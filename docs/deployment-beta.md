@@ -41,7 +41,7 @@ Depuis Render :
 Le build exécute :
 
 ```sh
-git submodule update --init --recursive && npm ci && npx prisma generate && npm run build
+git submodule update --init --recursive && npm ci --include=dev && npx prisma generate && npm run build
 ```
 
 Sur le plan free Render, `preDeployCommand` n'est pas disponible. La commande de démarrage exécute donc d'abord les migrations puis démarre l'app :

@@ -85,6 +85,6 @@ Ne copiez jamais votre `.env` local dans GitHub ou Render.
 Commandes habituelles :
 
 ```sh
-git submodule update --init --recursive && npm ci && npx prisma generate && npm run build
+git submodule update --init --recursive && npm ci --include=dev && npx prisma generate && npm run build
 npx prisma migrate deploy && npm start
 ```
