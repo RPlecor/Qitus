@@ -130,6 +130,9 @@ function activityLabel(action: string) {
     "import.retry_categorization_requested": "Retry catégorisation demandé",
     "import.completed": "Import terminé",
     "import.failed": "Import échoué",
+    "import.deleted": "Import supprimé",
+    "import.reset_requested": "Réinitialisation imports demandée",
+    "import.reset_completed": "Réinitialisation imports terminée",
     "transaction.categorized": "Transaction corrigée",
     "accounting_review.viewed": "Contrôle comptable consulté",
     "accounting_review.blocker_resolved": "Blocage comptable levé",
@@ -279,6 +282,7 @@ function activityDetail(row: ActivityLogSummary) {
   if (row.action.startsWith("correction_rule.") && typeof metadata?.counterparty === "string") return metadata.counterparty;
   if (row.action.startsWith("closing_adjustment.") && typeof metadata?.label === "string") return metadata.label;
   if (row.action.startsWith("import.") && typeof metadata?.filename === "string") return metadata.filename;
+  if (row.action.startsWith("import.") && typeof metadata?.importCount === "number") return `${metadata.importCount} import(s)`;
   if (row.action.startsWith("profile.") && typeof metadata?.name === "string") return metadata.name;
   if (row.action.startsWith("vat.") && typeof metadata?.filename === "string") return metadata.filename;
   if (row.action.startsWith("vat.") && typeof metadata?.issueKey === "string") return metadata.issueKey;

@@ -745,6 +745,39 @@ p { margin: 0; }
   margin: 0;
 }
 
+.stack-sm {
+  display: grid;
+  gap: 10px;
+}
+
+.danger-details {
+  position: relative;
+}
+
+.danger-details > summary {
+  list-style: none;
+  cursor: pointer;
+}
+
+.danger-details > summary::-webkit-details-marker {
+  display: none;
+}
+
+.danger-popover {
+  min-width: 260px;
+  margin-top: 8px;
+  padding: 12px;
+  border: 1px solid var(--red-border);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.danger-popover form {
+  display: grid;
+  gap: 8px;
+}
+
 /* ── STATUS BADGES ── */
 .cpt {
   display: inline-block;
