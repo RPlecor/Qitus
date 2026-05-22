@@ -14,6 +14,7 @@ import { ReconciliationFreshnessCenter } from "../reconciliations/reconciliation
 import { ReconciliationIssueWorkflow } from "../reconciliations/reconciliation-issue-workflow.server";
 import { TransactionExplorer } from "../transactions/transaction-explorer.server";
 import { VatDeclarationCenter } from "../vat/vat-declaration-center.server";
+import { VatLedgerReadinessCenter } from "../vat/vat-ledger-readiness-center.server";
 import type { NotificationSource, NotificationSpec } from "./notification-source.server";
 
 export function defaultNotificationSources(): NotificationSource[] {
@@ -107,13 +108,30 @@ class AccountingReviewNotificationSource implements NotificationSource {
   }
 }
 
-class VatNotificationSource implements NotificationSource {
+export class VatNotificationSource implements NotificationSource {
   readonly sourceKey = "vat";
-  constructor(private readonly vat = new VatDeclarationCenter()) {}
+  constructor(
+    private readonly vat = new VatDeclarationCenter(),
+    private readonly ledgerReadiness = new VatLedgerReadinessCenter()
+  ) {}
 
   async listNotificationSpecs(workspace: CompanyWorkspace): Promise<NotificationSpec[]> {
-    const vatReview = await this.vat.getVatReview(workspace);
+    const [vatReview, ledgerReadiness] = await Promise.all([
+      this.vat.getVatReview(workspace),
+      this.ledgerReadiness.getReadiness(workspace),
+    ]);
     const specs: NotificationSpec[] = [];
+    if (ledgerReadiness.status !== "ok") {
+      specs.push({
+        type: "VAT_ALERT",
+        severity: ledgerReadiness.status === "action_required" ? "BLOCKING" : "WARNING",
+        title: ledgerReadiness.title,
+        body: ledgerReadiness.message,
+        href: "/tva",
+        dedupeKey: "vat:ledger-readiness",
+        metadata: { status: ledgerReadiness.status, counters: ledgerReadiness.counters },
+      });
+    }
     if (vatReview.controls.length > 0) {
       specs.push({
         type: "VAT_ALERT",

@@ -4,6 +4,7 @@ import { AppShell, Main } from "~/components/ui";
 import { requireCompanyWorkspace } from "~/modules/company-workspace/company-workspace.server";
 import { VatControlCenter } from "~/modules/vat/vat-control-center.server";
 import { VatDeclarationCenter } from "~/modules/vat/vat-declaration-center.server";
+import { VatLedgerReadinessCenter } from "~/modules/vat/vat-ledger-readiness-center.server";
 import { VatPositionCenter } from "~/modules/vat/vat-position-center.server";
 import { VatRegularizationCenter } from "~/modules/vat/vat-regularization-center.server";
 import { VatReviewWorkflow } from "~/modules/vat/vat-review-workflow.server";
@@ -12,18 +13,19 @@ export async function loader(args: LoaderFunctionArgs) {
   const workspace = await requireCompanyWorkspace(args);
   const url = new URL(args.request.url);
   const filters = { dateFrom: url.searchParams.get("dateFrom"), dateTo: url.searchParams.get("dateTo") };
-  const [position, review, declarations, settlement, queue] = await Promise.all([
+  const [position, review, declarations, settlement, queue, ledgerReadiness] = await Promise.all([
     new VatPositionCenter().getVatPosition(workspace, filters),
     new VatControlCenter().getVatReview(workspace, filters),
     new VatDeclarationCenter().listDeclarations(workspace),
     new VatRegularizationCenter().summarizeOpenVatBalance(workspace),
     new VatReviewWorkflow().getReviewQueue(workspace, filters),
+    new VatLedgerReadinessCenter().getReadiness(workspace),
   ]);
-  return json({ position, review, declarations, settlement, queue, query: Object.fromEntries(url.searchParams) });
+  return json({ position, review, declarations, settlement, queue, ledgerReadiness, query: Object.fromEntries(url.searchParams) });
 }
 
 export default function TvaPage() {
-  const { position, review, declarations, settlement, queue, query } = useLoaderData<typeof loader>();
+  const { position, review, declarations, settlement, queue, ledgerReadiness, query } = useLoaderData<typeof loader>();
   const declarationType = position.regime === "REEL_NORMAL" ? "CA3" : "CA12";
   const hasActiveDeclaration = declarations.some((declaration) => declaration.active);
 
@@ -32,6 +34,7 @@ export default function TvaPage() {
       <Main title="TVA" subtitle="Position déclarative et brouillons CA3/CA12">
         {query.success ? <div className="alert blue"><strong>{query.success}</strong></div> : null}
         {query.error ? <div className="alert red"><strong>{query.error}</strong></div> : null}
+        {ledgerReadiness.status !== "ok" ? <VatReadinessAlert readiness={ledgerReadiness} /> : null}
 
         <div className="kpi-grid">
           <div className="kpi"><div className="kpi-label">Régime</div><span className="kpi-val">{position.regime}</span><div className="sub">{position.exigibility}</div></div>
@@ -111,6 +114,18 @@ export default function TvaPage() {
         </section>
       </Main>
     </AppShell>
+  );
+}
+
+function VatReadinessAlert({ readiness }: { readiness: { status: string; title: string; message: string; actions: Array<{ label: string; href: string; primary?: boolean }> } }) {
+  return (
+    <div className={`alert ${readiness.status === "action_required" ? "orange" : "blue"}`}>
+      <strong>{readiness.title}</strong>
+      <span>{readiness.message}</span>
+      <div className="row-actions">
+        {readiness.actions.map((action) => <Link key={action.href} className={`btn btn-sm ${action.primary ? "btn-p" : ""}`} to={action.href}>{action.label}</Link>)}
+      </div>
+    </div>
   );
 }
 

@@ -4,22 +4,33 @@ import { AppShell, Main } from "~/components/ui";
 import { requireCompanyWorkspace } from "~/modules/company-workspace/company-workspace.server";
 import { CompanyProfile } from "~/modules/company-workspace/company-profile.server";
 import { PrivacyCenter } from "~/modules/privacy/privacy-center.server";
+import { VatLedgerReadinessCenter } from "~/modules/vat/vat-ledger-readiness-center.server";
 
 export async function loader(args: LoaderFunctionArgs) {
   const workspace = await requireCompanyWorkspace(args);
-  const [company, privacy] = await Promise.all([
+  const [company, privacy, ledgerReadiness] = await Promise.all([
     new CompanyProfile().getProfile(workspace),
     new PrivacyCenter().getPrivacyStatus(workspace),
+    new VatLedgerReadinessCenter().getReadiness(workspace),
   ]);
-  return json({ company, privacy });
+  return json({ company, privacy, ledgerReadiness });
 }
 
 export default function Profil() {
-  const { company, privacy } = useLoaderData<typeof loader>();
+  const { company, privacy, ledgerReadiness } = useLoaderData<typeof loader>();
 
   return (
     <AppShell active="profil">
       <Main title="Profil" subtitle="Informations entreprise">
+        {ledgerReadiness.status !== "ok" ? (
+          <div className={`alert ${ledgerReadiness.status === "action_required" ? "orange" : "blue"}`} style={{ maxWidth: 760 }}>
+            <strong>{ledgerReadiness.title}</strong>
+            <span>{ledgerReadiness.message}</span>
+            <div className="row-actions">
+              {ledgerReadiness.actions.map((action) => <Link key={action.href} className={`btn btn-sm ${action.primary ? "btn-p" : ""}`} to={action.href}>{action.label}</Link>)}
+            </div>
+          </div>
+        ) : null}
         <Form className="card" method="post" action="/api/companies/current" style={{ maxWidth: 760 }}>
           <div className="form-row">
             <div className="field"><label>Nom</label><input name="name" defaultValue={company.name} /></div>

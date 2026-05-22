@@ -12,12 +12,20 @@ export async function action(args: ActionFunctionArgs) {
   const { request } = args;
   const workspace = await requireCompanyWorkspace(args);
   const form = await request.formData();
+  const before = {
+    vatRegime: workspace.company.vatRegime,
+    vatExigibility: workspace.company.vatExigibility,
+  };
   const updated = await new CompanyProfile().saveProfile(workspace, companyProfileInputFromForm(form));
   await new ActivityLogCenter().recordActivity(workspace, {
     action: "profile.updated",
     entityType: "company",
     entityId: updated.id,
-    metadata: { name: updated.name },
+    metadata: {
+      name: updated.name,
+      vatRegime: { from: before.vatRegime, to: updated.vatRegime },
+      vatExigibility: { from: before.vatExigibility, to: updated.vatExigibility },
+    },
   });
   if (request.headers.get("accept")?.includes("application/json")) return json(updated);
   return redirect("/profil");
