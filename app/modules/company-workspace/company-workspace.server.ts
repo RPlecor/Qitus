@@ -15,6 +15,13 @@ export type CompanyWorkspace = {
   authMode: "dev" | "clerk";
 };
 
+export type WorkspaceShellContext = {
+  companyName: string;
+  companyStatus: string;
+  fiscalYearLabel: string;
+  onboardingComplete: boolean;
+};
+
 export interface IdentityAdapter {
   resolveIdentity(args: LoaderFunctionArgs): Promise<{ clerkId: string; email?: string; name?: string | null }>;
 }
@@ -31,7 +38,13 @@ export class ClerkIdentityAdapter implements IdentityAdapter {
   async resolveIdentity(args: LoaderFunctionArgs) {
     const auth = await getAuth(args, { secretKey: this.config.clerkSecretKey });
     if (!auth.userId) throw redirect("/login");
-    return { clerkId: auth.userId };
+    const claims = (auth.sessionClaims ?? {}) as Record<string, unknown>;
+    const claimName = [stringClaim(claims.given_name), stringClaim(claims.family_name)].filter(Boolean).join(" ");
+    return {
+      clerkId: auth.userId,
+      email: stringClaim(claims.email) ?? stringClaim(claims.primary_email_address),
+      name: stringClaim(claims.name) ?? (claimName || null),
+    };
   }
 }
 
@@ -59,6 +72,29 @@ export async function requireCompanyWorkspace(args: LoaderFunctionArgs): Promise
     : await new DevIdentityAdapter().resolveIdentity(args);
 
   return getOrCreateWorkspaceForIdentity(identity, config.authMode, args.request);
+}
+
+export async function getOptionalWorkspaceShell(args: LoaderFunctionArgs): Promise<WorkspaceShellContext | null> {
+  const config = getRuntimeConfig();
+  if (config.authMode !== "clerk") return null;
+
+  const auth = await getAuth(args, { secretKey: config.clerkSecretKey });
+  if (!auth.userId) return null;
+
+  const user = await prisma.user.findFirst({
+    where: { clerkId: auth.userId, deletedAt: null },
+    include: {
+      companies: {
+        where: { deletedAt: null },
+        include: { fiscalYears: { orderBy: { startDate: "desc" } } },
+        take: 1,
+      },
+    },
+  });
+  const company = user?.companies[0];
+  const fiscalYear = company?.fiscalYears[0];
+  if (!company || !fiscalYear) return null;
+  return workspaceShellContext(company, fiscalYear);
 }
 
 export async function getDevCompanyWorkspace(): Promise<CompanyWorkspace> {
@@ -98,26 +134,27 @@ async function getOrCreateWorkspaceForIdentity(
   });
 
   if (!company) {
+    const isDev = authMode === "dev";
     company = await prisma.company.create({
       data: {
         userId: user.id,
-        name: "ACME Digital",
+        name: isDev ? "ACME Digital" : "Entreprise à configurer",
         legalForm: "SASU",
-        siren: "912345678",
-        siret: "91234567800015",
-        nafCode: "6202A",
-        rcs: "RCS Paris",
-        capital: 1000,
-        addressStreet: "42 rue de la Paix",
-        addressPostal: "75002",
-        addressCity: "Paris",
-        managerFirstName: "Marie",
-        managerLastName: "Dupont",
-        managerCivility: "Mme",
-        managerRole: "President",
+        siren: isDev ? "912345678" : null,
+        siret: isDev ? "91234567800015" : null,
+        nafCode: isDev ? "6202A" : null,
+        rcs: isDev ? "RCS Paris" : null,
+        capital: isDev ? 1000 : null,
+        addressStreet: isDev ? "42 rue de la Paix" : null,
+        addressPostal: isDev ? "75002" : null,
+        addressCity: isDev ? "Paris" : null,
+        managerFirstName: isDev ? "Marie" : null,
+        managerLastName: isDev ? "Dupont" : null,
+        managerCivility: isDev ? "Mme" : null,
+        managerRole: isDev ? "President" : null,
         corporateTax: "IS",
         vatRegime: "FRANCHISE",
-        onboardingComplete: authMode === "dev",
+        onboardingComplete: isDev,
         fiscalYears: {
           create: { startDate: new Date("2025-01-01"), endDate: new Date("2025-12-31") },
         },
@@ -138,5 +175,37 @@ async function getOrCreateWorkspaceForIdentity(
   });
   const subscription = await new SubscriptionCenter().getSubscription({ company });
 
+  if (authMode === "clerk" && !company.onboardingComplete && request && !allowsIncompleteOnboarding(new URL(request.url).pathname)) {
+    throw redirect("/onboarding");
+  }
+
   return { user, company, fiscalYear, bankAccount, subscription, authMode };
+}
+
+export function workspaceShellContext(company: Company & { fiscalYears?: FiscalYear[] }, fiscalYear: FiscalYear): WorkspaceShellContext {
+  return {
+    companyName: company.name,
+    companyStatus: company.legalForm,
+    fiscalYearLabel: `${formatDate(fiscalYear.startDate)} – ${formatDate(fiscalYear.endDate)}`,
+    onboardingComplete: company.onboardingComplete,
+  };
+}
+
+function allowsIncompleteOnboarding(pathname: string) {
+  return pathname === "/login"
+    || pathname === "/signup"
+    || pathname === "/onboarding"
+    || pathname === "/api/companies"
+    || pathname === "/webhooks/clerk"
+    || pathname === "/healthz"
+    || pathname === "/readyz"
+    || pathname.startsWith("/shared/");
+}
+
+function stringClaim(value: unknown) {
+  return typeof value === "string" && value.trim() ? value : undefined;
+}
+
+function formatDate(value: Date) {
+  return new Intl.DateTimeFormat("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric", timeZone: "UTC" }).format(value);
 }

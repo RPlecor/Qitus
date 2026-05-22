@@ -28,7 +28,13 @@ services:
           name: qitus-db
           property: connectionString
       - key: AUTH_MODE
-        value: dev
+        value: clerk
+      - key: CLERK_PUBLISHABLE_KEY
+        sync: false
+      - key: CLERK_SECRET_KEY
+        sync: false
+      - key: CLERK_WEBHOOK_SECRET
+        sync: false
       - key: BILLING_MODE
         value: stub
       - key: AI_PROVIDER

@@ -116,7 +116,12 @@ export class PrismaClerkUserSync implements ClerkUserSync {
       if (!user) return null;
       const updated = await prisma.user.update({
         where: { id: user.id },
-        data: { email: `deleted-${clerkId}@clerk.paperasse.local`, name: null },
+        data: {
+          email: `deleted-${clerkId}@clerk.paperasse.local`,
+          name: null,
+          deletedAt: new Date(),
+          anonymizedAt: new Date(),
+        },
       });
       await recordWebhookActivity(updated.id, user.companies[0]?.id, event);
       return updated;

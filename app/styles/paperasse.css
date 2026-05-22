@@ -204,6 +204,15 @@ p { margin: 0; }
   text-decoration: none;
 }
 
+.s-item-btn {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+}
+
 .s-item:hover {
   background: var(--bg);
   color: var(--fg);

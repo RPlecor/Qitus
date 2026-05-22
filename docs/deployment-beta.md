@@ -22,13 +22,27 @@ Il crée :
 Configuration livrée par défaut :
 
 - `APP_ENV=staging`
-- `AUTH_MODE=dev`
+- `AUTH_MODE=clerk`
 - `BILLING_MODE=stub`
 - `CHAT_PROVIDER=fake`
 - `OPEN_BANKING_PROVIDER=disabled`
 - `OBJECT_STORAGE_MODE=local`
 
-Cette configuration sert à obtenir une URL Render rapidement, sans exposer de secrets Clerk, Stripe, Open Banking ou S3. Elle n'est pas une configuration production multi-utilisateur.
+Cette configuration sert à obtenir une URL Render staging avec de vrais comptes Clerk, sans activer encore Stripe, Open Banking ou S3. Elle n'est pas une configuration production complète.
+
+Avant de tester l'interface, renseigner dans Render :
+
+- `CLERK_PUBLISHABLE_KEY`
+- `CLERK_SECRET_KEY`
+- `CLERK_WEBHOOK_SECRET`
+
+Dans Clerk, configurer :
+
+- Sign-in URL : `https://<render-url>/login`
+- Sign-up URL : `https://<render-url>/signup`
+- After sign-in/up : `https://<render-url>/dashboard`
+- Webhook : `https://<render-url>/webhooks/clerk`
+- Événements webhook : `user.created`, `user.updated`, `user.deleted`
 
 Depuis Render :
 
@@ -60,7 +74,7 @@ Important : en Blueprint staging, les documents et pièces utilisent `/tmp/qitus
 
 Pour exposer à de vrais utilisateurs :
 
-- passer `AUTH_MODE=clerk` et renseigner Clerk ;
+- conserver `AUTH_MODE=clerk` et renseigner Clerk ;
 - passer `BILLING_MODE=stripe` si abonnement réel ;
 - passer `OBJECT_STORAGE_MODE=s3` ;
 - configurer `PUBLIC_APP_URL` avec le domaine réel ;

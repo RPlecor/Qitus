@@ -2,6 +2,7 @@ import { json, type LinksFunction, type LoaderFunctionArgs } from "@remix-run/no
 import { Links, Meta, Outlet, Scripts, ScrollRestoration, useLoaderData } from "@remix-run/react";
 import { ClerkProvider } from "@clerk/remix";
 import { rootAuthLoader } from "@clerk/remix/ssr.server";
+import { getOptionalWorkspaceShell, type WorkspaceShellContext } from "~/modules/company-workspace/company-workspace.server";
 import { assertRuntimeConfig, getRuntimeConfig } from "~/modules/runtime-config.server";
 import stylesheet from "~/styles/paperasse.css?url";
 
@@ -19,14 +20,21 @@ export async function loader(args: LoaderFunctionArgs) {
   const config = getRuntimeConfig();
   if (config.authMode !== "clerk") return json({ authMode: "dev" });
   assertRuntimeConfig(config);
-  return rootAuthLoader(args, () => ({ authMode: "clerk" }), {
+  return rootAuthLoader(args, async () => ({
+    authMode: "clerk",
+    shell: await getOptionalWorkspaceShell(args),
+  }), {
     publishableKey: config.clerkPublishableKey,
     secretKey: config.clerkSecretKey,
+    signInUrl: "/login",
+    signUpUrl: "/signup",
+    signInForceRedirectUrl: "/dashboard",
+    signUpForceRedirectUrl: "/dashboard",
   });
 }
 
 export default function App() {
-  const data = useLoaderData<typeof loader>() as { authMode: string; clerkState?: unknown };
+  const data = useLoaderData<typeof loader>() as { authMode: string; clerkState?: unknown; shell?: WorkspaceShellContext | null };
   const body = (
     <>
       <Outlet />

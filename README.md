@@ -13,7 +13,7 @@ npm run seed
 npm run dev
 ```
 
-Par défaut, l'app utilise un contexte de développement mono-utilisateur et mono-company. En définissant `AUTH_MODE=clerk`, les routes serveur passent par Clerk tout en conservant le mode démo local quand `AUTH_MODE=dev`.
+Par défaut, l'app utilise un contexte de développement mono-utilisateur et mono-company. En définissant `AUTH_MODE=clerk`, les routes serveur passent par Clerk, les nouveaux comptes passent par `/signup`, puis terminent leur entreprise dans `/onboarding`.
 
 ## Variables
 
@@ -226,3 +226,16 @@ http://localhost:5173/webhooks/clerk
 - `user.deleted`
 
 Le webhook est vérifié avec Svix et enregistré dans `WebhookEvent` pour éviter les doublons. `AUTH_MODE=dev` reste le mode recommandé pour `npm run demo:reset` et `npm run validate:mvp`.
+
+Pour Render staging, `render.yaml` active `AUTH_MODE=clerk` et attend que ces trois secrets soient renseignés dans l'interface Render avant test utilisateur :
+
+- `CLERK_PUBLISHABLE_KEY`
+- `CLERK_SECRET_KEY`
+- `CLERK_WEBHOOK_SECRET`
+
+Configurer aussi dans Clerk :
+
+- Sign-in URL : `https://<render-url>/login`
+- Sign-up URL : `https://<render-url>/signup`
+- After sign-in/up : `https://<render-url>/dashboard`
+- Webhook : `https://<render-url>/webhooks/clerk`

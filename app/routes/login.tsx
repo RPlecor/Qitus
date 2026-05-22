@@ -14,7 +14,7 @@ export default function Login() {
       <div className="shell center">
         <div className="ob-card">
           <h1>Connectez-vous.</h1>
-          <SignIn routing="path" path="/login" signUpUrl="/login?mode=signup" forceRedirectUrl="/dashboard" />
+          <SignIn routing="path" path="/login" signUpUrl="/signup" forceRedirectUrl="/dashboard" />
         </div>
       </div>
     );

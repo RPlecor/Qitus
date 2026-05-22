@@ -23,6 +23,7 @@ import {
   Diamond,
   FolderCheck,
   Plug,
+  LogOut,
 } from "lucide-react";
 
 const ICON_SIZE = 16;
@@ -94,16 +95,23 @@ function buildNav(showDemo: boolean): NavSection[] {
 }
 
 export function AppShell({ children, active = "dashboard" }: { children: ReactNode; active?: string }) {
-  const rootData = useRouteLoaderData("root") as { authMode?: string } | undefined;
+  const rootData = useRouteLoaderData("root") as {
+    authMode?: string;
+    shell?: { companyName: string; companyStatus: string; fiscalYearLabel: string; onboardingComplete: boolean } | null;
+  } | undefined;
   const showDemo = rootData?.authMode === "dev";
+  const shell = rootData?.shell;
   const sections = buildNav(showDemo);
 
   return (
     <div className="shell">
       <aside className="sidebar">
         <div className="s-id">
-          <strong>ACME DIGITAL</strong>
-          <span>SASU · Exercice 01/01 – 31/12/2025</span>
+          <strong>{shell?.companyName ?? "ACME DIGITAL"}</strong>
+          <span>
+            {shell ? `${shell.companyStatus} · Exercice ${shell.fiscalYearLabel}` : "SASU · Exercice 01/01 – 31/12/2025"}
+          </span>
+          {shell && !shell.onboardingComplete ? <span>Configuration à terminer</span> : null}
         </div>
         <nav className="s-nav">
           {sections.map((section) => (
@@ -129,10 +137,29 @@ export function AppShell({ children, active = "dashboard" }: { children: ReactNo
             </span>
             Profil
           </NavLink>
+          {rootData?.authMode === "clerk" ? <ClerkSignOutButton /> : null}
         </div>
       </aside>
       {children}
     </div>
+  );
+}
+
+function ClerkSignOutButton() {
+  return (
+    <button
+      type="button"
+      className="s-item s-item-btn"
+      onClick={() => {
+        const clerk = (window as typeof window & { Clerk?: { signOut: (options?: { redirectUrl?: string }) => Promise<void> } }).Clerk;
+        void clerk?.signOut({ redirectUrl: "/login" });
+      }}
+    >
+      <span className="ic">
+        <LogOut size={ICON_SIZE} strokeWidth={ICON_STROKE} />
+      </span>
+      Déconnexion
+    </button>
   );
 }
 

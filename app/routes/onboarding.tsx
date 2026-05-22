@@ -1,4 +1,12 @@
+import { json, redirect, type LoaderFunctionArgs } from "@remix-run/node";
 import { Form, Link } from "@remix-run/react";
+import { requireCompanyWorkspace } from "~/modules/company-workspace/company-workspace.server";
+
+export async function loader(args: LoaderFunctionArgs) {
+  const workspace = await requireCompanyWorkspace(args);
+  if (workspace.authMode === "clerk" && workspace.company.onboardingComplete) throw redirect("/dashboard");
+  return json({ authMode: workspace.authMode });
+}
 
 export default function Onboarding() {
   return (
