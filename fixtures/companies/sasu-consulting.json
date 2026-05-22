@@ -1,0 +1,72 @@
+{
+  "company": {
+    "name": "ACME Digital",
+    "legal_form": "SASU",
+    "siren": "912345678",
+    "siret": "91234567800015",
+    "naf_code": "6202A",
+    "naf_label": "Conseil en systèmes et logiciels informatiques",
+    "rcs": "Paris B 912 345 678",
+    "capital": 1000,
+    "address": {
+      "street": "42 rue de la Paix",
+      "postal_code": "75002",
+      "city": "Paris",
+      "country": "France"
+    },
+    "president": {
+      "name": "Marie Dupont",
+      "role": "Présidente",
+      "is_sole_shareholder": true
+    },
+    "creation_date": "2023-06-15",
+    "fiscal_year": {
+      "start": "2025-01-01",
+      "end": "2025-12-31"
+    },
+    "tax_regime": {
+      "corporate_tax": "IS",
+      "vat_regime": "franchise_en_base",
+      "vat_threshold": 36800,
+      "income_tax_regime": null,
+      "simplified_regime": true
+    },
+    "bank_accounts": [
+      {
+        "id": "qonto-main",
+        "bank": "Qonto",
+        "iban": "FR76XXXX",
+        "label": "Compte courant professionnel",
+        "pcg_account": "5121"
+      }
+    ],
+    "stripe_accounts": [
+      {
+        "id": "stripe-saas",
+        "name": "ACME SaaS",
+        "env_key": "STRIPE_SECRET",
+        "currency": "EUR"
+      }
+    ],
+    "qonto": {
+      "enabled": true
+    },
+    "accounting": {
+      "currency": "EUR",
+      "decimal_separator": ",",
+      "pcg_version": "2025"
+    }
+  },
+  "_fixture_meta": {
+    "description": "SASU consulting IT, franchise TVA, IS, 1 associé unique. Scénario principal de test MVP.",
+    "covers": [
+      "Onboarding entreprise",
+      "Import transactions Qonto + Stripe",
+      "Catégorisation dépenses consulting/SaaS",
+      "Clôture annuelle IS avec taux réduit PME 15%",
+      "Compte courant d'associé 455",
+      "PCA sur abonnements SaaS annuels",
+      "Amortissement matériel informatique"
+    ]
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "codex-cli": {
+    "enabled": true,
+    "kind": "codex-cli",
+    "model": "gpt-5.4-mini"
+  },
+  "openai": {
+    "enabled": false,
+    "kind": "openai-responses"
+  }
+}

@@ -1,0 +1,1340 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String           @id @default(cuid())
+  clerkId         String           @unique
+  email           String           @unique
+  name            String?
+  companies       Company[]
+  notifications   Notification[]
+  privacyRequests PrivacyRequest[]
+  uploadedAttachments Attachment[]
+  generatedVatDeclarations VatDeclaration[]
+  deletedAt       DateTime?
+  anonymizedAt    DateTime?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+}
+
+model Company {
+  id                 String        @id @default(cuid())
+  userId             String
+  user               User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name               String
+  legalForm          LegalForm
+  siren              String?
+  siret              String?
+  nafCode            String?
+  rcs                String?
+  capital            Int?
+  addressStreet      String?
+  addressPostal      String?
+  addressCity        String?
+  managerFirstName   String?
+  managerLastName    String?
+  managerCivility    String?
+  managerRole        String?
+  corporateTax       TaxType?
+  vatRegime          VatRegime
+  vatExigibility     VatExigibility @default(ENCAISSEMENTS)
+  vatRate            Decimal?      @db.Decimal(5, 4)
+  incomeRegime       String?
+  onboardingComplete Boolean       @default(false)
+  fiscalYears        FiscalYear[]
+  bankAccounts       BankAccount[]
+  vendorMappings     VendorMapping[]
+  documents          Document[]
+  activityLogs       ActivityLog[]
+  shareLinks         ShareLink[]
+  subscriptions      Subscription[]
+  usageEvents        UsageEvent[]
+  chatConversations  ChatConversation[]
+  bankConnections     BankConnection[]
+  bankFeedAccounts    BankFeedAccount[]
+  bankFeedSyncEvents  BankFeedSyncEvent[]
+  notifications      Notification[]
+  privacyRequests    PrivacyRequest[]
+  attachments         Attachment[]
+  vatDeclarations     VatDeclaration[]
+  dossierSnapshots    DossierSnapshot[]
+  expertReviewRuns    ExpertReviewRun[]
+  deletedAt          DateTime?
+  anonymizedAt       DateTime?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+}
+
+model FiscalYear {
+  id             String         @id @default(cuid())
+  companyId      String
+  company        Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  startDate      DateTime
+  endDate        DateTime
+  status         FiscalYearStatus @default(OPEN)
+  imports        Import[]
+  transactions   Transaction[]
+  categorizations Categorization[]
+  correctionRules CorrectionRule[]
+  journalEntries JournalEntry[]
+  documents      Document[]
+  activityLogs   ActivityLog[]
+  accountingIssueResolutions AccountingIssueResolution[]
+  closingAdjustmentProposals ClosingAdjustmentProposal[]
+  annualClosingRuns AnnualClosingRun[]
+  fixedAssets    FixedAsset[]
+  bankReconciliations BankReconciliation[]
+  reconciliationRuns ReconciliationRun[]
+  bankFeedSyncEvents BankFeedSyncEvent[]
+  closingWorkpapers ClosingWorkpaper[]
+  shareLinks     ShareLink[]
+  usageEvents    UsageEvent[]
+  chatConversations ChatConversation[]
+  notifications  Notification[]
+  attachments    Attachment[]
+  vatDeclarations VatDeclaration[]
+  dossierSnapshots DossierSnapshot[]
+  expertReviewRuns ExpertReviewRun[]
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@unique([companyId, startDate, endDate])
+}
+
+model BankAccount {
+  id         String   @id @default(cuid())
+  companyId  String
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  bank       String
+  label      String
+  iban       String?
+  pcgAccount String   @default("5121")
+  fecAccount String   @default("51211")
+  imports    Import[]
+  bankReconciliations BankReconciliation[]
+  createdAt  DateTime @default(now())
+}
+
+model Import {
+  id              String       @id @default(cuid())
+  fiscalYearId    String
+  fiscalYear      FiscalYear   @relation(fields: [fiscalYearId], references: [id], onDelete: Cascade)
+  bankAccountId   String?
+  bankAccount     BankAccount? @relation(fields: [bankAccountId], references: [id])
+  sourceType      ImportSource @default(CSV_UPLOAD)
+  originalFilename String?
+  storageKey      String?
+  fileFormat      String?
+  fileEncoding    String?
+  fileSeparator   String?
+  detectedColumns Json?
+  columnMapping   Json?
+  status          ImportStatus @default(PENDING)
+  currentStep     String?
+  progress        Int          @default(0)
+  totalRows       Int          @default(0)
+  parsedRows      Int          @default(0)
+  categorizedRows Int          @default(0)
+  reviewRows      Int          @default(0)
+  errorMessage    String?
+  lastErrorCode   String?
+  lastErrorMessage String?
+  retryCount      Int          @default(0)
+  startedAt       DateTime?
+  completedAt     DateTime?
+  durationMs      Int?
+  transactions    Transaction[]
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+}
+
+model Transaction {
+  id             String          @id @default(cuid())
+  fiscalYearId   String
+  fiscalYear     FiscalYear      @relation(fields: [fiscalYearId], references: [id], onDelete: Cascade)
+  importId       String
+  import         Import          @relation(fields: [importId], references: [id], onDelete: Cascade)
+  sourceId       String?
+  date           DateTime
+  label          String
+  normalizedLabel String
+  counterparty   String?
+  amount         Decimal         @db.Decimal(12, 2)
+  currency       String          @default("EUR")
+  type           TransactionType
+  sourceRef      String?
+  sourceCategory String?
+  notes          String?
+  categorization Categorization?
+  journalEntryId String?
+  journalEntry   JournalEntry?   @relation(fields: [journalEntryId], references: [id])
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@index([fiscalYearId, date])
+  @@index([importId])
+}
+
+model VendorMapping {
+  id             String    @id @default(cuid())
+  companyId      String?
+  company        Company?  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  pattern        String
+  matchType      MatchType
+  accountDebit   String
+  accountCredit  String    @default("5121")
+  accountLabel   String?
+  journal        String    @default("BQ")
+  ecritureLabel  String?
+  vatRate        Decimal?  @db.Decimal(5, 4)
+  vatOperationNature VatOperationNature?
+  isAnnualCharge Boolean   @default(false)
+  hitCount       Int       @default(0)
+  source         String    @default("seed")
+  active         Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([companyId, pattern])
+  @@index([matchType])
+}
+
+model Categorization {
+  id                    String                 @id @default(cuid())
+  fiscalYearId           String
+  fiscalYear             FiscalYear             @relation(fields: [fiscalYearId], references: [id], onDelete: Cascade)
+  transactionId          String                 @unique
+  transaction            Transaction            @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  accountDebit           String?
+  accountDebitLabel      String?
+  accountCredit          String?
+  accountCreditLabel     String?
+  journal                String?
+  ecritureLabel          String?
+  vatRate                Decimal?               @db.Decimal(5, 4)
+  vatOperationNature     VatOperationNature?
+  confidence             Confidence
+  source                 CategorizationSource
+  aiRationale            String?
+  alternatives           Json?
+  status                 CategorizationStatus
+  isAnnualCharge         Boolean                @default(false)
+  originalAccountDebit   String?
+  originalAccountCredit  String?
+  correctionNote         String?
+  confirmedAt            DateTime?
+  createdAt              DateTime               @default(now())
+  updatedAt              DateTime               @updatedAt
+}
+
+model CorrectionRule {
+  id                  String     @id @default(cuid())
+  fiscalYearId         String
+  fiscalYear           FiscalYear @relation(fields: [fiscalYearId], references: [id], onDelete: Cascade)
+  counterparty         String
+  preferredAccount     String
+  preferredAccountLabel String?
+  preferredVatRate      Decimal?   @db.Decimal(5, 4)
+  vatOperationNature     VatOperationNature?
+  condition            String?
+  active               Boolean    @default(true)
+  disabledAt           DateTime?
+  matchCountSnapshot   Int        @default(0)
+  lastMatchedAt        DateTime?
+  sourceTransactionId  String?
+  note                 String?
+  createdAt            DateTime   @default(now())
+  updatedAt            DateTime   @updatedAt
+}
+
+model JournalEntry {
+  id           String       @id @default(cuid())
+  fiscalYearId String
+  fiscalYear   FiscalYear   @relation(fields: [fiscalYearId], references: [id], onDelete: Cascade)
+  num          Int
+  date         DateTime
+  journal      String
+  ref          String?
+  label        String
+  source       EntrySource
+  lines        JournalLine[]
+  transactions Transaction[]
+  closingAdjustmentProposal ClosingAdjustmentProposal?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@unique([fiscalYearId, num])
+  @@index([fiscalYearId, date])
+}
+
+model JournalLine {
+  id             String       @id @default(cuid())
+  journalEntryId  String
+  journalEntry    JournalEntry @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
+  account        String
+  accountLabel   String?
+  debit          Decimal      @default(0) @db.Decimal(12, 2)
+  credit         Decimal      @default(0) @db.Decimal(12, 2)
+}
+
+model Document {
+  id            String       @id @default(cuid())
+  companyId     String
+  company       Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  fiscalYearId  String
+  fiscalYear    FiscalYear   @relation(fields: [fiscalYearId], references: [id], onDelete: Cascade)
+  type          DocumentType
+  format        String
+  storageKey    String
+  filename      String
+  sizeBytes     Int?
+  entriesCount  Int?
+  generatedBy   String
+  scriptVersion String?
+  status        DocumentStatus @default(READY)
+  errorMessage  String?
+  generatedAt   DateTime     @default(now())
+  createdAt     DateTime     @default(now())
+}
+
+model VatDeclaration {
+  id                String               @id @default(cuid())
+  companyId         String
+  company           Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  fiscalYearId      String
+  fiscalYear        FiscalYear           @relation(fields: [fiscalYearId], references: [id], onDelete: Cascade)
+  type              VatDeclarationType
+  periodStart       DateTime
+  periodEnd         DateTime
+  status            VatDeclarationStatus @default(DRAFT)
+  sourceJson        Json
+  amountsJson       Json
+  controlsJson      Json
+  documentId        String?
+  generatedByUserId String?
+  generatedByUser   User?                @relation(fields: [generatedByUserId], references: [id], onDelete: SetNull)
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+
+  @@index([companyId, fiscalYearId, status])
+  @@index([type, periodStart, periodEnd])
+}
+
+model ActivityLog {
+  id        String   @id @default(cuid())
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  fiscalYearId String?
+  fiscalYear FiscalYear? @relation(fields: [fiscalYearId], references: [id], onDelete: SetNull)
+  userId    String?
+  action    String
+  entityType String?
+  entityId  String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@index([companyId, fiscalYearId])
+  @@index([createdAt])
+}
+
+model Notification {
+  id           String               @id @default(cuid())
+  companyId    String
+  company      Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  fiscalYearId String
+  fiscalYear   FiscalYear           @relation(fields: [fiscalYearId], references: [id], onDelete: Cascade)
+  userId       String?
+  user         User?                @relation(fields: [userId], references: [id], onDelete: SetNull)
+  type         NotificationType
+  severity     NotificationSeverity
+  title        String
+  body         String
+  href         String?
+  dedupeKey    String
+  readAt       DateTime?
+  dismissedAt  DateTime?
+  expiresAt    DateTime?
+  metadataJson Json?
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+
+  @@unique([companyId, fiscalYearId, dedupeKey])
+  @@index([companyId, fiscalYearId, dismissedAt])
+  @@index([userId])
+  @@index([type])
+  @@index([severity])
+}
+
+model PrivacyRequest {
+  id           String               @id @default(cuid())
+  userId       String
+  user         User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyId    String
+  company      Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  kind         PrivacyRequestKind
+  status       PrivacyRequestStatus @default(REQUESTED)
+  requestedAt  DateTime             @default(now())
+  processedAt  DateTime?
+  errorMessage String?
+  metadataJson Json?
+
+  @@index([userId, companyId])
+  @@index([kind, status])
+  @@index([requestedAt])
+}
+
+model WebhookEvent {
+  id           String   @id @default(cuid())
+  provider     String
+  eventId      String   @unique
+  eventType    String
+  status       String
+  receivedAt   DateTime @default(now())
+  processedAt  DateTime?
+  errorMessage String?
+
+  @@index([provider, eventType])
+  @@index([status])
+}
+
+model AccountingIssueResolution {
+  id           String                @id @default(cuid())
+  fiscalYearId String
+  fiscalYear   FiscalYear            @relation(fields: [fiscalYearId], references: [id], onDelete: Cascade)
+  issueKey     String
+  controlCode  String
+  status       AccountingIssueStatus @default(OPEN)
+  note         String?
+  resolvedAt   DateTime?
+  ignoredAt    DateTime?
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+
+  @@unique([fiscalYearId, issueKey])
+  @@index([fiscalYearId, controlCode])
+  @@index([status])
+}
+
+model ClosingAdjustmentProposal {
+  id              String                  @id @default(cuid())
+  fiscalYearId    String
+  fiscalYear      FiscalYear              @relation(fields: [fiscalYearId], references: [id], onDelete: Cascade)
+  issueKey        String
+  proposalKey     String
+  kind            ClosingAdjustmentKind
+  status          ClosingAdjustmentStatus @default(DRAFT)
+  label           String
+  assumptionsJson Json?
+  calculationJson Json
+  linesJson       Json
+  calculationVersion Int                  @default(1)
+  lastCalculatedAt DateTime?
+  staleReason     String?
+  journalEntryId  String?                 @unique
+  journalEntry    JournalEntry?            @relation(fields: [journalEntryId], references: [id])
+  note            String?
+  approvedByUserId String?
+  rejectedByUserId String?
+  events          ClosingAdjustmentEvent[]
+  approvedAt      DateTime?
+  rejectedAt      DateTime?
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+
+  @@unique([fiscalYearId, proposalKey])
+  @@index([fiscalYearId, kind])
+  @@index([status])
+}
+
+model ClosingAdjustmentEvent {
+  id              String                    @id @default(cuid())
+  proposalId      String
+  proposal        ClosingAdjustmentProposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  eventType       String
+  payloadJson     Json?
+  createdByUserId String?
+  createdAt       DateTime                  @default(now())
+
+  @@index([proposalId, createdAt])
+  @@index([eventType])
+}
+
+model ClosingWorkpaper {
+  id               String                 @id @default(cuid())
+  fiscalYearId     String
+  fiscalYear       FiscalYear             @relation(fields: [fiscalYearId], references: [id], onDelete: Cascade)
+  workpaperKey     String
+  kind             String
+  status           ClosingWorkpaperStatus @default(DRAFT)
+  title            String
+  sourceEntityType String?
+  sourceEntityId   String?
+  assumptionsJson  Json?
+  calculationJson  Json?
+  note             String?
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
+
+  @@unique([fiscalYearId, workpaperKey])
+  @@index([fiscalYearId, kind])
+  @@index([status])
+}
+
+model AnnualClosingRun {
+  id                   String                 @id @default(cuid())
+  fiscalYearId         String                 @unique
+  fiscalYear           FiscalYear             @relation(fields: [fiscalYearId], references: [id], onDelete: Cascade)
+  status               AnnualClosingRunStatus @default(NOT_STARTED)
+  evidenceManifestJson Json?
+  steps                AnnualClosingStep[]
+  startedAt            DateTime?
+  closedAt             DateTime?
+  reopenedAt           DateTime?
+  closedByUserId       String?
+  reopenedByUserId     String?
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+
+  @@index([status])
+}
+
+model AnnualClosingStep {
+  id             String                  @id @default(cuid())
+  closingRunId   String
+  closingRun     AnnualClosingRun        @relation(fields: [closingRunId], references: [id], onDelete: Cascade)
+  code           String
+  status         AnnualClosingStepStatus @default(PENDING)
+  blockingCount  Int                     @default(0)
+  warningCount   Int                     @default(0)
+  resultJson     Json?
+  completedAt    DateTime?
+  createdAt      DateTime                @default(now())
+  updatedAt      DateTime                @updatedAt
+
+  @@unique([closingRunId, code])
+  @@index([status])
+}
+
+model FixedAsset {
+  id                  String           @id @default(cuid())
+  fiscalYearId        String
+  fiscalYear          FiscalYear       @relation(fields: [fiscalYearId], references: [id], onDelete: Cascade)
+  label               String
+  account             String
+  acquisitionDate     DateTime
+  amount              Decimal          @db.Decimal(12, 2)
+  method              FixedAssetMethod @default(LINEAR)
+  usefulLifeYears     Int
+  depreciationAccount String
+  expenseAccount      String
+  archivedAt          DateTime?
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+
+  @@index([fiscalYearId])
+  @@index([archivedAt])
+}
+
+model BankReconciliation {
+  id               String                   @id @default(cuid())
+  fiscalYearId     String
+  fiscalYear       FiscalYear               @relation(fields: [fiscalYearId], references: [id], onDelete: Cascade)
+  bankAccountId    String
+  bankAccount      BankAccount              @relation(fields: [bankAccountId], references: [id], onDelete: Cascade)
+  statementDate    DateTime
+  statementBalance Decimal                  @db.Decimal(12, 2)
+  ledgerBalance    Decimal                  @db.Decimal(12, 2)
+  difference       Decimal                  @db.Decimal(12, 2)
+  status           BankReconciliationStatus @default(DRAFT)
+  confirmedAt      DateTime?
+  createdAt        DateTime                 @default(now())
+  updatedAt        DateTime                 @updatedAt
+
+  @@unique([fiscalYearId, bankAccountId])
+  @@index([status])
+}
+
+model ReconciliationRun {
+  id           String                  @id @default(cuid())
+  fiscalYearId String
+  fiscalYear   FiscalYear              @relation(fields: [fiscalYearId], references: [id], onDelete: Cascade)
+  kind         ReconciliationRunKind
+  status       ReconciliationRunStatus @default(DRAFT)
+  startedAt    DateTime?
+  completedAt  DateTime?
+  metadataJson Json?
+  matches      ReconciliationMatch[]
+  issues       ReconciliationIssue[]
+  createdAt    DateTime                @default(now())
+  updatedAt    DateTime                @updatedAt
+
+  @@unique([fiscalYearId, kind])
+  @@index([status])
+}
+
+model ReconciliationMatch {
+  id                 String                    @id @default(cuid())
+  runId              String
+  run                ReconciliationRun         @relation(fields: [runId], references: [id], onDelete: Cascade)
+  kind               ReconciliationMatchKind
+  leftEntityType     String
+  leftEntityId       String
+  rightEntityType    String?
+  rightEntityId      String?
+  status             ReconciliationMatchStatus @default(UNMATCHED)
+  amountDifference   Decimal                   @default(0) @db.Decimal(12, 2)
+  dateDifferenceDays Int                       @default(0)
+  confidence         Decimal                   @default(0) @db.Decimal(5, 4)
+  note               String?
+  createdAt          DateTime                  @default(now())
+  updatedAt          DateTime                  @updatedAt
+
+  @@index([runId, status])
+  @@index([leftEntityType, leftEntityId])
+  @@index([rightEntityType, rightEntityId])
+}
+
+model ReconciliationIssue {
+  id          String                      @id @default(cuid())
+  runId       String
+  run         ReconciliationRun           @relation(fields: [runId], references: [id], onDelete: Cascade)
+  issueKey    String
+  code        String
+  severity    ReconciliationIssueSeverity
+  status      ReconciliationIssueStatus   @default(OPEN)
+  entityType  String
+  entityId    String
+  note        String?
+  createdAt   DateTime                    @default(now())
+  updatedAt   DateTime                    @updatedAt
+
+  @@unique([runId, issueKey])
+  @@index([status])
+  @@index([code])
+}
+
+model StripeEvent {
+  id           String          @id @default(cuid())
+  companyId    String
+  fiscalYearId String
+  sourceId     String
+  eventType    StripeEventType
+  date         DateTime
+  grossAmount  Decimal         @default(0) @db.Decimal(12, 2)
+  feeAmount    Decimal         @default(0) @db.Decimal(12, 2)
+  netAmount    Decimal         @default(0) @db.Decimal(12, 2)
+  currency     String          @default("EUR")
+  payoutId     String?
+  metadataJson Json?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  @@unique([fiscalYearId, sourceId])
+  @@index([companyId, fiscalYearId, eventType])
+  @@index([payoutId])
+}
+
+model StripePayout {
+  id           String   @id @default(cuid())
+  companyId    String
+  fiscalYearId String
+  sourceId     String
+  arrivalDate  DateTime
+  amount       Decimal  @db.Decimal(12, 2)
+  currency     String   @default("EUR")
+  status       String
+  metadataJson Json?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([fiscalYearId, sourceId])
+  @@index([companyId, fiscalYearId, status])
+}
+
+model ShareLink {
+  id             String          @id @default(cuid())
+  companyId      String
+  company        Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  fiscalYearId   String
+  fiscalYear     FiscalYear      @relation(fields: [fiscalYearId], references: [id], onDelete: Cascade)
+  tokenHash      String          @unique
+  label          String
+  permission     SharePermission @default(READ_ONLY_REVIEW)
+  expiresAt      DateTime
+  revokedAt      DateTime?
+  reviewerName   String?
+  reviewNote     String?
+  reviewedAt     DateTime?
+  expertReviewRuns ExpertReviewRun[]
+  createdAt      DateTime        @default(now())
+  lastAccessedAt DateTime?
+
+  @@index([companyId, fiscalYearId])
+  @@index([expiresAt])
+  @@index([revokedAt])
+}
+
+model DossierSnapshot {
+  id              String                @id @default(cuid())
+  companyId       String
+  company         Company               @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  fiscalYearId    String
+  fiscalYear      FiscalYear            @relation(fields: [fiscalYearId], references: [id], onDelete: Cascade)
+  reviewRunId     String?
+  reviewRun       ExpertReviewRun?      @relation(fields: [reviewRunId], references: [id], onDelete: SetNull)
+  snapshotKey     String
+  status          DossierSnapshotStatus @default(DRAFT)
+  manifestJson    Json
+  createdByUserId String?
+  createdAt       DateTime              @default(now())
+
+  @@unique([fiscalYearId, snapshotKey])
+  @@index([companyId, fiscalYearId, status])
+  @@index([reviewRunId])
+}
+
+model ExpertReviewRun {
+  id             String              @id @default(cuid())
+  companyId      String
+  company        Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  fiscalYearId   String
+  fiscalYear     FiscalYear          @relation(fields: [fiscalYearId], references: [id], onDelete: Cascade)
+  shareLinkId    String?
+  shareLink      ShareLink?          @relation(fields: [shareLinkId], references: [id], onDelete: SetNull)
+  status         ExpertReviewStatus  @default(DRAFT)
+  reviewerName   String?
+  reviewerEmail  String?
+  summaryJson    Json?
+  items          ExpertReviewItem[]
+  snapshots      DossierSnapshot[]
+  submittedAt    DateTime?
+  signedOffAt    DateTime?
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  @@index([companyId, fiscalYearId, status])
+  @@index([shareLinkId])
+}
+
+model ExpertReviewItem {
+  id             String                 @id @default(cuid())
+  reviewRunId    String
+  reviewRun      ExpertReviewRun        @relation(fields: [reviewRunId], references: [id], onDelete: Cascade)
+  sectionCode    String
+  entityType     String?
+  entityId       String?
+  severity       ExpertReviewSeverity
+  status         ExpertReviewItemStatus @default(OPEN)
+  title          String
+  body           String
+  comments       ExpertReviewComment[]
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+  resolvedAt     DateTime?
+
+  @@index([reviewRunId, status])
+  @@index([sectionCode])
+  @@index([severity])
+}
+
+model ExpertReviewComment {
+  id           String                 @id @default(cuid())
+  reviewItemId String
+  reviewItem   ExpertReviewItem       @relation(fields: [reviewItemId], references: [id], onDelete: Cascade)
+  authorType   ExpertReviewAuthorType
+  authorName   String
+  body         String
+  createdAt    DateTime               @default(now())
+
+  @@index([reviewItemId, createdAt])
+}
+
+model Subscription {
+  id                   String             @id @default(cuid())
+  companyId            String
+  company              Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  tier                 SubscriptionTier
+  status               SubscriptionStatus
+  provider             BillingProvider    @default(NONE)
+  stripeCustomerId     String?
+  stripeSubscriptionId String?
+  currentPeriodStart   DateTime?
+  currentPeriodEnd     DateTime?
+  cancelAtPeriodEnd    Boolean            @default(false)
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+
+  @@unique([companyId])
+  @@index([status])
+  @@index([tier])
+  @@index([stripeCustomerId])
+  @@index([stripeSubscriptionId])
+}
+
+model UsageEvent {
+  id           String      @id @default(cuid())
+  companyId    String
+  company      Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  fiscalYearId String?
+  fiscalYear   FiscalYear? @relation(fields: [fiscalYearId], references: [id], onDelete: SetNull)
+  userId       String?
+  kind         UsageEventKind
+  quantity     Int         @default(1)
+  periodKey    String
+  metadataJson Json?
+  createdAt    DateTime    @default(now())
+
+  @@index([companyId, kind, periodKey])
+  @@index([fiscalYearId])
+  @@index([createdAt])
+}
+
+model BillingWebhookEvent {
+  id           String   @id @default(cuid())
+  provider     String
+  eventId      String   @unique
+  eventType    String
+  status       String
+  receivedAt   DateTime @default(now())
+  processedAt  DateTime?
+  errorMessage String?
+
+  @@index([provider, eventType])
+  @@index([status])
+}
+
+model ChatConversation {
+  id           String             @id @default(cuid())
+  companyId    String
+  company      Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  fiscalYearId String
+  fiscalYear   FiscalYear         @relation(fields: [fiscalYearId], references: [id], onDelete: Cascade)
+  title        String?
+  status       ChatConversationStatus @default(OPEN)
+  messages     ChatMessage[]
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  @@index([companyId, fiscalYearId])
+  @@index([status])
+}
+
+model ChatMessage {
+  id             String           @id @default(cuid())
+  conversationId String
+  conversation   ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  role           ChatMessageRole
+  content        String
+  provider       String?
+  model          String?
+  metadataJson   Json?
+  createdAt      DateTime         @default(now())
+
+  @@index([conversationId, createdAt])
+  @@index([role])
+}
+
+model BankConnection {
+  id                   String               @id @default(cuid())
+  companyId            String
+  company              Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  provider             OpenBankingProvider
+  providerConnectionId String
+  status               BankConnectionStatus @default(ACTIVE)
+  consentExpiresAt     DateTime?
+  lastSyncedAt         DateTime?
+  metadataJson         Json?
+  accounts             BankFeedAccount[]
+  syncEvents           BankFeedSyncEvent[]
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+
+  @@unique([companyId, provider, providerConnectionId])
+  @@index([companyId, status])
+  @@index([consentExpiresAt])
+}
+
+model BankFeedAccount {
+  id                String         @id @default(cuid())
+  companyId         String
+  company           Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  bankConnectionId  String
+  bankConnection    BankConnection @relation(fields: [bankConnectionId], references: [id], onDelete: Cascade)
+  providerAccountId String
+  ibanMasked        String?
+  name              String
+  currency          String         @default("EUR")
+  status            String         @default("ACTIVE")
+  metadataJson      Json?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  @@unique([bankConnectionId, providerAccountId])
+  @@index([companyId, status])
+}
+
+model BankFeedSyncEvent {
+  id               String             @id @default(cuid())
+  companyId        String
+  company          Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  fiscalYearId     String?
+  fiscalYear       FiscalYear?        @relation(fields: [fiscalYearId], references: [id], onDelete: SetNull)
+  bankConnectionId String?
+  bankConnection   BankConnection?    @relation(fields: [bankConnectionId], references: [id], onDelete: SetNull)
+  status           BankFeedSyncStatus
+  startedAt        DateTime           @default(now())
+  finishedAt       DateTime?
+  errorCode        String?
+  errorMessage     String?
+  transactionsFetched  Int            @default(0)
+  transactionsImported Int            @default(0)
+  metadataJson     Json?
+
+  @@index([companyId, fiscalYearId, startedAt])
+  @@index([bankConnectionId])
+  @@index([status])
+}
+
+model Attachment {
+  id                String           @id @default(cuid())
+  companyId         String
+  company           Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  fiscalYearId      String
+  fiscalYear        FiscalYear       @relation(fields: [fiscalYearId], references: [id], onDelete: Cascade)
+  uploadedByUserId  String?
+  uploadedByUser    User?            @relation(fields: [uploadedByUserId], references: [id], onDelete: SetNull)
+  originalFilename  String
+  mimeType          String
+  sizeBytes         Int
+  storageKey        String
+  sha256            String
+  status            AttachmentStatus @default(UPLOADED)
+  extractedText     String?
+  extractedJson     Json?
+  supplierName      String?
+  invoiceDate       DateTime?
+  invoiceNumber     String?
+  amountHt          Decimal?         @db.Decimal(12, 2)
+  amountVat         Decimal?         @db.Decimal(12, 2)
+  amountTtc         Decimal?         @db.Decimal(12, 2)
+  currency          String?
+  archivedAt        DateTime?
+  links             AttachmentLink[]
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@unique([companyId, fiscalYearId, sha256])
+  @@index([companyId, fiscalYearId, status])
+  @@index([archivedAt])
+}
+
+model AttachmentLink {
+  id              String                 @id @default(cuid())
+  attachmentId    String
+  attachment      Attachment             @relation(fields: [attachmentId], references: [id], onDelete: Cascade)
+  entityType      AttachmentEntityType
+  entityId        String
+  relationType    AttachmentRelationType
+  note            String?
+  createdByUserId String?
+  createdAt       DateTime               @default(now())
+
+  @@unique([attachmentId, entityType, entityId, relationType])
+  @@index([entityType, entityId])
+  @@index([relationType])
+}
+
+enum LegalForm {
+  AUTO_ENTREPRENEUR
+  EI
+  EURL
+  SASU
+  SARL
+  SAS
+  SA
+  SCI
+  AUTRE
+}
+
+enum TaxType {
+  IS
+  IR
+}
+
+enum VatRegime {
+  FRANCHISE
+  REEL_SIMPLIFIE
+  REEL_NORMAL
+}
+
+enum VatExigibility {
+  DEBITS
+  ENCAISSEMENTS
+  MIXED
+}
+
+enum VatOperationNature {
+  DOMESTIC_PURCHASE
+  DOMESTIC_SALE
+  INTRACOM_PURCHASE
+  INTRACOM_SALE
+  REVERSE_CHARGE
+  EXEMPT
+  OUT_OF_SCOPE
+}
+
+enum FiscalYearStatus {
+  OPEN
+  CLOSING
+  CLOSED
+}
+
+enum NotificationType {
+  TRANSACTION_REVIEW
+  IMPORT_STATUS
+  DOCUMENT_STALE
+  VAT_ALERT
+  FISCAL_DEADLINE
+  REGULATORY_FRESHNESS
+  CLOSING_BLOCKER
+  USAGE_LIMIT
+}
+
+enum NotificationSeverity {
+  INFO
+  WARNING
+  BLOCKING
+}
+
+enum PrivacyRequestKind {
+  EXPORT
+  SOFT_DELETE
+  ANONYMIZATION
+  PURGE
+}
+
+enum PrivacyRequestStatus {
+  REQUESTED
+  PROCESSING
+  DONE
+  FAILED
+}
+
+enum ImportSource {
+  CSV_UPLOAD
+  OPEN_BANKING
+  QONTO_API
+}
+
+enum ImportStatus {
+  PENDING
+  PARSING
+  NEEDS_MAPPING
+  CATEGORIZING
+  REVIEW
+  DONE
+  ERROR
+}
+
+enum TransactionType {
+  DEBIT
+  CREDIT
+}
+
+enum MatchType {
+  VENDOR_EXACT
+  VENDOR_CONTAINS
+  LABEL_REGEX
+  LABEL_KEYWORD
+}
+
+enum Confidence {
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum CategorizationSource {
+  CORRECTION_RULE
+  VENDOR_LOOKUP
+  PATTERN_MATCH
+  AI
+  MANUAL
+}
+
+enum CategorizationStatus {
+  PROPOSED
+  USER_CONFIRMED
+  USER_CORRECTED
+  MANUAL
+  NEEDS_REVIEW
+}
+
+enum EntrySource {
+  IMPORT
+  MANUAL
+  CLOSING_ADJUSTMENT
+}
+
+enum DocumentType {
+  FEC
+  BALANCE
+  BILAN
+  COMPTE_RESULTAT
+  PDF_BUNDLE
+  LIASSE_FISCALE
+  EVIDENCE_BUNDLE
+  TVA_DECLARATION
+}
+
+enum DocumentStatus {
+  READY
+  ERROR
+}
+
+enum DossierSnapshotStatus {
+  DRAFT
+  SUBMITTED
+  FINAL
+}
+
+enum ExpertReviewStatus {
+  DRAFT
+  IN_REVIEW
+  CHANGES_REQUESTED
+  READY_FOR_SIGNOFF
+  SIGNED_OFF
+  CANCELLED
+}
+
+enum ExpertReviewSeverity {
+  INFO
+  WARNING
+  BLOCKING
+}
+
+enum ExpertReviewItemStatus {
+  OPEN
+  ANSWERED
+  RESOLVED
+  WAIVED
+}
+
+enum ExpertReviewAuthorType {
+  USER
+  EXPERT
+  SYSTEM
+}
+
+enum VatDeclarationType {
+  CA3
+  CA12
+}
+
+enum VatDeclarationStatus {
+  DRAFT
+  SUPERSEDED
+}
+
+enum AccountingIssueStatus {
+  OPEN
+  RESOLVED
+  IGNORED
+}
+
+enum ClosingAdjustmentKind {
+  CCA
+  DEPRECIATION
+  CORPORATE_TAX
+  FNP
+  FAE
+  PCA
+  STOCK_VARIATION
+  PROVISION
+  PROVISION_REVERSAL
+  LOAN_INTEREST_ACCRUAL
+  PAYROLL_ACCRUAL
+  VAT_SETTLEMENT
+  RECONCILIATION_DIFFERENCE
+}
+
+enum ClosingAdjustmentStatus {
+  DRAFT
+  APPROVED
+  REJECTED
+}
+
+enum ClosingWorkpaperStatus {
+  DRAFT
+  READY
+  ARCHIVED
+}
+
+enum AnnualClosingRunStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  READY_TO_CLOSE
+  CLOSED
+  REOPENED
+}
+
+enum AnnualClosingStepStatus {
+  PENDING
+  BLOCKED
+  READY
+  DONE
+  SKIPPED
+}
+
+enum FixedAssetMethod {
+  LINEAR
+}
+
+enum BankReconciliationStatus {
+  DRAFT
+  MATCHED
+  DIFFERENCE
+}
+
+enum ReconciliationRunKind {
+  BANK
+  STRIPE
+  THIRD_PARTY
+  SUSPENSE
+}
+
+enum ReconciliationRunStatus {
+  DRAFT
+  READY
+  BLOCKED
+  COMPLETED
+}
+
+enum ReconciliationMatchKind {
+  BANK_TRANSACTION_LEDGER
+  STRIPE_PAYOUT
+  THIRD_PARTY
+  SUSPENSE
+}
+
+enum ReconciliationMatchStatus {
+  AUTO_MATCHED
+  USER_MATCHED
+  UNMATCHED
+  IGNORED
+  DIFFERENCE
+}
+
+enum ReconciliationIssueSeverity {
+  BLOCKING
+  WARNING
+}
+
+enum ReconciliationIssueStatus {
+  OPEN
+  RESOLVED
+  IGNORED
+}
+
+enum StripeEventType {
+  CHARGE
+  FEE
+  REFUND
+  DISPUTE
+  PAYOUT
+}
+
+enum SharePermission {
+  READ_ONLY_REVIEW
+}
+
+enum SubscriptionTier {
+  SOLO
+  ENTREPRISE
+  ENTREPRISE_PLUS
+}
+
+enum SubscriptionStatus {
+  ACTIVE_STUB
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  INCOMPLETE
+}
+
+enum BillingProvider {
+  NONE
+  STRIPE
+}
+
+enum UsageEventKind {
+  AI_CHAT_MESSAGE
+  AI_CATEGORIZATION
+  IMPORT
+}
+
+enum OpenBankingProvider {
+  MOCK
+  BRIDGE
+  POWENS
+  GOCARDLESS
+  TINK
+  YAPILY
+}
+
+enum BankConnectionStatus {
+  PENDING
+  ACTIVE
+  EXPIRED
+  ERROR
+  REVOKED
+}
+
+enum BankFeedSyncStatus {
+  STARTED
+  SUCCESS
+  FAILED
+  DUPLICATE
+}
+
+enum ChatConversationStatus {
+  OPEN
+  ARCHIVED
+}
+
+enum ChatMessageRole {
+  USER
+  ASSISTANT
+  SYSTEM
+}
+
+enum AttachmentStatus {
+  UPLOADED
+  EXTRACTED
+  EXTRACTION_FAILED
+  ARCHIVED
+}
+
+enum AttachmentEntityType {
+  TRANSACTION
+  JOURNAL_ENTRY
+  CLOSING_ADJUSTMENT
+  FISCAL_YEAR
+}
+
+enum AttachmentRelationType {
+  INVOICE
+  RECEIPT
+  BANK_STATEMENT
+  CONTRACT
+  USER_DECISION
+  EXPERT_VALIDATION
+  OTHER
+}

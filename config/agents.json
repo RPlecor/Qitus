@@ -1,0 +1,6 @@
+{
+  "categorization": {
+    "provider": "codex-cli",
+    "role": "residual-transaction-categorizer"
+  }
+}

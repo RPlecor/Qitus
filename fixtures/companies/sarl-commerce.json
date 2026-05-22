@@ -1,0 +1,67 @@
+{
+  "company": {
+    "name": "Maison Gourmande",
+    "legal_form": "SARL",
+    "siren": "823456789",
+    "siret": "82345678900012",
+    "naf_code": "4729Z",
+    "naf_label": "Autres commerces de détail alimentaires en magasin spécialisé",
+    "rcs": "Lyon B 823 456 789",
+    "capital": 5000,
+    "address": {
+      "street": "18 rue de la République",
+      "postal_code": "69002",
+      "city": "Lyon",
+      "country": "France"
+    },
+    "manager": {
+      "name": "Pierre Martin",
+      "role": "Gérant",
+      "is_sole_shareholder": false
+    },
+    "shareholders": [
+      { "name": "Pierre Martin", "shares_percent": 60 },
+      { "name": "Sophie Martin", "shares_percent": 40 }
+    ],
+    "creation_date": "2021-03-10",
+    "fiscal_year": {
+      "start": "2025-01-01",
+      "end": "2025-12-31"
+    },
+    "tax_regime": {
+      "corporate_tax": "IS",
+      "vat_regime": "reel_simplifie",
+      "vat_rate_default": 5.5,
+      "vat_rate_secondary": 20,
+      "income_tax_regime": null,
+      "simplified_regime": false
+    },
+    "bank_accounts": [
+      {
+        "id": "bnp-main",
+        "bank": "BNP Paribas",
+        "iban": "FR76XXXX",
+        "label": "Compte courant pro",
+        "pcg_account": "5121"
+      }
+    ],
+    "employees": {
+      "count": 3,
+      "has_payroll": true
+    },
+    "accounting": {
+      "currency": "EUR",
+      "decimal_separator": ",",
+      "pcg_version": "2025"
+    }
+  },
+  "_fixture_meta": {
+    "description": "SARL commerce alimentaire, TVA réel simplifié (5.5% + 20%), IS, 2 associés, 3 salariés. Scénario secondaire plus complexe.",
+    "covers": [
+      "TVA multi-taux (5.5% alimentaire + 20% autres)",
+      "Plusieurs associés (PV d'AG, pas décision associé unique)",
+      "Salariés (hors scope MVP mais prépare V1)",
+      "Volume de transactions plus élevé"
+    ]
+  }
+}

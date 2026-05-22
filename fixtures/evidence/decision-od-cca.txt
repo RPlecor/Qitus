@@ -1,0 +1,6 @@
+Decision utilisateur de rattachement de charge
+Date: 2025-12-31
+Dossier: Pre-cloture 2025
+Decision: rattacher la part N+1 des abonnements annuels en charges constatees d'avance.
+Compte attendu: 486
+Note: document de demonstration locale, non certifie.

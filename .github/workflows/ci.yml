@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  test:
+    name: Typecheck, tests and build
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: paperasse
+          POSTGRES_PASSWORD: paperasse
+          POSTGRES_DB: paperasse_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U paperasse -d paperasse_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://paperasse:paperasse@localhost:5432/paperasse_test
+      APP_ENV: local
+      PUBLIC_APP_URL: http://localhost:5173
+      SESSION_SECRET: ci-only-change-me-ci-only-change-me
+      COOKIE_SECURE: "0"
+      AUTH_MODE: dev
+      BILLING_MODE: stub
+      CHAT_PROVIDER: fake
+      OPEN_BANKING_PROVIDER: mock
+      CONNECTORS_MODE: disabled
+      PROVIDER_SECRET_ENCRYPTION_KEY: ci-provider-secret-key
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Apply migrations
+        run: npx prisma migrate deploy
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Build
+        run: npm run build

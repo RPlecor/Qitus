@@ -1,0 +1,172 @@
+{
+  "_fixture_meta": {
+    "description": "Scénarios de test pour le chat IA contextuel. Chaque scénario simule une question d'un dirigeant de TPE avec le contexte entreprise ACME Digital SASU et les écritures du journal 2025. Les réponses attendues sont des patterns (pas du texte exact) permettant de valider la pertinence.",
+    "company": "companies/sasu-consulting.json",
+    "journal": "journal-entries/journal-entries-2025.json"
+  },
+  "scenarios": [
+    {
+      "id": "chat_001",
+      "category": "categorisation",
+      "question": "Comment je comptabilise un achat chez AWS ?",
+      "context_needed": ["company.tax_regime.vat_regime"],
+      "expected_answer_contains": [
+        "compte 6135",
+        "locations mobilières",
+        "franchise en base de TVA",
+        "pas de TVA déductible"
+      ],
+      "expected_answer_must_not_contain": [
+        "TVA déductible",
+        "compte 44566"
+      ],
+      "rationale": "En franchise TVA, pas de TVA déductible. AWS = SaaS = 6135. L'IA doit adapter sa réponse au régime TVA de l'entreprise."
+    },
+    {
+      "id": "chat_002",
+      "category": "seuils",
+      "question": "Mon CA cumulé est de 32 000 €, suis-je proche du seuil TVA ?",
+      "context_needed": ["company.tax_regime.vat_regime", "company.tax_regime.vat_threshold", "company.naf_code"],
+      "expected_answer_contains": [
+        "36 800",
+        "franchise en base",
+        "prestations de services",
+        "4 800 € de marge",
+        "vigilance"
+      ],
+      "expected_answer_must_not_contain": [
+        "91 900"
+      ],
+      "rationale": "ACME est en prestations de services (NAF 6202A). Le seuil est 36 800 € (pas 91 900 € qui est pour les ventes de marchandises). L'IA doit calculer la marge et alerter."
+    },
+    {
+      "id": "chat_003",
+      "category": "cca_455",
+      "question": "Mon compte courant d'associé 455 est à 1 600 €, c'est risqué ?",
+      "context_needed": ["company.legal_form", "journal_entries (écritures 455)"],
+      "expected_answer_contains": [
+        "4551",
+        "compte courant d'associé",
+        "SASU",
+        "convention de trésorerie",
+        "taux d'intérêt",
+        "art. 39-1-3° CGI"
+      ],
+      "expected_answer_must_not_contain": [
+        "pas de risque"
+      ],
+      "rationale": "Le CCA à 1 600 € (2×800 € remboursés) est un sujet de contrôle fiscal courant. L'IA doit mentionner : la convention de trésorerie recommandée, le taux d'intérêt fiscal maximum (TMP BCE), et le risque de requalification en revenus distribués si pas documenté."
+    },
+    {
+      "id": "chat_004",
+      "category": "echeances",
+      "question": "Quelles sont mes prochaines échéances fiscales ?",
+      "context_needed": ["company.tax_regime", "company.fiscal_year", "current_date"],
+      "expected_answer_contains": [
+        "IS",
+        "acompte",
+        "liasse fiscale",
+        "2065",
+        "2033"
+      ],
+      "rationale": "Dépend de la date courante. L'IA doit consulter le calendrier fiscal et filtrer par régime (IS, franchise TVA = pas de CA3). Les acomptes IS sont le 15/03, 15/06, 15/09, 15/12."
+    },
+    {
+      "id": "chat_005",
+      "category": "immobilisation",
+      "question": "J'ai acheté un écran à 450 € et un MacBook à 1 899 €. Je les comptabilise comment ?",
+      "context_needed": [],
+      "expected_answer_contains": [
+        "500 €",
+        "seuil",
+        "immobilisation",
+        "2183",
+        "6064",
+        "amortissement",
+        "3 ans"
+      ],
+      "rationale": "Écran < 500 € HT → charge (6064). MacBook > 500 € → immobilisation (2183) + amortissement linéaire 3 ans. L'IA doit connaître le seuil d'immobilisation des petits matériels."
+    },
+    {
+      "id": "chat_006",
+      "category": "stripe",
+      "question": "J'ai reçu un payout Stripe de 1 200 €. C'est un revenu ?",
+      "context_needed": ["stripe_accounts"],
+      "expected_answer_contains": [
+        "payout",
+        "pas un revenu",
+        "mouvement de trésorerie",
+        "5115",
+        "5121",
+        "commissions Stripe",
+        "6278"
+      ],
+      "expected_answer_must_not_contain": [
+        "produit",
+        "chiffre d'affaires",
+        "706"
+      ],
+      "rationale": "Un payout Stripe n'est PAS un revenu. Les revenus sont les charges individuelles (comptabilisées en 706 ou 707 au moment de la vente). Le payout = transfert Stripe (5115) → banque (5121). Les commissions Stripe = 6278 (frais sur services bancaires). L'IA ne doit JAMAIS comptabiliser un payout en CA."
+    },
+    {
+      "id": "chat_007",
+      "category": "pca",
+      "question": "J'ai payé mon assurance RC Pro 540 € en janvier pour toute l'année. Comment ça marche en clôture ?",
+      "context_needed": ["company.fiscal_year"],
+      "expected_answer_contains": [
+        "charge constatée d'avance",
+        "CCA",
+        "486",
+        "prorata temporis",
+        "27 jours"
+      ],
+      "rationale": "Assurance payée le 28/01 pour 12 mois = couvre jusqu'au 27/01/2026. Les 27 jours de janvier 2026 = CCA. L'IA doit calculer le prorata et proposer l'écriture OD de clôture."
+    },
+    {
+      "id": "chat_008",
+      "category": "general",
+      "question": "C'est quoi la différence entre une charge et une immobilisation ?",
+      "context_needed": [],
+      "expected_answer_contains": [
+        "500 €",
+        "durée d'utilisation",
+        "supérieure à un an",
+        "amortissement",
+        "classe 2",
+        "classe 6"
+      ],
+      "rationale": "Question de base — l'IA doit expliquer simplement sans jargon excessif, en donnant le seuil pratique de 500 € HT et des exemples concrets."
+    },
+    {
+      "id": "chat_009",
+      "category": "facturation_electronique",
+      "question": "La facturation électronique, ça me concerne ?",
+      "context_needed": ["company.legal_form", "company.tax_regime"],
+      "expected_answer_contains": [
+        "septembre 2026",
+        "réception",
+        "septembre 2027",
+        "émission",
+        "plateforme agréée",
+        "SASU",
+        "TPE"
+      ],
+      "rationale": "En tant que SASU (TPE), ACME doit pouvoir RECEVOIR des factures électroniques dès sept. 2026 et ÉMETTRE dès sept. 2027. L'IA doit contextualiser selon la taille de l'entreprise."
+    },
+    {
+      "id": "chat_010",
+      "category": "cloture_is",
+      "question": "Comment est calculé mon IS cette année ?",
+      "context_needed": ["company.tax_regime.corporate_tax", "company.capital", "resultat_comptable"],
+      "expected_answer_contains": [
+        "taux réduit",
+        "15 %",
+        "PME",
+        "42 500 €",
+        "25 %",
+        "résultat fiscal"
+      ],
+      "rationale": "ACME est éligible au taux réduit PME (15% sur les premiers 42 500 € de résultat fiscal) car : CA < 10M€, capital entièrement libéré, détenu à 75%+ par des personnes physiques. L'IA doit expliquer les conditions et le calcul."
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+-- AlterTable
+ALTER TABLE "CorrectionRule"
+ADD COLUMN     "disabledAt" TIMESTAMP(3),
+ADD COLUMN     "matchCountSnapshot" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "lastMatchedAt" TIMESTAMP(3),
+ADD COLUMN     "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;

@@ -1,0 +1,186 @@
+{
+  "_fixture_meta": {
+    "description": "Données pour le workflow de clôture annuelle 2025 — ACME Digital SASU. Couvre les étapes 3 (rapprochement), 4 (amortissements), 5 (PCA/CCA), 7 (IS)."
+  },
+
+  "immobilisations": [
+    {
+      "id": "immo_001",
+      "label": "MacBook Pro 14 pouces M3",
+      "account": "2183",
+      "account_label": "Matériel de bureau et informatique",
+      "acquisition_date": "2025-02-10",
+      "amount_ht": 1899.00,
+      "depreciation_method": "lineaire",
+      "useful_life_years": 3,
+      "first_year_prorata": true,
+      "prorata_days": 325,
+      "prorata_total_days": 365,
+      "annual_depreciation": 633.00,
+      "depreciation_2025": 563.89,
+      "depreciation_account": "28183",
+      "dotation_account": "68112",
+      "net_book_value_2025_12_31": 1335.11,
+      "journal_entry_depreciation": {
+        "num": null,
+        "date": "2025-12-31",
+        "journal": "OD",
+        "ref": "AMORT-001",
+        "label": "Dotation amortissement MacBook Pro M3 — exercice 2025 (prorata 325/365 jours)",
+        "lines": [
+          { "account": "68112", "debit": 563.89, "credit": 0 },
+          { "account": "28183", "debit": 0, "credit": 563.89 }
+        ]
+      }
+    },
+    {
+      "id": "immo_002",
+      "label": "Licence Figma Professional (3 ans)",
+      "account": "2051",
+      "account_label": "Concessions et droits similaires",
+      "acquisition_date": "2023-06-15",
+      "amount_ht": 267.00,
+      "depreciation_method": "lineaire",
+      "useful_life_years": 3,
+      "annual_depreciation": 89.00,
+      "depreciation_2025": 89.00,
+      "depreciation_account": "28051",
+      "dotation_account": "68111",
+      "net_book_value_2025_12_31": 0.00,
+      "notes": "Entièrement amorti au 14/06/2026. Dernière année pleine d'amortissement en 2025.",
+      "journal_entry_depreciation": {
+        "num": null,
+        "date": "2025-12-31",
+        "journal": "OD",
+        "ref": "AMORT-002",
+        "label": "Dotation amortissement licence Figma — exercice 2025",
+        "lines": [
+          { "account": "68111", "debit": 89.00, "credit": 0 },
+          { "account": "28051", "debit": 0, "credit": 89.00 }
+        ]
+      }
+    }
+  ],
+
+  "pca_cca": [
+    {
+      "id": "pca_001",
+      "type": "CCA",
+      "label": "AXA — assurance RC Pro (payée annuellement le 28/01/2025)",
+      "total_amount": 540.00,
+      "payment_date": "2025-01-28",
+      "period_start": "2025-01-28",
+      "period_end": "2026-01-27",
+      "days_in_period": 365,
+      "days_in_exercise": 338,
+      "days_next_exercise": 27,
+      "amount_current_exercise": 499.73,
+      "amount_next_exercise_cca": 40.27,
+      "account_cca": "486",
+      "account_cca_label": "Charges constatées d'avance",
+      "journal_entry": {
+        "num": null,
+        "date": "2025-12-31",
+        "journal": "OD",
+        "ref": "CCA-001",
+        "label": "CCA — assurance RC Pro AXA (27 jours sur exercice 2026)",
+        "lines": [
+          { "account": "486", "debit": 40.27, "credit": 0 },
+          { "account": "6161", "debit": 0, "credit": 40.27 }
+        ]
+      }
+    },
+    {
+      "id": "pca_002",
+      "type": "CCA",
+      "label": "Canva Pro (payé annuellement le 17/01/2025)",
+      "total_amount": 35.90,
+      "payment_date": "2025-01-17",
+      "period_start": "2025-01-17",
+      "period_end": "2026-01-16",
+      "days_in_period": 365,
+      "days_in_exercise": 349,
+      "days_next_exercise": 16,
+      "amount_current_exercise": 34.33,
+      "amount_next_exercise_cca": 1.57,
+      "account_cca": "486",
+      "journal_entry": {
+        "num": null,
+        "date": "2025-12-31",
+        "journal": "OD",
+        "ref": "CCA-002",
+        "label": "CCA — Canva Pro (16 jours sur exercice 2026)",
+        "lines": [
+          { "account": "486", "debit": 1.57, "credit": 0 },
+          { "account": "6135", "debit": 0, "credit": 1.57 }
+        ]
+      }
+    }
+  ],
+
+  "rapprochement_bancaire": {
+    "date": "2025-12-31",
+    "bank_account": "5121",
+    "solde_comptable": 18742.56,
+    "solde_releve_bancaire": 18742.56,
+    "ecart": 0.00,
+    "status": "rapproche",
+    "notes": "Aucun écart — toutes les transactions bancaires ont été importées et comptabilisées. Pas de chèques en circulation (Qonto = virements/CB uniquement).",
+    "user_input_required": {
+      "solde_releve_bancaire": "L'utilisateur doit saisir le solde de son relevé Qonto au 31/12/2025.",
+      "prompt": "Quel est le solde de votre compte Qonto au 31 décembre 2025 ?"
+    }
+  },
+
+  "calcul_is": {
+    "exercice": "2025-01-01 / 2025-12-31",
+    "duree_mois": 12,
+    "resultat_comptable_avant_is": 22150.00,
+    "reintegrations": [],
+    "deductions": [],
+    "resultat_fiscal": 22150.00,
+    "eligible_taux_reduit_pme": true,
+    "conditions_taux_reduit": {
+      "ca_ht_inferieur_10m": true,
+      "capital_libere": true,
+      "detenu_personnes_physiques_75pct": true
+    },
+    "calcul": {
+      "tranche_taux_reduit": {
+        "base": 22150.00,
+        "plafond": 42500.00,
+        "taux": 0.15,
+        "impot": 3322.50
+      },
+      "tranche_taux_normal": {
+        "base": 0.00,
+        "taux": 0.25,
+        "impot": 0.00
+      }
+    },
+    "is_total": 3322.50,
+    "resultat_net": 18827.50,
+    "journal_entry": {
+      "num": null,
+      "date": "2025-12-31",
+      "journal": "OD",
+      "ref": "IS-2025",
+      "label": "Impôt sur les sociétés — exercice 2025 (taux réduit PME 15%)",
+      "lines": [
+        { "account": "695", "debit": 3322.50, "credit": 0 },
+        { "account": "444", "debit": 0, "credit": 3322.50 }
+      ]
+    }
+  },
+
+  "summary_cloture": {
+    "total_ecritures_od_cloture": 5,
+    "ecritures": [
+      "AMORT-001 — Amortissement MacBook Pro : 563,89 €",
+      "AMORT-002 — Amortissement licence Figma : 89,00 €",
+      "CCA-001 — CCA assurance AXA : 40,27 €",
+      "CCA-002 — CCA Canva Pro : 1,57 €",
+      "IS-2025 — Impôt sur les sociétés : 3 322,50 €"
+    ]
+  }
+}

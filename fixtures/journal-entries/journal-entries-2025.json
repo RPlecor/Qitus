@@ -1,0 +1,184 @@
+{
+  "_fixture_meta": {
+    "description": "Écritures comptables au format journal-entries.json du repo Paperasse. Extrait janvier 2025 — 16 écritures correspondant aux transactions Qonto catégorisées. Ce format est l'INPUT des scripts generate-statements.js, generate-fec.js et generate-pdfs.js.",
+    "schema_source": "https://github.com/romainsimon/paperasse — data/journal-entries.json"
+  },
+  "entries": [
+    {
+      "num": 1,
+      "date": "2025-01-03",
+      "journal": "BQ",
+      "ref": "QTO-2025-001",
+      "label": "OVH — hébergement cloud janvier 2025",
+      "lines": [
+        { "account": "6135", "debit": 29.99, "credit": 0 },
+        { "account": "5121", "debit": 0, "credit": 29.99 }
+      ]
+    },
+    {
+      "num": 2,
+      "date": "2025-01-03",
+      "journal": "BQ",
+      "ref": "QTO-2025-002",
+      "label": "Google Workspace — abonnement mensuel",
+      "lines": [
+        { "account": "6135", "debit": 11.99, "credit": 0 },
+        { "account": "5121", "debit": 0, "credit": 11.99 }
+      ]
+    },
+    {
+      "num": 3,
+      "date": "2025-01-05",
+      "journal": "BQ",
+      "ref": "QTO-2025-003",
+      "label": "Notion — abonnement team mensuel",
+      "lines": [
+        { "account": "6135", "debit": 49.00, "credit": 0 },
+        { "account": "5121", "debit": 0, "credit": 49.00 }
+      ]
+    },
+    {
+      "num": 4,
+      "date": "2025-01-06",
+      "journal": "BQ",
+      "ref": "QTO-2025-004",
+      "label": "Figma — abonnement professionnel annuel",
+      "lines": [
+        { "account": "6135", "debit": 89.00, "credit": 0 },
+        { "account": "5121", "debit": 0, "credit": 89.00 }
+      ]
+    },
+    {
+      "num": 5,
+      "date": "2025-01-08",
+      "journal": "BQ",
+      "ref": "QTO-2025-005",
+      "label": "Startup Innov SAS — mission conseil janvier 2025",
+      "lines": [
+        { "account": "5121", "debit": 3500.00, "credit": 0 },
+        { "account": "706", "debit": 0, "credit": 3500.00 }
+      ]
+    },
+    {
+      "num": 6,
+      "date": "2025-01-10",
+      "journal": "BQ",
+      "ref": "QTO-2025-006",
+      "label": "Amazon — fournitures bureau et écran",
+      "lines": [
+        { "account": "6064", "debit": 156.80, "credit": 0 },
+        { "account": "5121", "debit": 0, "credit": 156.80 }
+      ]
+    },
+    {
+      "num": 7,
+      "date": "2025-01-12",
+      "journal": "BQ",
+      "ref": "QTO-2025-007",
+      "label": "SNCF — déplacement client Paris-Lyon AR",
+      "lines": [
+        { "account": "6251", "debit": 45.50, "credit": 0 },
+        { "account": "5121", "debit": 0, "credit": 45.50 }
+      ]
+    },
+    {
+      "num": 8,
+      "date": "2025-01-15",
+      "journal": "BQ",
+      "ref": "QTO-2025-008",
+      "label": "Dupont Marie — remboursement CCA associé",
+      "lines": [
+        { "account": "4551", "debit": 800.00, "credit": 0 },
+        { "account": "5121", "debit": 0, "credit": 800.00 }
+      ]
+    },
+    {
+      "num": 9,
+      "date": "2025-01-15",
+      "journal": "BQ",
+      "ref": "QTO-2025-009",
+      "label": "GitHub — abonnement team mensuel",
+      "lines": [
+        { "account": "6135", "debit": 19.99, "credit": 0 },
+        { "account": "5121", "debit": 0, "credit": 19.99 }
+      ]
+    },
+    {
+      "num": 10,
+      "date": "2025-01-17",
+      "journal": "BQ",
+      "ref": "QTO-2025-010",
+      "label": "Canva — abonnement pro annuel",
+      "lines": [
+        { "account": "6135", "debit": 35.90, "credit": 0 },
+        { "account": "5121", "debit": 0, "credit": 35.90 }
+      ]
+    },
+    {
+      "num": 11,
+      "date": "2025-01-20",
+      "journal": "BQ",
+      "ref": "QTO-2025-011",
+      "label": "Cabinet EC Paris — honoraires expert-comptable T4 2024",
+      "lines": [
+        { "account": "6226", "debit": 250.00, "credit": 0 },
+        { "account": "5121", "debit": 0, "credit": 250.00 }
+      ]
+    },
+    {
+      "num": 12,
+      "date": "2025-01-22",
+      "journal": "BQ",
+      "ref": "QTO-2025-012",
+      "label": "Bigcorp International SA — mission audit SI janvier",
+      "lines": [
+        { "account": "5121", "debit": 2000.00, "credit": 0 },
+        { "account": "706", "debit": 0, "credit": 2000.00 }
+      ]
+    },
+    {
+      "num": 13,
+      "date": "2025-01-25",
+      "journal": "BQ",
+      "ref": "QTO-2025-013",
+      "label": "Slack — abonnement pro mensuel",
+      "lines": [
+        { "account": "6135", "debit": 14.99, "credit": 0 },
+        { "account": "5121", "debit": 0, "credit": 14.99 }
+      ]
+    },
+    {
+      "num": 14,
+      "date": "2025-01-27",
+      "journal": "BQ",
+      "ref": "QTO-2025-014",
+      "label": "Uber — déplacement client",
+      "lines": [
+        { "account": "6251", "debit": 62.30, "credit": 0 },
+        { "account": "5121", "debit": 0, "credit": 62.30 }
+      ]
+    },
+    {
+      "num": 15,
+      "date": "2025-01-28",
+      "journal": "BQ",
+      "ref": "QTO-2025-015",
+      "label": "AXA — assurance RC professionnelle annuelle",
+      "lines": [
+        { "account": "6161", "debit": 540.00, "credit": 0 },
+        { "account": "5121", "debit": 0, "credit": 540.00 }
+      ]
+    },
+    {
+      "num": 16,
+      "date": "2025-01-31",
+      "journal": "BQ",
+      "ref": "QTO-2025-016",
+      "label": "Anthropic — API Claude usage janvier 2025",
+      "lines": [
+        { "account": "6135", "debit": 129.00, "credit": 0 },
+        { "account": "5121", "debit": 0, "credit": 129.00 }
+      ]
+    }
+  ]
+}

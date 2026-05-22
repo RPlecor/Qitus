@@ -1,0 +1,9 @@
+Facture Google Workspace
+Fournisseur: GOOGLE IRELAND LTD
+Date facture: 2025-01-03
+Numero facture: GGL-2025-001
+Client: ACME Digital
+Prestation: Google Workspace Business
+Montant HT: 9.99 EUR
+TVA: 2.00 EUR
+Total TTC: 11.99 EUR

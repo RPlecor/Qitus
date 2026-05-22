@@ -1,0 +1,9 @@
+dateOp;dateVal;label;amount;accountNum;accountLabel;categoryName
+2025-01-03;2025-01-03;Vir Perm OVH SAS HOSTING;-29.99;40618XXXXX;Compte PRO;Informatique
+2025-01-05;2025-01-05;Carte 05/01 Amazon EU Sarl Luxembourg;-78.45;40618XXXXX;Compte PRO;Achats
+2025-01-08;2025-01-09;Vir Recu Startup Innov SAS Facture 2025-001;3500.00;40618XXXXX;Compte PRO;Virements recus
+2025-01-10;2025-01-10;Carte 10/01 SNCF Connect Paris;-45.50;40618XXXXX;Compte PRO;Transports
+2025-01-15;2025-01-15;Vir Emis Dupont Marie Remb CCA;-800.00;40618XXXXX;Compte PRO;Virements emis
+2025-01-20;2025-01-20;Vir Recu Bigcorp International SA;2000.00;40618XXXXX;Compte PRO;Virements recus
+2025-01-25;2025-01-25;Carte 25/01 Anthropic Inc San Francisco;-129.00;40618XXXXX;Compte PRO;Informatique
+2025-01-31;2025-01-31;Frais de tenue de compte;-3.00;40618XXXXX;Compte PRO;Frais bancaires

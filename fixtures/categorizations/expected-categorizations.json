@@ -1,0 +1,211 @@
+{
+  "_fixture_meta": {
+    "description": "Catégorisations attendues pour les transactions normalisées. C'est le golden dataset de test : pour chaque transaction, le compte PCG correct, le journal, et le niveau de confiance attendu.",
+    "usage": "Comparer la sortie de l'IA avec ces catégorisations pour mesurer la précision. Objectif MVP : >85% de catégorisations correctes en confiance high/medium."
+  },
+  "categorizations": [
+    {
+      "transaction_id": "txn_001",
+      "label": "OVH CLOUD HOSTING JANVIER",
+      "expected": {
+        "account_debit": "6135",
+        "account_debit_label": "Locations mobilières",
+        "account_credit": "5121",
+        "account_credit_label": "Banque — compte courant",
+        "journal": "BQ",
+        "ecriture_label": "OVH — hébergement cloud janvier 2025",
+        "confidence": "high",
+        "rationale": "OVH = hébergeur cloud. Les abonnements cloud/SaaS = compte 6135 (locations mobilières) ou 6156 (maintenance). Le PCG recommande 6135 pour les services de type location/abonnement."
+      }
+    },
+    {
+      "transaction_id": "txn_002",
+      "label": "GOOGLE WORKSPACE BUSINESS",
+      "expected": {
+        "account_debit": "6135",
+        "account_debit_label": "Locations mobilières",
+        "account_credit": "5121",
+        "journal": "BQ",
+        "ecriture_label": "Google Workspace — abonnement mensuel",
+        "confidence": "high",
+        "rationale": "Google Workspace = suite bureautique SaaS = 6135."
+      }
+    },
+    {
+      "transaction_id": "txn_005",
+      "label": "MISSION CONSEIL JANVIER 2025",
+      "expected": {
+        "account_debit": "5121",
+        "account_debit_label": "Banque — compte courant",
+        "account_credit": "706",
+        "account_credit_label": "Prestations de services",
+        "journal": "BQ",
+        "ecriture_label": "Startup Innov SAS — mission conseil janvier 2025",
+        "confidence": "high",
+        "rationale": "Encaissement client pour prestation de services = compte 706. SASU consulting, activité principale."
+      }
+    },
+    {
+      "transaction_id": "txn_006",
+      "label": "FOURNITURES BUREAU + ECRAN",
+      "expected": {
+        "account_debit": "6064",
+        "account_debit_label": "Fournitures administratives",
+        "account_credit": "5121",
+        "journal": "BQ",
+        "ecriture_label": "Amazon — fournitures bureau et écran",
+        "confidence": "medium",
+        "rationale": "Amazon = fournitures. Compte 6064. ATTENTION : si l'écran > 500 € HT unitaire, il faudrait l'immobiliser (compte 2183). Le libellé ne permet pas de distinguer — confiance medium, à confirmer par l'utilisateur."
+      }
+    },
+    {
+      "transaction_id": "txn_007",
+      "label": "PARIS-LYON AR CLIENT",
+      "expected": {
+        "account_debit": "6251",
+        "account_debit_label": "Voyages et déplacements",
+        "account_credit": "5121",
+        "journal": "BQ",
+        "ecriture_label": "SNCF — déplacement client Paris-Lyon AR",
+        "confidence": "high",
+        "rationale": "Billet de train pour déplacement professionnel = 6251."
+      }
+    },
+    {
+      "transaction_id": "txn_008",
+      "label": "REMBOURSEMENT CCA ASSOCIE",
+      "expected": {
+        "account_debit": "4551",
+        "account_debit_label": "Associés — comptes courants",
+        "account_credit": "5121",
+        "journal": "BQ",
+        "ecriture_label": "Dupont Marie — remboursement CCA associé",
+        "confidence": "high",
+        "rationale": "Remboursement compte courant d'associé = mouvement du compte 4551 (débit = diminution de la dette envers l'associé)."
+      }
+    },
+    {
+      "transaction_id": "txn_011",
+      "label": "HONORAIRES EC T4 2024",
+      "expected": {
+        "account_debit": "6226",
+        "account_debit_label": "Honoraires",
+        "account_credit": "5121",
+        "journal": "BQ",
+        "ecriture_label": "Cabinet EC Paris — honoraires expert-comptable T4 2024",
+        "confidence": "high",
+        "rationale": "Honoraires expert-comptable = 6226."
+      }
+    },
+    {
+      "transaction_id": "txn_014",
+      "label": "UBER TRAJET CLIENT + REPAS",
+      "expected": {
+        "account_debit": "6256",
+        "account_debit_label": "Missions",
+        "account_credit": "5121",
+        "journal": "BQ",
+        "ecriture_label": "Uber — déplacement et repas mission client",
+        "confidence": "medium",
+        "rationale": "Mix transport + restauration. Si impossible de séparer, compte 6256 (missions) qui englobe. Confiance medium car il faudrait idéalement séparer transport (6251) et repas (6257)."
+      }
+    },
+    {
+      "transaction_id": "txn_015",
+      "label": "ASSURANCE RC PRO ANNUELLE",
+      "expected": {
+        "account_debit": "6161",
+        "account_debit_label": "Assurances multirisques",
+        "account_credit": "5121",
+        "journal": "BQ",
+        "ecriture_label": "AXA — assurance RC professionnelle annuelle",
+        "confidence": "high",
+        "rationale": "Assurance RC Pro = 6161. NB : paiement annuel en janvier → PCA à calculer en clôture (11/12 à reporter)."
+      },
+      "_cloture_flag": "PCA — 11/12 de 540 € = 495 € à constater en PCA (compte 486)"
+    },
+    {
+      "transaction_id": "txn_021",
+      "label": "MACBOOK PRO 14 M3",
+      "expected": {
+        "account_debit": "2183",
+        "account_debit_label": "Matériel de bureau et informatique",
+        "account_credit": "5121",
+        "journal": "BQ",
+        "ecriture_label": "Apple — MacBook Pro 14 M3 (immobilisation)",
+        "confidence": "high",
+        "rationale": "MacBook Pro à 1 899 € > seuil d'immobilisation 500 € HT. Compte 2183 (matériel de bureau et informatique). Amortissement linéaire sur 3 ans."
+      },
+      "_cloture_flag": "IMMOBILISATION — durée 3 ans, début amortissement 10/02/2025, dotation 2025 prorata = 1899 × (325/365) / 3 = 563,89 €"
+    },
+    {
+      "transaction_id": "txn_037",
+      "label": "VIREMENT REF 789456123",
+      "expected": {
+        "account_debit": null,
+        "account_credit": "5121",
+        "journal": "BQ",
+        "ecriture_label": null,
+        "confidence": "low",
+        "rationale": "Libellé opaque — impossible d'identifier la nature de la dépense ou la contrepartie. Aucune catégorisation proposée. L'utilisateur doit clarifier.",
+        "requires_user_input": true,
+        "suggested_prompt": "Cette transaction de 45,00 € du 18/03/2025 avec la référence 789456123 ne peut pas être catégorisée automatiquement. Pouvez-vous indiquer la nature de cette dépense ?"
+      }
+    },
+    {
+      "transaction_id": "txn_040",
+      "label": "PAYOUT MARS 2025",
+      "expected": {
+        "account_debit": "5121",
+        "account_debit_label": "Banque — compte courant",
+        "account_credit": "5115",
+        "account_credit_label": "Stripe — compte d'attente",
+        "journal": "BQ",
+        "ecriture_label": "Stripe — payout mars 2025 (rapprochement)",
+        "confidence": "high",
+        "rationale": "Payout Stripe = transfert du compte Stripe (5115 en attente) vers le compte bancaire (5121). Les revenus ont déjà été comptabilisés individuellement via les charges Stripe. Le payout n'est PAS un revenu, c'est un mouvement de trésorerie."
+      },
+      "_rapprochement_flag": "Doit être croisé avec stripe-transactions.json payout po_003"
+    },
+    {
+      "transaction_id": "txn_041",
+      "label": "POSTE FIXE COWORKING T1 2025",
+      "expected": {
+        "account_debit": "6132",
+        "account_debit_label": "Locations immobilières",
+        "account_credit": "5121",
+        "journal": "BQ",
+        "ecriture_label": "Coworking Republic — poste fixe T1 2025",
+        "confidence": "high",
+        "rationale": "Location de poste de travail en espace de coworking = 6132 (locations immobilières). Certains comptables utilisent 6135 — les deux sont acceptables."
+      }
+    },
+    {
+      "transaction_id": "txn_042",
+      "label": "FRAIS BANCAIRES MARS",
+      "expected": {
+        "account_debit": "6271",
+        "account_debit_label": "Frais sur titres",
+        "account_credit": "5121",
+        "journal": "BQ",
+        "ecriture_label": "Qonto — frais bancaires mars 2025",
+        "confidence": "high",
+        "rationale": "Frais bancaires = 627 (services bancaires). Plus précisément 6271 ou 6278 selon le PCG."
+      }
+    }
+  ],
+  "ambiguous_cases_summary": {
+    "total_transactions": 42,
+    "expected_high_confidence": 32,
+    "expected_medium_confidence": 7,
+    "expected_low_confidence": 3,
+    "low_confidence_ids": ["txn_037"],
+    "medium_confidence_reasons": [
+      "txn_006 — Amazon fournitures : montant pourrait inclure une immobilisation",
+      "txn_014 — Uber mix transport/repas : devrait être séparé idéalement",
+      "txn_004 — Figma annuel : paiement annuel → PCA potentiel",
+      "txn_010 — Canva annuel : paiement annuel → PCA potentiel",
+      "txn_025 — WeTransfer annuel : paiement annuel → PCA potentiel"
+    ]
+  }
+}

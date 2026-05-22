@@ -1,0 +1,9 @@
+Facture OVHcloud
+Fournisseur: OVH SAS
+Date facture: 2025-01-03
+Numero facture: OVH-2025-001
+Client: ACME Digital
+Prestation: Hebergement cloud janvier 2025
+Montant HT: 24.99 EUR
+TVA: 5.00 EUR
+Total TTC: 29.99 EUR

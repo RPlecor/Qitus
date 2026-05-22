@@ -1,0 +1,77 @@
+{
+  "_fixture_meta": {
+    "description": "Résumé attendu des états financiers pour ACME Digital SASU — exercice 2025. Chiffres basés sur l'extrapolation du Q1 (42 transactions) sur l'année complète + écritures de clôture. Ces chiffres sont des CIBLES DE TEST, pas des calculs exacts — ils seront affinés quand le journal complet sera généré.",
+    "company": "companies/sasu-consulting.json",
+    "warning": "Chiffres indicatifs basés sur l'extrapolation Q1 × 4. Le journal complet de l'année complète n'est pas encore dans les fixtures — il le sera en phase de développement."
+  },
+
+  "compte_de_resultat": {
+    "exercice": "01/01/2025 – 31/12/2025",
+    "produits": {
+      "706_prestations_services": {
+        "label": "Prestations de services (consulting)",
+        "montant": 48800.00,
+        "detail": "Startup Innov (~14 000 €/trim) + Bigcorp (~8 000 €/trim) + nouveaux clients"
+      },
+      "707_ventes_produits": {
+        "label": "Ventes de produits (SaaS via Stripe)",
+        "montant": 5280.00,
+        "detail": "~1 320 €/trim via Stripe (net de refunds)"
+      },
+      "total_produits": 54080.00
+    },
+    "charges": {
+      "6064_fournitures": { "label": "Fournitures administratives", "montant": 940.00 },
+      "6132_locations_immobilieres": { "label": "Locations immobilières (coworking)", "montant": 1400.00 },
+      "6135_locations_mobilieres": { "label": "Locations mobilières (SaaS/cloud)", "montant": 5280.00, "detail": "OVH, Google, Notion, GitHub, Slack, Canva, Anthropic, etc." },
+      "6161_assurances": { "label": "Assurances", "montant": 499.73, "detail": "AXA RC Pro (après CCA)" },
+      "6226_honoraires": { "label": "Honoraires", "montant": 1000.00, "detail": "Expert-comptable" },
+      "6251_deplacements": { "label": "Voyages et déplacements", "montant": 980.00 },
+      "6257_receptions": { "label": "Réceptions et restauration", "montant": 350.00 },
+      "627_services_bancaires": { "label": "Services bancaires", "montant": 240.00, "detail": "Qonto + commissions Stripe" },
+      "6354_droits_enregistrement": { "label": "Frais juridiques (greffe)", "montant": 175.00 },
+      "68111_dot_amort_incorporelles": { "label": "Dotation amortissement incorporelles", "montant": 89.00 },
+      "68112_dot_amort_corporelles": { "label": "Dotation amortissement corporelles", "montant": 563.89 },
+      "total_charges": 31517.62
+    },
+    "resultat_exploitation": 22562.38,
+    "resultat_courant_avant_is": 22562.38,
+    "is": 3384.36,
+    "resultat_net": 19178.02
+  },
+
+  "bilan_simplifie": {
+    "date": "31/12/2025",
+    "actif": {
+      "immobilisations_incorporelles_nettes": 0.00,
+      "immobilisations_corporelles_brutes": 1899.00,
+      "amortissements_corporels": -563.89,
+      "immobilisations_corporelles_nettes": 1335.11,
+      "creances_clients": 0.00,
+      "charges_constatees_avance": 41.84,
+      "tresorerie": 18742.56,
+      "total_actif": 20119.51
+    },
+    "passif": {
+      "capital_social": 1000.00,
+      "reserves": 0.00,
+      "report_a_nouveau": 0.00,
+      "resultat_exercice": 19178.02,
+      "dettes_is": 3384.36,
+      "dettes_fournisseurs": 0.00,
+      "compte_courant_associe": -3442.87,
+      "total_passif": 20119.51
+    },
+    "equilibre_check": true
+  },
+
+  "indicateurs_cles": {
+    "ca_annuel": 54080.00,
+    "marge_nette_pct": 35.5,
+    "tresorerie_nette": 18742.56,
+    "ratio_charges_saas_sur_ca_pct": 9.8,
+    "seuil_tva_franchise_restant": -17280.00,
+    "alerte_tva": "ATTENTION : CA > 36 800 €. Sortie de franchise TVA en cours d'année. Obligation de facturer la TVA dès le dépassement du seuil majoré (39 100 €).",
+    "eligible_taux_reduit_pme": true
+  }
+}

@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scenarios MRR Paperasse — Projection 12 mois</title>
+<style>
+:root {
+  --ivory: #FAF9F5;
+  --paper: #FFFFFF;
+  --slate: #141413;
+  --clay: #D97757;
+  --clay-d: #B85C3E;
+  --oat: #E3DACC;
+  --olive: #788C5D;
+  --red: #C0392B;
+  --amber: #D4A017;
+  --blue: #3A5F8A;
+  --g100: #F0EEE6;
+  --g200: #E6E3DA;
+  --g300: #D1CFC5;
+  --g500: #87867F;
+  --g700: #3D3D3A;
+  --serif: ui-serif, Georgia, "Times New Roman", serif;
+  --sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.55;
+  color: var(--slate);
+  background: var(--ivory);
+  -webkit-font-smoothing: antialiased;
+}
+.wrap { max-width: 1200px; margin: 0 auto; padding: 48px 32px 80px; }
+
+/* HEADER */
+.eyebrow {
+  font-family: var(--mono); font-size: 12px; text-transform: uppercase;
+  letter-spacing: 0.1em; color: var(--clay); display: flex; align-items: center; gap: 12px; margin-bottom: 16px;
+}
+.eyebrow::before { content: ""; display: block; width: 24px; height: 3px; background: var(--clay); border-radius: 2px; }
+h1 { font-family: var(--serif); font-size: clamp(32px,4.5vw,54px); font-weight: 700; line-height: 1.08; letter-spacing: -0.018em; margin-bottom: 20px; }
+h1 em { font-style: italic; color: var(--clay); }
+.subtitle { font-size: 18px; color: var(--g500); max-width: 720px; margin-bottom: 40px; }
+.meta { font-family: var(--mono); font-size: 12px; color: var(--g500); display: flex; gap: 24px; flex-wrap: wrap; margin-bottom: 48px; padding-bottom: 32px; border-bottom: 1.5px solid var(--g300); }
+
+/* SECTIONS */
+section { padding: 48px 0; border-bottom: 1.5px solid var(--g300); }
+section:last-of-type { border-bottom: none; }
+.section-eyebrow { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--clay); margin-bottom: 12px; }
+h2 { font-family: var(--serif); font-size: clamp(24px,3vw,36px); font-weight: 700; line-height: 1.12; letter-spacing: -0.015em; margin-bottom: 24px; }
+h3 { font-size: 18px; font-weight: 700; margin-bottom: 12px; margin-top: 32px; }
+p { max-width: 720px; margin-bottom: 16px; }
+strong { color: var(--slate); font-weight: 600; }
+
+/* TLDR */
+.tldr { background: var(--paper); border: 1.5px solid var(--g200); border-left: 4px solid var(--clay); border-radius: 8px; padding: 24px 28px; margin-bottom: 48px; }
+.tldr-title { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--clay); margin-bottom: 12px; }
+.tldr p { margin-bottom: 8px; color: var(--g700); }
+.tldr p:last-child { margin-bottom: 0; }
+
+/* TABLES */
+.table-wrap { overflow-x: auto; margin: 24px 0 32px; border-radius: 8px; border: 1px solid var(--g200); }
+table { width: 100%; border-collapse: collapse; font-size: 14px; background: var(--paper); }
+thead { background: var(--g100); }
+th { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--g500); padding: 12px 16px; text-align: left; font-weight: 600; white-space: nowrap; border-bottom: 1.5px solid var(--g300); }
+td { padding: 12px 16px; border-bottom: 1px solid var(--g200); vertical-align: top; line-height: 1.45; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: var(--g100); }
+th.num, td.num { text-align: right; font-family: var(--mono); font-size: 13px; }
+td.num { font-variant-numeric: tabular-nums; }
+tr.total td { font-weight: 700; border-top: 2px solid var(--g300); background: var(--g100); }
+tr.subtotal td { font-weight: 600; background: rgba(217,119,87,0.04); }
+
+/* BADGES */
+.badge { display: inline-block; font-family: var(--mono); font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; white-space: nowrap; }
+.badge-green { background: rgba(120,140,93,0.15); color: #4A6B2A; }
+.badge-amber { background: rgba(212,160,23,0.15); color: #8B6914; }
+.badge-red { background: rgba(192,57,43,0.12); color: #8B2E1F; }
+.badge-blue { background: rgba(100,130,180,0.15); color: #3A5F8A; }
+.badge-clay { background: rgba(217,119,87,0.15); color: var(--clay-d); }
+
+/* CALLOUT */
+.callout { background: var(--g100); border-radius: 8px; padding: 20px 24px; margin: 24px 0; font-size: 15px; color: var(--g700); max-width: 720px; }
+.callout strong { color: var(--slate); }
+
+/* SCENARIO CARDS */
+.scenario-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin: 32px 0; }
+@media (max-width: 880px) { .scenario-grid { grid-template-columns: 1fr; } }
+.scenario-card { background: var(--paper); border: 1.5px solid var(--g200); border-radius: 10px; padding: 28px; position: relative; }
+.scenario-card.recommended { border-color: var(--clay); box-shadow: 0 2px 12px rgba(217,119,87,0.08); }
+.scenario-card .rec-badge { position: absolute; top: -10px; right: 20px; background: var(--clay); color: white; font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; padding: 3px 10px; border-radius: 4px; }
+.scenario-name { font-family: var(--serif); font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+.scenario-sub { font-size: 13px; color: var(--g500); margin-bottom: 16px; }
+.tier { padding: 12px 0; border-bottom: 1px solid var(--g200); }
+.tier:last-child { border-bottom: none; }
+.tier-name { font-weight: 600; font-size: 15px; }
+.tier-price { font-family: var(--mono); font-size: 20px; font-weight: 700; color: var(--clay); }
+.tier-price small { font-size: 12px; font-weight: 400; color: var(--g500); }
+.tier-desc { font-size: 13px; color: var(--g500); margin-top: 4px; }
+
+/* BOTTOM LINE */
+.bottom-line { background: var(--slate); color: var(--ivory); border-radius: 10px; padding: 32px 36px; margin-top: 48px; }
+.bottom-line h2 { color: var(--ivory); margin-bottom: 20px; }
+.bottom-line p { color: var(--g300); max-width: none; }
+.bottom-line strong { color: var(--ivory); }
+
+/* FOOTER */
+footer { margin-top: 48px; padding-top: 24px; border-top: 1px solid var(--g300); font-family: var(--mono); font-size: 11px; color: var(--g500); display: flex; flex-wrap: wrap; gap: 8px 24px; }
+footer a { color: var(--clay); text-decoration: none; }
+footer a:hover { text-decoration: underline; }
+
+/* HIGHLIGHT COLUMN */
+.hl-col { background: rgba(217,119,87,0.04); }
+thead .hl-col { background: rgba(217,119,87,0.08); color: var(--clay-d); }
+
+@media (max-width: 640px) {
+  .wrap { padding: 32px 20px 60px; }
+  .meta { flex-direction: column; gap: 8px; }
+  table { font-size: 13px; }
+  th, td { padding: 10px 12px; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- HEADER -->
+<div class="eyebrow">CPO Advisory &middot; Financial modeling</div>
+<h1>Scenarios <em>MRR</em> Paperasse</h1>
+<p class="subtitle">Trois grilles tarifaires, trois hypotheses d'acquisition, decomposition des couts unitaires et projection sur 12 mois. Plafond : 39&euro; HT/mois.</p>
+<div class="meta">
+  <span>21 mai 2026</span>
+  <span>Draft v1</span>
+  <span>Tous montants HT sauf mention contraire</span>
+</div>
+
+<!-- TLDR -->
+<div class="tldr">
+  <div class="tldr-title">En resume</div>
+  <p><strong>Cout variable par utilisateur :</strong> entre 0,45&euro; et 0,65&euro;/mois (Open Banking + IA residuelle + stockage). Le rules-first comprime le cout IA a quasi zero.</p>
+  <p><strong>Cout fixe infrastructure :</strong> de ~30&euro;/mois en beta a ~250&euro;/mois a 500 utilisateurs. Render + Scaleway + monitoring.</p>
+  <p><strong>Breakeven :</strong> entre 15 et 45 utilisateurs payants selon le scenario, atteignable des M3-M4.</p>
+  <p><strong>Scenario recommande :</strong> trois tiers (9,90&euro; / 24,90&euro; / 39&euro;) avec ARPU cible de 22-24&euro;. MRR M12 entre 2 500&euro; et 12 000&euro; selon l'acquisition.</p>
+</div>
+
+<!-- SECTION 1 : STRUCTURE DE COUTS -->
+<section>
+  <div class="section-eyebrow">Structure de couts</div>
+  <h2>Ce que coute Paperasse par utilisateur et en fixe</h2>
+
+  <h3>Couts fixes (infrastructure)</h3>
+  <p>Les couts fixes evoluent par paliers. Trois paliers correspondent aux phases de croissance de la beta.</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Composant</th>
+          <th>Fournisseur</th>
+          <th class="num">Palier 1<br><small>0-100 users</small></th>
+          <th class="num">Palier 2<br><small>100-500 users</small></th>
+          <th class="num">Palier 3<br><small>500+ users</small></th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Web service</strong></td>
+          <td>Render Starter &rarr; Standard</td>
+          <td class="num">7&euro;</td>
+          <td class="num">23&euro;</td>
+          <td class="num">79&euro;</td>
+          <td>App Remix + API</td>
+        </tr>
+        <tr>
+          <td><strong>PostgreSQL manage</strong></td>
+          <td>Render Starter &rarr; Standard</td>
+          <td class="num">7&euro;</td>
+          <td class="num">23&euro;</td>
+          <td class="num">79&euro;</td>
+          <td>+ 0,28&euro;/GB stockage</td>
+        </tr>
+        <tr>
+          <td><strong>Redis (BullMQ)</strong></td>
+          <td>Render Free &rarr; Starter</td>
+          <td class="num">0&euro;</td>
+          <td class="num">7&euro;</td>
+          <td class="num">23&euro;</td>
+          <td>File d'attente imports + jobs</td>
+        </tr>
+        <tr>
+          <td><strong>Stockage objet</strong></td>
+          <td>Scaleway S3</td>
+          <td class="num">1&euro;</td>
+          <td class="num">5&euro;</td>
+          <td class="num">15&euro;</td>
+          <td>0,012&euro;/GB. Justificatifs, FEC, exports</td>
+        </tr>
+        <tr>
+          <td><strong>Authentification</strong></td>
+          <td>Clerk</td>
+          <td class="num">0&euro;</td>
+          <td class="num">0&euro;</td>
+          <td class="num">0&euro;</td>
+          <td>Gratuit jusqu'a 50k MAU</td>
+        </tr>
+        <tr>
+          <td><strong>Domaine + DNS + email</strong></td>
+          <td>OVH / Cloudflare</td>
+          <td class="num">5&euro;</td>
+          <td class="num">5&euro;</td>
+          <td class="num">10&euro;</td>
+          <td>paperasse.app + transactionnel</td>
+        </tr>
+        <tr>
+          <td><strong>Monitoring + alerting</strong></td>
+          <td>Sentry free &rarr; Team</td>
+          <td class="num">0&euro;</td>
+          <td class="num">12&euro;</td>
+          <td class="num">26&euro;</td>
+          <td>Erreurs + performance</td>
+        </tr>
+        <tr>
+          <td><strong>GitHub</strong></td>
+          <td>Free (repo prive)</td>
+          <td class="num">0&euro;</td>
+          <td class="num">0&euro;</td>
+          <td class="num">4&euro;</td>
+          <td>Actions CI gratuites suffisantes en solo</td>
+        </tr>
+        <tr class="total">
+          <td colspan="2"><strong>Total fixe mensuel</strong></td>
+          <td class="num"><strong>20&euro;</strong></td>
+          <td class="num"><strong>75&euro;</strong></td>
+          <td class="num"><strong>236&euro;</strong></td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Couts variables (par utilisateur actif/mois)</h3>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Composant</th>
+          <th>Hypothese de calcul</th>
+          <th class="num">Cout/user/mois</th>
+          <th>Source</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Open Banking provider</strong></td>
+          <td>Lecture seule, ~0,40-0,50&euro;/user/mois (Tink standard tier). Bridge/Powens : tarif sur devis, estimation comparable</td>
+          <td class="num">0,40&euro;</td>
+          <td>Tink pricing public, estim. Bridge/Powens</td>
+        </tr>
+        <tr>
+          <td><strong>Anthropic API (IA residuelle)</strong></td>
+          <td>~100 tx/mois/user, 15% vont a l'IA = 15 appels Haiku. Input ~7 500 tokens + output ~3 000 tokens = ~0,02&euro;</td>
+          <td class="num">0,02&euro;</td>
+          <td>Haiku 4.5 : 1$/MTok in, 5$/MTok out</td>
+        </tr>
+        <tr>
+          <td><strong>Stockage justificatifs</strong></td>
+          <td>~20 pieces/mois, ~200 KB/piece = 4 MB/mois. Scaleway : 0,012&euro;/GB</td>
+          <td class="num">&lt;0,01&euro;</td>
+          <td>Scaleway Object Storage</td>
+        </tr>
+        <tr>
+          <td><strong>Bande passante / egress</strong></td>
+          <td>~50 MB/mois/user (API + telecharges). Render : 100 GB gratuits</td>
+          <td class="num">0,00&euro;</td>
+          <td>Inclus Render free tier</td>
+        </tr>
+        <tr>
+          <td><strong>Email transactionnel</strong></td>
+          <td>~5 emails/mois/user (notifications, exports). Resend/Postmark free tier</td>
+          <td class="num">0,00&euro;</td>
+          <td>Resend : 3 000 emails/mois gratuits</td>
+        </tr>
+        <tr class="total">
+          <td colspan="2"><strong>Total variable par user/mois</strong></td>
+          <td class="num"><strong>~0,43&euro;</strong></td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout">
+    <strong>Le rules-first change la donne :</strong> chez un concurrent IA-first, le cout IA par user tourne entre 0,50&euro; et 2&euro;/mois (chaque transaction passe par un LLM). Chez Paperasse, ~85% des transactions sont traitees par regles deterministes a cout zero. Le cout IA residuel est de 0,02&euro;/user/mois, soit 25 a 100x moins cher. C'est ce qui rend un pricing a 9,90&euro; economiquement viable.
+  </div>
+
+  <h3>Marge brute unitaire par tier</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Tier</th>
+          <th class="num">Prix HT/mois</th>
+          <th class="num">Cout variable</th>
+          <th class="num">Marge brute unitaire</th>
+          <th class="num">Marge brute %</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Starter</strong> (micro/franchise TVA)</td>
+          <td class="num">9,90&euro;</td>
+          <td class="num">0,43&euro;</td>
+          <td class="num">9,47&euro;</td>
+          <td class="num"><span class="badge badge-green">95,7%</span></td>
+        </tr>
+        <tr>
+          <td><strong>Pro</strong> (SASU/EURL au reel)</td>
+          <td class="num">24,90&euro;</td>
+          <td class="num">0,55&euro;</td>
+          <td class="num">24,35&euro;</td>
+          <td class="num"><span class="badge badge-green">97,8%</span></td>
+        </tr>
+        <tr>
+          <td><strong>Business</strong> (TPE 1-10 salaries)</td>
+          <td class="num">39,00&euro;</td>
+          <td class="num">0,65&euro;</td>
+          <td class="num">38,35&euro;</td>
+          <td class="num"><span class="badge badge-green">98,3%</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p style="font-size:14px;color:var(--g500)">Le cout variable Pro et Business est legerement superieur (plus de transactions, plus de stockage, plus d'appels IA sur les cas complexes). La marge brute reste au-dessus de 95% sur tous les tiers grace a l'architecture rules-first.</p>
+</section>
+
+<!-- SECTION 2 : GRILLES TARIFAIRES -->
+<section>
+  <div class="section-eyebrow">Grilles tarifaires</div>
+  <h2>Trois scenarios de pricing</h2>
+
+  <div class="scenario-grid">
+    <div class="scenario-card">
+      <div class="scenario-name">Scenario A</div>
+      <div class="scenario-sub">Freemium agressif</div>
+      <div class="tier">
+        <div class="tier-name">Free</div>
+        <div class="tier-price">0&euro; <small>/mois</small></div>
+        <div class="tier-desc">Micro-entrepreneur franchise TVA. 30 tx/mois max. CSV uniquement. FEC + balance.</div>
+      </div>
+      <div class="tier">
+        <div class="tier-name">Solo</div>
+        <div class="tier-price">14,90&euro; <small>HT/mois</small></div>
+        <div class="tier-desc">SASU/EURL freelance. 200 tx/mois. Open Banking. TVA. Cloture guidee. Lien EC.</div>
+      </div>
+      <div class="tier">
+        <div class="tier-name">TPE</div>
+        <div class="tier-price">29,90&euro; <small>HT/mois</small></div>
+        <div class="tier-desc">1-10 salaries. 500 tx/mois. Multi-exercice. Liasse complete. Dossier EC collaboratif.</div>
+      </div>
+    </div>
+
+    <div class="scenario-card recommended">
+      <div class="rec-badge">Recommande</div>
+      <div class="scenario-name">Scenario B</div>
+      <div class="scenario-sub">Trois tiers progressifs</div>
+      <div class="tier">
+        <div class="tier-name">Starter</div>
+        <div class="tier-price">9,90&euro; <small>HT/mois</small></div>
+        <div class="tier-desc">Micro/franchise TVA. 100 tx/mois. CSV + Open Banking. FEC + balance + bilan.</div>
+      </div>
+      <div class="tier">
+        <div class="tier-name">Pro</div>
+        <div class="tier-price">24,90&euro; <small>HT/mois</small></div>
+        <div class="tier-desc">SASU/EURL au reel. 300 tx/mois. TVA. Cloture. Liasse. Lien EC. Justificatifs.</div>
+      </div>
+      <div class="tier">
+        <div class="tier-name">Business</div>
+        <div class="tier-price">39,00&euro; <small>HT/mois</small></div>
+        <div class="tier-desc">TPE 1-10 salaries. 800 tx/mois. Multi-exercice. Rapprochements avances. Dossier EC complet. Support prioritaire.</div>
+      </div>
+    </div>
+
+    <div class="scenario-card">
+      <div class="scenario-name">Scenario C</div>
+      <div class="scenario-sub">Entree unique + upsell</div>
+      <div class="tier">
+        <div class="tier-name">Essai 30 jours</div>
+        <div class="tier-price">0&euro;</div>
+        <div class="tier-desc">Toutes fonctionnalites. 1 exercice. Le "aha moment" doit se produire pendant l'essai.</div>
+      </div>
+      <div class="tier">
+        <div class="tier-name">Paperasse</div>
+        <div class="tier-price">19,90&euro; <small>HT/mois</small></div>
+        <div class="tier-desc">Tout inclus. 300 tx/mois. TVA. Cloture. Lien EC. Un seul prix, pas de choix.</div>
+      </div>
+      <div class="tier">
+        <div class="tier-name">Paperasse+</div>
+        <div class="tier-price">34,90&euro; <small>HT/mois</small></div>
+        <div class="tier-desc">Volume (800 tx). Multi-exercice. Dossier EC complet. Support prioritaire.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout">
+    <strong>Pourquoi le scenario B est recommande :</strong> le tier Starter a 9,90&euro; cree une porte d'entree tres basse qui capture les micro-entrepreneurs (le segment le plus large en France : 4,2M en 2025). Le tier Pro a 24,90&euro; est le coeur de cible (SASU/EURL au reel, le segment ou la douleur comptable est la plus forte). Le tier Business a 39&euro; monetise les TPE a plus fort volume. L'ARPU cible de 22-24&euro; est atteignable avec un mix 30% Starter / 50% Pro / 20% Business.
+  </div>
+
+  <h3>Comparaison avec les concurrents</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Segment</th>
+          <th class="num">Indy</th>
+          <th class="num">Indy + EC</th>
+          <th class="num">Pennylane</th>
+          <th class="num hl-col">Paperasse (Sc. B)</th>
+          <th>Avantage Paperasse</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Micro/freelance</td>
+          <td class="num">0-9&euro;</td>
+          <td class="num">n/a</td>
+          <td class="num">Via cabinet</td>
+          <td class="num hl-col">9,90&euro;</td>
+          <td>Plus cher qu'Indy free, mais FEC + bilan inclus</td>
+        </tr>
+        <tr>
+          <td>SASU/EURL au reel</td>
+          <td class="num">49&euro;</td>
+          <td class="num">98&euro;</td>
+          <td class="num">79&euro;</td>
+          <td class="num hl-col">24,90&euro;</td>
+          <td><strong>2x moins cher qu'Indy, 3x moins que Pennylane.</strong> Lien EC inclus</td>
+        </tr>
+        <tr>
+          <td>TPE (1-10 sal.)</td>
+          <td class="num">49&euro;</td>
+          <td class="num">98&euro;</td>
+          <td class="num">79&euro;+</td>
+          <td class="num hl-col">39,00&euro;</td>
+          <td><strong>2,5x moins cher.</strong> Dossier EC complet inclus</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- SECTION 3 : HYPOTHESES D'ACQUISITION -->
+<section>
+  <div class="section-eyebrow">Hypotheses d'acquisition</div>
+  <h2>Trois trajectoires sur 12 mois</h2>
+
+  <p>Les hypotheses ci-dessous couvrent le nombre de <strong>nouveaux utilisateurs payants</strong> par mois (hors free tier dans le scenario A). Le churn mensuel est estime a 5% en beta (produit immature, attentes non calibrees) puis 3% en regime post-beta (M7+).</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Mois</th>
+          <th>Phase</th>
+          <th class="num">Pessimiste<br><small>nouveaux/mois</small></th>
+          <th class="num">Realiste<br><small>nouveaux/mois</small></th>
+          <th class="num">Optimiste<br><small>nouveaux/mois</small></th>
+          <th>Canal principal</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>M1</strong></td>
+          <td><span class="badge badge-blue">Beta fermee</span></td>
+          <td class="num">5</td>
+          <td class="num">10</td>
+          <td class="num">15</td>
+          <td>Reseau perso, IH, Malt, LinkedIn</td>
+        </tr>
+        <tr>
+          <td><strong>M2</strong></td>
+          <td><span class="badge badge-blue">Beta fermee</span></td>
+          <td class="num">5</td>
+          <td class="num">10</td>
+          <td class="num">20</td>
+          <td>Bouche-a-oreille, forums freelance</td>
+        </tr>
+        <tr>
+          <td><strong>M3</strong></td>
+          <td><span class="badge badge-blue">Beta fermee</span></td>
+          <td class="num">8</td>
+          <td class="num">15</td>
+          <td class="num">25</td>
+          <td>SEO long-tail + referrals beta</td>
+        </tr>
+        <tr>
+          <td><strong>M4</strong></td>
+          <td><span class="badge badge-amber">Beta ouverte</span></td>
+          <td class="num">10</td>
+          <td class="num">20</td>
+          <td class="num">35</td>
+          <td>LP1 live, Product Hunt FR, SEO</td>
+        </tr>
+        <tr>
+          <td><strong>M5</strong></td>
+          <td><span class="badge badge-amber">Beta ouverte</span></td>
+          <td class="num">10</td>
+          <td class="num">25</td>
+          <td class="num">45</td>
+          <td>Content marketing, comparatifs</td>
+        </tr>
+        <tr>
+          <td><strong>M6</strong></td>
+          <td><span class="badge badge-amber">Beta ouverte</span></td>
+          <td class="num">12</td>
+          <td class="num">30</td>
+          <td class="num">55</td>
+          <td>Partenariats EC, webinaires</td>
+        </tr>
+        <tr>
+          <td><strong>M7</strong></td>
+          <td><span class="badge badge-green">Lancement</span></td>
+          <td class="num">12</td>
+          <td class="num">30</td>
+          <td class="num">60</td>
+          <td>PR lancement, ads test (petit budget)</td>
+        </tr>
+        <tr>
+          <td><strong>M8</strong></td>
+          <td><span class="badge badge-green">Lancement</span></td>
+          <td class="num">10</td>
+          <td class="num">25</td>
+          <td class="num">55</td>
+          <td>SEO organique + referrals</td>
+        </tr>
+        <tr>
+          <td><strong>M9</strong></td>
+          <td><span class="badge badge-green">Croissance</span></td>
+          <td class="num">10</td>
+          <td class="num">25</td>
+          <td class="num">55</td>
+          <td>Flywheel contenu + partenariats</td>
+        </tr>
+        <tr>
+          <td><strong>M10</strong></td>
+          <td><span class="badge badge-green">Croissance</span></td>
+          <td class="num">10</td>
+          <td class="num">25</td>
+          <td class="num">60</td>
+          <td>Referral programme</td>
+        </tr>
+        <tr>
+          <td><strong>M11</strong></td>
+          <td><span class="badge badge-green">Croissance</span></td>
+          <td class="num">10</td>
+          <td class="num">25</td>
+          <td class="num">60</td>
+          <td>Saison fiscale (clotures annuelles)</td>
+        </tr>
+        <tr>
+          <td><strong>M12</strong></td>
+          <td><span class="badge badge-green">Croissance</span></td>
+          <td class="num">10</td>
+          <td class="num">25</td>
+          <td class="num">65</td>
+          <td>Saison fiscale + organique</td>
+        </tr>
+        <tr class="total">
+          <td colspan="2"><strong>Total nouveaux sur 12 mois</strong></td>
+          <td class="num"><strong>112</strong></td>
+          <td class="num"><strong>265</strong></td>
+          <td class="num"><strong>550</strong></td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout">
+    <strong>Churn :</strong> 5%/mois en beta (M1-M6) puis 3%/mois post-lancement (M7-M12). Un churn de 3% mensuel = 31% annuel, ce qui est eleve mais typique d'un SaaS early-stage B2C/micro-B2B. L'objectif M12+ est de descendre sous 2% via amelioration produit et onboarding.
+  </div>
+</section>
+
+<!-- SECTION 4 : PROJECTIONS MRR -->
+<section>
+  <div class="section-eyebrow">Projections MRR</div>
+  <h2>MRR sur 12 mois — Scenario B recommande</h2>
+
+  <p>Projection avec le pricing Scenario B (9,90 / 24,90 / 39&euro;), mix estime 30% Starter / 50% Pro / 20% Business, ARPU resultant de <strong>22,37&euro;</strong>.</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Mois</th>
+          <th class="num">Nouveaux<br><small>(realiste)</small></th>
+          <th class="num">Churn<br><small>sorties</small></th>
+          <th class="num">Payants<br><small>actifs fin mois</small></th>
+          <th class="num">MRR</th>
+          <th class="num">Couts fixes</th>
+          <th class="num">Couts var.</th>
+          <th class="num">Resultat net</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>M1</strong></td>
+          <td class="num">10</td>
+          <td class="num">0</td>
+          <td class="num">10</td>
+          <td class="num">224&euro;</td>
+          <td class="num">20&euro;</td>
+          <td class="num">4&euro;</td>
+          <td class="num" style="color:var(--olive)">+200&euro;</td>
+        </tr>
+        <tr>
+          <td><strong>M2</strong></td>
+          <td class="num">10</td>
+          <td class="num">1</td>
+          <td class="num">19</td>
+          <td class="num">425&euro;</td>
+          <td class="num">20&euro;</td>
+          <td class="num">8&euro;</td>
+          <td class="num" style="color:var(--olive)">+397&euro;</td>
+        </tr>
+        <tr>
+          <td><strong>M3</strong></td>
+          <td class="num">15</td>
+          <td class="num">1</td>
+          <td class="num">33</td>
+          <td class="num">738&euro;</td>
+          <td class="num">20&euro;</td>
+          <td class="num">14&euro;</td>
+          <td class="num" style="color:var(--olive)">+704&euro;</td>
+        </tr>
+        <tr>
+          <td><strong>M4</strong></td>
+          <td class="num">20</td>
+          <td class="num">2</td>
+          <td class="num">51</td>
+          <td class="num">1 141&euro;</td>
+          <td class="num">20&euro;</td>
+          <td class="num">22&euro;</td>
+          <td class="num" style="color:var(--olive)">+1 099&euro;</td>
+        </tr>
+        <tr>
+          <td><strong>M5</strong></td>
+          <td class="num">25</td>
+          <td class="num">3</td>
+          <td class="num">73</td>
+          <td class="num">1 633&euro;</td>
+          <td class="num">20&euro;</td>
+          <td class="num">31&euro;</td>
+          <td class="num" style="color:var(--olive)">+1 582&euro;</td>
+        </tr>
+        <tr>
+          <td><strong>M6</strong></td>
+          <td class="num">30</td>
+          <td class="num">4</td>
+          <td class="num">99</td>
+          <td class="num">2 215&euro;</td>
+          <td class="num">20&euro;</td>
+          <td class="num">43&euro;</td>
+          <td class="num" style="color:var(--olive)">+2 152&euro;</td>
+        </tr>
+        <tr>
+          <td><strong>M7</strong></td>
+          <td class="num">30</td>
+          <td class="num">3</td>
+          <td class="num">126</td>
+          <td class="num">2 819&euro;</td>
+          <td class="num">75&euro;</td>
+          <td class="num">54&euro;</td>
+          <td class="num" style="color:var(--olive)">+2 690&euro;</td>
+        </tr>
+        <tr>
+          <td><strong>M8</strong></td>
+          <td class="num">25</td>
+          <td class="num">4</td>
+          <td class="num">147</td>
+          <td class="num">3 289&euro;</td>
+          <td class="num">75&euro;</td>
+          <td class="num">63&euro;</td>
+          <td class="num" style="color:var(--olive)">+3 151&euro;</td>
+        </tr>
+        <tr>
+          <td><strong>M9</strong></td>
+          <td class="num">25</td>
+          <td class="num">4</td>
+          <td class="num">168</td>
+          <td class="num">3 759&euro;</td>
+          <td class="num">75&euro;</td>
+          <td class="num">72&euro;</td>
+          <td class="num" style="color:var(--olive)">+3 612&euro;</td>
+        </tr>
+        <tr>
+          <td><strong>M10</strong></td>
+          <td class="num">25</td>
+          <td class="num">5</td>
+          <td class="num">188</td>
+          <td class="num">4 206&euro;</td>
+          <td class="num">75&euro;</td>
+          <td class="num">81&euro;</td>
+          <td class="num" style="color:var(--olive)">+4 050&euro;</td>
+        </tr>
+        <tr>
+          <td><strong>M11</strong></td>
+          <td class="num">25</td>
+          <td class="num">6</td>
+          <td class="num">207</td>
+          <td class="num">4 631&euro;</td>
+          <td class="num">75&euro;</td>
+          <td class="num">89&euro;</td>
+          <td class="num" style="color:var(--olive)">+4 467&euro;</td>
+        </tr>
+        <tr>
+          <td><strong>M12</strong></td>
+          <td class="num">25</td>
+          <td class="num">6</td>
+          <td class="num">226</td>
+          <td class="num">5 056&euro;</td>
+          <td class="num">75&euro;</td>
+          <td class="num">97&euro;</td>
+          <td class="num" style="color:var(--olive)">+4 884&euro;</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Synthese M12 par scenario d'acquisition</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th></th>
+          <th class="num">Pessimiste</th>
+          <th class="num hl-col">Realiste</th>
+          <th class="num">Optimiste</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Payants actifs M12</strong></td>
+          <td class="num">~85</td>
+          <td class="num hl-col">~226</td>
+          <td class="num">~460</td>
+        </tr>
+        <tr>
+          <td><strong>MRR M12</strong></td>
+          <td class="num">1 901&euro;</td>
+          <td class="num hl-col">5 056&euro;</td>
+          <td class="num">10 294&euro;</td>
+        </tr>
+        <tr>
+          <td><strong>ARR implicite M12</strong></td>
+          <td class="num">22 812&euro;</td>
+          <td class="num hl-col">60 672&euro;</td>
+          <td class="num">123 528&euro;</td>
+        </tr>
+        <tr>
+          <td><strong>Couts totaux M12</strong></td>
+          <td class="num">57&euro;</td>
+          <td class="num hl-col">172&euro;</td>
+          <td class="num">434&euro;</td>
+        </tr>
+        <tr>
+          <td><strong>Marge operationnelle M12</strong></td>
+          <td class="num"><span class="badge badge-green">97%</span></td>
+          <td class="num hl-col"><span class="badge badge-green">96,6%</span></td>
+          <td class="num"><span class="badge badge-green">95,8%</span></td>
+        </tr>
+        <tr>
+          <td><strong>Revenu cumule 12 mois</strong></td>
+          <td class="num">10 740&euro;</td>
+          <td class="num hl-col">30 136&euro;</td>
+          <td class="num">62 890&euro;</td>
+        </tr>
+        <tr>
+          <td><strong>Breakeven (mois)</strong></td>
+          <td class="num">M1</td>
+          <td class="num hl-col">M1</td>
+          <td class="num">M1</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout">
+    <strong>Breakeven des M1 :</strong> avec des couts fixes de 20&euro;/mois et un cout variable de 0,43&euro;/user, le seuil de rentabilite operationnelle est atteint des le premier utilisateur payant a 9,90&euro;. C'est l'avantage structurel d'un SaaS solo-founder avec architecture rules-first : pas de team, pas de bureau, pas d'infra lourde. Le vrai enjeu n'est pas le breakeven mais la vitesse d'acquisition.
+  </div>
+</section>
+
+<!-- SECTION 5 : SENSIBILITE -->
+<section>
+  <div class="section-eyebrow">Analyse de sensibilite</div>
+  <h2>Impact du pricing sur le MRR M12</h2>
+
+  <p>Le tableau ci-dessous montre le MRR M12 pour chaque combinaison scenario pricing x hypothese d'acquisition.</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th></th>
+          <th>ARPU</th>
+          <th class="num">Pessimiste<br><small>~85 payants</small></th>
+          <th class="num">Realiste<br><small>~226 payants</small></th>
+          <th class="num">Optimiste<br><small>~460 payants</small></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Sc. A</strong> Freemium agressif</td>
+          <td><span class="badge badge-amber">19,42&euro;</span><br><small>Mix: 0%F/35%Solo/45%TPE/20%Free-converti</small></td>
+          <td class="num">1 651&euro;</td>
+          <td class="num">4 389&euro;</td>
+          <td class="num">8 933&euro;</td>
+        </tr>
+        <tr>
+          <td><strong>Sc. B</strong> Trois tiers <span class="badge badge-clay">Rec.</span></td>
+          <td><span class="badge badge-green">22,37&euro;</span><br><small>Mix: 30%St/50%Pro/20%Biz</small></td>
+          <td class="num">1 901&euro;</td>
+          <td class="num">5 056&euro;</td>
+          <td class="num">10 294&euro;</td>
+        </tr>
+        <tr>
+          <td><strong>Sc. C</strong> Entree unique</td>
+          <td><span class="badge badge-green">23,90&euro;</span><br><small>Mix: 70%Std/30%Plus</small></td>
+          <td class="num">2 032&euro;</td>
+          <td class="num">5 401&euro;</td>
+          <td class="num">10 994&euro;</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Risques par scenario</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Scenario</th>
+          <th>Forces</th>
+          <th>Risques</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>A — Freemium</strong></td>
+          <td>Volume d'acquisition maximal. Reduit la friction. Le tier gratuit sert de top-of-funnel massif pour le SEO et le bouche-a-oreille.</td>
+          <td>Le free tier attire des utilisateurs qui ne convertissent jamais. Cout de support sur des non-payants. Ancrage prix bas qui complique les upsells. ARPU le plus faible des trois.</td>
+        </tr>
+        <tr>
+          <td><strong>B — Trois tiers</strong></td>
+          <td>Porte d'entree basse (9,90&euro;) mais payante des le jour 1. Segmentation claire par besoin reel. ARPU sain. Upsell naturel quand l'activite croit.</td>
+          <td>Le tier Starter a 9,90&euro; peut cannibaliser le Pro si les limites ne sont pas assez differenciantes. Complexite de 3 plans a communiquer sur la LP.</td>
+        </tr>
+        <tr>
+          <td><strong>C — Entree unique</strong></td>
+          <td>Simplicite de communication ("un seul prix"). Trial de 30 jours reduit la friction. ARPU le plus eleve.</td>
+          <td>Pas de tier d'entree pour les micro-entrepreneurs (19,90&euro; peut sembler cher vs Indy gratuit). Perd le segment prix-sensible. Moins de surface SEO (pas de page "gratuit").</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- SECTION 6 : METRIQUES -->
+<section>
+  <div class="section-eyebrow">Metriques cles</div>
+  <h2>KPIs a tracker des M1</h2>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Metrique</th>
+          <th class="num">Cible M6</th>
+          <th class="num">Cible M12</th>
+          <th>Pourquoi</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>MRR</strong></td>
+          <td class="num">&gt; 1 500&euro;</td>
+          <td class="num">&gt; 5 000&euro;</td>
+          <td>North star revenue. Si M6 &lt; 500&euro;, revoir acquisition ou pricing</td>
+        </tr>
+        <tr>
+          <td><strong>Payants actifs</strong></td>
+          <td class="num">&gt; 70</td>
+          <td class="num">&gt; 200</td>
+          <td>Base installee. Proxy de traction produit</td>
+        </tr>
+        <tr>
+          <td><strong>ARPU</strong></td>
+          <td class="num">&gt; 20&euro;</td>
+          <td class="num">&gt; 22&euro;</td>
+          <td>Si ARPU &lt; 15&euro;, trop de Starter et pas assez de Pro/Biz</td>
+        </tr>
+        <tr>
+          <td><strong>Churn mensuel</strong></td>
+          <td class="num">&lt; 6%</td>
+          <td class="num">&lt; 3%</td>
+          <td>Un churn &gt; 8% en beta signale un probleme produit fondamental</td>
+        </tr>
+        <tr>
+          <td><strong>Taux conversion trial/free &rarr; payant</strong></td>
+          <td class="num">&gt; 15%</td>
+          <td class="num">&gt; 25%</td>
+          <td>Mesure la qualite du "aha moment". Benchmark PLG SaaS : 10-25%</td>
+        </tr>
+        <tr>
+          <td><strong>Cout IA / user / mois</strong></td>
+          <td class="num">&lt; 0,05&euro;</td>
+          <td class="num">&lt; 0,03&euro;</td>
+          <td>Validera le rules-first en production. Si &gt; 0,10&euro;, les regles ne couvrent pas assez</td>
+        </tr>
+        <tr>
+          <td><strong>Time-to-first-import</strong></td>
+          <td class="num">&lt; 5 min</td>
+          <td class="num">&lt; 3 min</td>
+          <td>Friction onboarding. Correle directement avec la conversion</td>
+        </tr>
+        <tr>
+          <td><strong>LTV estimee (ARPU / churn)</strong></td>
+          <td class="num">&gt; 350&euro;</td>
+          <td class="num">&gt; 700&euro;</td>
+          <td>LTV/CAC &gt; 3 necessaire pour investir en acquisition payante</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- BOTTOM LINE -->
+<div class="bottom-line">
+  <h2>Bottom line</h2>
+  <p><strong>Le pricing recommande est le Scenario B : 9,90 / 24,90 / 39&euro; HT/mois.</strong> Il offre le meilleur equilibre entre accessibilite (porte d'entree basse pour les micro), monetisation (ARPU de 22&euro; sur le coeur de cible SASU/EURL) et potentiel d'upsell (Business a 39&euro; pour les TPE).</p>
+  <p style="margin-top:16px">L'architecture rules-first rend ce pricing viable : le cout variable par utilisateur est de <strong>0,43&euro;/mois</strong>, soit une marge brute superieure a 95% sur tous les tiers. Un concurrent IA-first ne pourrait pas proposer 9,90&euro; sans perdre de l'argent sur chaque transaction.</p>
+  <p style="margin-top:16px">En hypothese realiste (265 acquisitions sur 12 mois, ~226 payants actifs a M12 apres churn), le <strong>MRR M12 atteint ~5 000&euro;</strong> (ARR ~60k&euro;). Le breakeven operationnel est immediat. Le vrai levier de croissance n'est pas le pricing mais l'acquisition : SEO, contenu, partenariats EC et bouche-a-oreille.</p>
+  <p style="margin-top:16px"><strong>Decision a prendre :</strong> fixer le prix du tier Starter (9,90&euro; vs gratuit). Le freemium (Sc. A) maximise le volume mais dilue l'ARPU et attire des utilisateurs non qualifies. Le payant des le jour 1 (Sc. B) selectionne des utilisateurs engages et cree un revenu immediat. Pour un solo-founder sans equipe support, le payant des M1 est plus sain.</p>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <span>Sources :</span>
+  <a href="https://render.com/pricing">Render Pricing</a>
+  <a href="https://www.scaleway.com/en/pricing/storage/">Scaleway Storage</a>
+  <a href="https://platform.claude.com/docs/en/about-claude/pricing">Anthropic API Pricing</a>
+  <a href="https://tink.com/pricing/">Tink Open Banking Pricing</a>
+  <a href="https://clerk.com/pricing">Clerk Auth Pricing</a>
+  <span>ROADMAP.md Paperasse Phase 9 (tiers cadrage)</span>
+</footer>
+
+</div>
+</body>
+</html>

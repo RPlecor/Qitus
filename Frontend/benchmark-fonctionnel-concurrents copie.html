@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Benchmark fonctionnel comptable — Paperasse vs concurrents</title>
+<style>
+:root {
+  --ivory: #FAF9F5;
+  --paper: #FFFFFF;
+  --slate: #141413;
+  --clay: #D97757;
+  --clay-d: #B85C3E;
+  --oat: #E3DACC;
+  --olive: #788C5D;
+  --red: #C0392B;
+  --amber: #D4A017;
+  --g100: #F0EEE6;
+  --g200: #E6E3DA;
+  --g300: #D1CFC5;
+  --g500: #87867F;
+  --g700: #3D3D3A;
+
+  --serif: ui-serif, Georgia, "Times New Roman", serif;
+  --sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.55;
+  color: var(--slate);
+  background: var(--ivory);
+  -webkit-font-smoothing: antialiased;
+}
+
+.wrap {
+  max-width: 1140px;
+  margin: 0 auto;
+  padding: 48px 32px 80px;
+}
+
+/* --- HEADER --- */
+.eyebrow {
+  font-family: var(--mono);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--clay);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.eyebrow::before {
+  content: "";
+  display: block;
+  width: 24px;
+  height: 3px;
+  background: var(--clay);
+  border-radius: 2px;
+}
+
+h1 {
+  font-family: var(--serif);
+  font-size: clamp(32px, 4.5vw, 54px);
+  font-weight: 700;
+  line-height: 1.08;
+  letter-spacing: -0.018em;
+  margin-bottom: 20px;
+}
+h1 em {
+  font-style: italic;
+  color: var(--clay);
+}
+
+.subtitle {
+  font-size: 18px;
+  color: var(--g500);
+  max-width: 640px;
+  margin-bottom: 40px;
+}
+
+.meta {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--g500);
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  margin-bottom: 48px;
+  padding-bottom: 32px;
+  border-bottom: 1.5px solid var(--g300);
+}
+
+/* --- SECTIONS --- */
+section {
+  padding: 48px 0;
+  border-bottom: 1.5px solid var(--g300);
+}
+section:last-of-type { border-bottom: none; }
+
+.section-eyebrow {
+  font-family: var(--mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--clay);
+  margin-bottom: 12px;
+}
+
+h2 {
+  font-family: var(--serif);
+  font-size: clamp(24px, 3vw, 36px);
+  font-weight: 700;
+  line-height: 1.12;
+  letter-spacing: -0.015em;
+  margin-bottom: 24px;
+}
+
+h3 {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  margin-top: 32px;
+}
+
+p { max-width: 720px; margin-bottom: 16px; }
+p + p { margin-top: 0; }
+
+strong { color: var(--slate); font-weight: 600; }
+
+/* --- TLDR CARD --- */
+.tldr {
+  background: var(--paper);
+  border: 1.5px solid var(--g200);
+  border-left: 4px solid var(--clay);
+  border-radius: 8px;
+  padding: 24px 28px;
+  margin-bottom: 48px;
+}
+.tldr-title {
+  font-family: var(--mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--clay);
+  margin-bottom: 12px;
+}
+.tldr p { margin-bottom: 8px; color: var(--g700); }
+.tldr p:last-child { margin-bottom: 0; }
+
+/* --- TABLES --- */
+.table-wrap {
+  overflow-x: auto;
+  margin: 24px 0 32px;
+  border-radius: 8px;
+  border: 1px solid var(--g200);
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  background: var(--paper);
+}
+thead { background: var(--g100); }
+th {
+  font-family: var(--mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--g500);
+  padding: 12px 16px;
+  text-align: left;
+  font-weight: 600;
+  white-space: nowrap;
+  border-bottom: 1.5px solid var(--g300);
+}
+td {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--g200);
+  vertical-align: top;
+  line-height: 1.45;
+}
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: var(--g100); }
+
+/* Column highlight for Paperasse */
+td:last-child, th:last-child {
+  background: rgba(217, 119, 87, 0.04);
+}
+thead th:last-child {
+  background: rgba(217, 119, 87, 0.08);
+  color: var(--clay-d);
+}
+
+/* --- BADGES --- */
+.badge {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+.badge-ok { background: rgba(120,140,93,0.15); color: #4A6B2A; }
+.badge-partial { background: rgba(212,160,23,0.15); color: #8B6914; }
+.badge-no { background: rgba(192,57,43,0.12); color: #8B2E1F; }
+.badge-reuse { background: rgba(100,130,180,0.15); color: #3A5F8A; }
+
+/* --- SCORE BARS --- */
+.score-row {
+  display: grid;
+  grid-template-columns: 140px 1fr 60px;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--g200);
+}
+.score-row:last-child { border-bottom: none; }
+.score-label {
+  font-weight: 600;
+  font-size: 15px;
+}
+.score-bar-bg {
+  height: 24px;
+  background: var(--g200);
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+}
+.score-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.5s ease;
+}
+.score-num {
+  font-family: var(--mono);
+  font-size: 14px;
+  font-weight: 700;
+  text-align: right;
+}
+
+/* --- COMPETITOR CARDS --- */
+.competitor-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin: 32px 0;
+}
+@media (max-width: 880px) {
+  .competitor-grid { grid-template-columns: 1fr; }
+}
+
+.comp-card {
+  background: var(--paper);
+  border: 1.5px solid var(--g200);
+  border-radius: 10px;
+  padding: 28px;
+  position: relative;
+}
+.comp-card.highlight {
+  border-color: var(--clay);
+  box-shadow: 0 2px 12px rgba(217,119,87,0.08);
+}
+.comp-logo {
+  font-family: var(--serif);
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.comp-tagline {
+  font-size: 13px;
+  color: var(--g500);
+  margin-bottom: 16px;
+}
+.comp-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--g700);
+  background: var(--g100);
+  padding: 4px 10px;
+  border-radius: 4px;
+  margin-right: 8px;
+  margin-bottom: 8px;
+}
+.comp-list {
+  list-style: none;
+  margin-top: 16px;
+  padding: 0;
+}
+.comp-list li {
+  padding: 6px 0;
+  font-size: 14px;
+  color: var(--g700);
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.comp-list li::before {
+  content: "";
+  display: block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--g300);
+  flex-shrink: 0;
+  margin-top: 7px;
+}
+
+/* --- CALLOUT --- */
+.callout {
+  background: var(--g100);
+  border-radius: 8px;
+  padding: 20px 24px;
+  margin: 24px 0;
+  font-size: 15px;
+  color: var(--g700);
+  max-width: 720px;
+}
+.callout strong { color: var(--slate); }
+
+/* --- DIFF TABLE --- */
+.diff-table td:nth-child(2),
+.diff-table td:nth-child(3) {
+  background: transparent;
+}
+.diff-table .vs-label {
+  font-family: var(--mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--g500);
+}
+
+/* --- BOTTOM LINE --- */
+.bottom-line {
+  background: var(--slate);
+  color: var(--ivory);
+  border-radius: 10px;
+  padding: 32px 36px;
+  margin-top: 48px;
+}
+.bottom-line h2 {
+  color: var(--ivory);
+  margin-bottom: 20px;
+}
+.bottom-line p {
+  color: var(--g300);
+  max-width: none;
+}
+.bottom-line strong {
+  color: var(--ivory);
+}
+
+/* --- FOOTER --- */
+footer {
+  margin-top: 48px;
+  padding-top: 24px;
+  border-top: 1px solid var(--g300);
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--g500);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+}
+footer a { color: var(--clay); text-decoration: none; }
+footer a:hover { text-decoration: underline; }
+
+@media (max-width: 640px) {
+  .wrap { padding: 32px 20px 60px; }
+  .meta { flex-direction: column; gap: 8px; }
+  table { font-size: 13px; }
+  th, td { padding: 10px 12px; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- HEADER -->
+<div class="eyebrow">CPO Advisory · Benchmark</div>
+<h1>Benchmark <em>fonctionnel</em> comptable</h1>
+<p class="subtitle">Pennylane, Indy et Tiime face aux 10 etapes de la chaine comptable TPE francaise. Ou se situe Paperasse.</p>
+<div class="meta">
+  <span>21 mai 2026</span>
+  <span>Draft v1</span>
+  <span>Perimetre : comptabilite pure</span>
+</div>
+
+<!-- TLDR -->
+<div class="tldr">
+  <div class="tldr-title">En resume</div>
+  <p><strong>Pennylane</strong> couvre 10/10 etapes. C'est la reference du marche, pas le concurrent direct.</p>
+  <p><strong>Indy</strong> couvre 9/10 etapes. C'est le concurrent le plus proche par la cible (freelances + societes a l'IS). Point faible : opacite IA, positionnement ambigu sur l'EC.</p>
+  <p><strong>Tiime</strong> ne fait que de la pre-comptabilite (3/10). Son perimetre s'arrete avant les ecritures.</p>
+  <p><strong>Paperasse</strong> couvre 2-3/10 solidement, 5/10 partiellement. Differenciateurs : transparence des regles, architecture low-cost, positionnement EC-first. Les 3 livrables Phase 8.5 (TVA, liasse, partage EC) sont non negociables pour la beta.</p>
+</div>
+
+<!-- SECTION 1 : MATRICE -->
+<section>
+  <div class="section-eyebrow">Matrice de couverture</div>
+  <h2>Qui fait quoi sur les 10 etapes</h2>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Etape</th>
+          <th>Pennylane</th>
+          <th>Indy</th>
+          <th>Tiime</th>
+          <th>Paperasse MVP</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td><strong>Collecte bancaire</strong></td>
+          <td><span class="badge badge-ok">Couvert</span><br>Open Banking + EBICS + CSV</td>
+          <td><span class="badge badge-ok">Couvert</span><br>Open Banking DSP2 obligatoire</td>
+          <td><span class="badge badge-ok">Couvert</span><br>Synchro auto + CSV</td>
+          <td><span class="badge badge-partial">Partiel</span><br>CSV (5 parsers). API reutil., pas branchee</td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td><strong>Categorisation PCG</strong></td>
+          <td><span class="badge badge-ok">Couvert</span><br>IA + regles</td>
+          <td><span class="badge badge-ok">Couvert</span><br>IA "intelligente"</td>
+          <td><span class="badge badge-ok">Couvert</span><br>IA, revendique 95%+</td>
+          <td><span class="badge badge-ok">Couvert</span><br>Triple couche (regles + patterns + IA)</td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td><strong>Ecritures comptables</strong></td>
+          <td><span class="badge badge-ok">Couvert</span><br>Partie double, TVA integree</td>
+          <td><span class="badge badge-ok">Couvert</span><br>Auto, TVA auto-detectee</td>
+          <td><span class="badge badge-no">Absent</span><br>Pre-compta seulement</td>
+          <td><span class="badge badge-partial">Partiel</span><br>Partie double OK. TVA a ajouter</td>
+        </tr>
+        <tr>
+          <td>4</td>
+          <td><strong>Declarations TVA</strong></td>
+          <td><span class="badge badge-ok">Couvert</span><br>CA3/CA12, teletransmises</td>
+          <td><span class="badge badge-ok">Couvert</span><br>CA3/CA12, teletransmises</td>
+          <td><span class="badge badge-no">Absent</span></td>
+          <td><span class="badge badge-no">Absent</span></td>
+        </tr>
+        <tr>
+          <td>5</td>
+          <td><strong>Pieces justificatives</strong></td>
+          <td><span class="badge badge-ok">Couvert</span><br>OCR, scan, rattachement auto</td>
+          <td><span class="badge badge-ok">Couvert</span><br>Photo/scan, rattachement</td>
+          <td><span class="badge badge-ok">Couvert</span><br>Scan factures + NDF</td>
+          <td><span class="badge badge-no">Absent</span><br>Phase 10+ roadmap</td>
+        </tr>
+        <tr>
+          <td>6</td>
+          <td><strong>Rapprochement bancaire</strong></td>
+          <td><span class="badge badge-ok">Couvert</span><br>Automatique</td>
+          <td><span class="badge badge-ok">Couvert</span><br>Automatique</td>
+          <td><span class="badge badge-partial">Basique</span></td>
+          <td><span class="badge badge-partial">Partiel</span><br>Controle pre-cloture</td>
+        </tr>
+        <tr>
+          <td>7</td>
+          <td><strong>Cloture annuelle</strong></td>
+          <td><span class="badge badge-ok">Couvert</span><br>Complete (amort., PCA, IS, OD)</td>
+          <td><span class="badge badge-ok">Couvert</span><br>Auto-guidee, limites societes complexes</td>
+          <td><span class="badge badge-no">Absent</span></td>
+          <td><span class="badge badge-partial">Partiel</span><br>Workflow 12 etapes, calculateurs incomplets</td>
+        </tr>
+        <tr>
+          <td>8</td>
+          <td><strong>Documents officiels</strong></td>
+          <td><span class="badge badge-ok">Couvert</span><br>FEC, bilan, CR, liasse, PV AG</td>
+          <td><span class="badge badge-ok">Couvert</span><br>FEC, bilan, CR, liasse, PV AG</td>
+          <td><span class="badge badge-no">Absent</span></td>
+          <td><span class="badge badge-partial">Partiel</span><br>FEC + balance OK. Liasse a faire</td>
+        </tr>
+        <tr>
+          <td>9</td>
+          <td><strong>Revue expert-comptable</strong></td>
+          <td><span class="badge badge-ok">Couvert</span><br>Espace EC, workflow validation</td>
+          <td><span class="badge badge-partial">Option</span><br>EC dedie +49&euro;/mois</td>
+          <td><span class="badge badge-no">Absent</span><br>Export vers EC externe</td>
+          <td><span class="badge badge-no">Absent</span><br>Phase 8.5 livrable 3</td>
+        </tr>
+        <tr>
+          <td>10</td>
+          <td><strong>Teledeclaration</strong></td>
+          <td><span class="badge badge-ok">Couvert</span><br>EDI impots.gouv + Infogreffe</td>
+          <td><span class="badge badge-ok">Couvert</span><br>Teletransmission (agree PA)</td>
+          <td><span class="badge badge-no">Absent</span></td>
+          <td><span class="badge badge-no">Absent</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Score bars -->
+  <h3>Score de couverture</h3>
+  <div style="max-width:600px; margin-top:16px;">
+    <div class="score-row">
+      <div class="score-label">Pennylane</div>
+      <div class="score-bar-bg"><div class="score-bar-fill" style="width:100%; background:var(--olive);"></div></div>
+      <div class="score-num" style="color:var(--olive)">10/10</div>
+    </div>
+    <div class="score-row">
+      <div class="score-label">Indy</div>
+      <div class="score-bar-bg"><div class="score-bar-fill" style="width:90%; background:var(--olive);"></div></div>
+      <div class="score-num" style="color:var(--olive)">9/10</div>
+    </div>
+    <div class="score-row">
+      <div class="score-label">Tiime</div>
+      <div class="score-bar-bg"><div class="score-bar-fill" style="width:30%; background:var(--amber);"></div></div>
+      <div class="score-num" style="color:var(--amber)">3/10</div>
+    </div>
+    <div class="score-row">
+      <div class="score-label" style="color:var(--clay)">Paperasse</div>
+      <div class="score-bar-bg"><div class="score-bar-fill" style="width:25%; background:var(--clay);"></div></div>
+      <div class="score-num" style="color:var(--clay)">2.5/10</div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 2 : CONCURRENTS -->
+<section>
+  <div class="section-eyebrow">Profils concurrents</div>
+  <h2>Quatre acteurs, quatre philosophies</h2>
+
+  <div class="competitor-grid">
+    <div class="comp-card">
+      <div class="comp-logo">Pennylane</div>
+      <div class="comp-tagline">Plateforme financiere complete PME + Cabinets EC</div>
+      <span class="comp-stat">350k+ clients</span>
+      <span class="comp-stat">4 500 cabinets</span>
+      <span class="comp-stat">250M&euro;+ leves</span>
+      <span class="comp-stat">~99&euro;/mois PME</span>
+      <ul class="comp-list">
+        <li>Cycle complet : open banking a teledeclaration</li>
+        <li>OCR factures + rattachement automatique</li>
+        <li>TVA auto + liasse + EDI</li>
+        <li>Espace EC integre avec workflow</li>
+        <li>Tresorerie, analytique, multi-devises</li>
+        <li>Modele B2B2C (vend aux cabinets ET aux entreprises)</li>
+      </ul>
+    </div>
+
+    <div class="comp-card">
+      <div class="comp-logo">Indy</div>
+      <div class="comp-tagline">Comptabilite self-serve pour independants et petites societes</div>
+      <span class="comp-stat">300k+ utilisateurs</span>
+      <span class="comp-stat">0-49&euro;/mois</span>
+      <span class="comp-stat">Agree PA</span>
+      <span class="comp-stat">iOS + Android</span>
+      <ul class="comp-list">
+        <li>Open Banking obligatoire des l'inscription</li>
+        <li>Categorisation IA (boite noire)</li>
+        <li>Ecritures + TVA auto-detectee</li>
+        <li>Liasse 2033/2065 + teletransmission</li>
+        <li>EC optionnel (+49&euro;/mois)</li>
+        <li>Plafonds CA : 254K&euro; services, 840K&euro; vente</li>
+      </ul>
+    </div>
+
+    <div class="comp-card">
+      <div class="comp-logo">Tiime</div>
+      <div class="comp-tagline">Gestion + facturation mobile-first. Pas de compta complete.</div>
+      <span class="comp-stat">Free a 25&euro;/mois</span>
+      <span class="comp-stat">Factur-X</span>
+      <span class="comp-stat">Compte Pro inclus</span>
+      <ul class="comp-list">
+        <li>Facturation + devis + NDF</li>
+        <li>Synchro bancaire + categorisation IA</li>
+        <li>Pas d'ecritures, pas de bilan, pas de liasse</li>
+        <li>Pas de TVA declarative, pas de cloture</li>
+        <li>Export pre-compta vers EC externe</li>
+        <li>Perimetre s'arrete avant la compta</li>
+      </ul>
+    </div>
+
+    <div class="comp-card highlight">
+      <div class="comp-logo" style="color:var(--clay)">Paperasse</div>
+      <div class="comp-tagline">Triple couche : regles + IA ciblee + validation expert-comptable</div>
+      <span class="comp-stat">Beta en preparation</span>
+      <span class="comp-stat">CSV-first</span>
+      <span class="comp-stat">Rules-first</span>
+      <ul class="comp-list">
+        <li>Import CSV (5 parsers). Open Banking a venir</li>
+        <li>Categorisation triple couche transparente</li>
+        <li>Ecritures partie double (TVA Phase 8.5)</li>
+        <li>FEC + balance generes. Liasse a finir</li>
+        <li>Workflow cloture 12 etapes structure</li>
+        <li>Partage EC promis, pas encore implemente</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 3 : DIFFERENCIATEURS -->
+<section>
+  <div class="section-eyebrow">Analyse croisee</div>
+  <h2>Ce qui differencie Paperasse</h2>
+
+  <h3>Categorisation : boite noire vs triple couche</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Critere</th>
+          <th>Pennylane</th>
+          <th>Indy</th>
+          <th>Paperasse</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Approche</strong></td>
+          <td>IA + regles (details non publics)</td>
+          <td>IA (details non publics)</td>
+          <td>Regles deterministes ~85%, IA residuelle ~15%</td>
+        </tr>
+        <tr>
+          <td><strong>Transparence</strong></td>
+          <td><span class="badge badge-no">Faible</span> boite noire</td>
+          <td><span class="badge badge-no">Faible</span> boite noire</td>
+          <td><span class="badge badge-ok">Forte</span> regles auditables, IA tracee</td>
+        </tr>
+        <tr>
+          <td><strong>Apprentissage</strong></td>
+          <td>Corrections utilisateur</td>
+          <td>Corrections utilisateur</td>
+          <td>CorrectionRules + VendorMapping</td>
+        </tr>
+        <tr>
+          <td><strong>Cout par transaction</strong></td>
+          <td>Eleve (IA sur chaque tx)</td>
+          <td>Eleve (IA sur chaque tx)</td>
+          <td>Faible (~15% seulement via IA)</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout">
+    <strong>Differenciateur cle :</strong> quand Pennylane ou Indy categorisent une transaction, l'utilisateur ne sait pas pourquoi. Quand Paperasse le fait via une regle deterministe, le "pourquoi" est tracable. C'est un argument de confiance fort pour le segment expert-comptable.
+  </div>
+
+  <h3>Rapport a l'expert-comptable</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Critere</th>
+          <th>Pennylane</th>
+          <th>Indy</th>
+          <th>Paperasse</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Philosophie</strong></td>
+          <td>EC = copilote permanent</td>
+          <td>EC = option, pousse a l'autonomie</td>
+          <td>EC = validateur final obligatoire</td>
+        </tr>
+        <tr>
+          <td><strong>Espace EC</strong></td>
+          <td><span class="badge badge-ok">Integre</span> workflow complet</td>
+          <td><span class="badge badge-partial">Option</span> +49&euro;/mois</td>
+          <td><span class="badge badge-no">A faire</span> Phase 8.5</td>
+        </tr>
+        <tr>
+          <td><strong>Modele</strong></td>
+          <td>B2B2C (vend aux cabinets)</td>
+          <td>B2C pur</td>
+          <td>B2C avec EC dans la boucle</td>
+        </tr>
+        <tr>
+          <td><strong>Promesse</strong></td>
+          <td>"Gerez avec votre EC"</td>
+          <td>"Gerez sans EC" (implicite)</td>
+          <td>"Preparez, votre EC valide"</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Collecte bancaire</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Methode</th>
+          <th>Pennylane</th>
+          <th>Indy</th>
+          <th>Tiime</th>
+          <th>Paperasse</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Open Banking (DSP2)</strong></td>
+          <td><span class="badge badge-ok">Oui</span></td>
+          <td><span class="badge badge-ok">Obligatoire</span></td>
+          <td><span class="badge badge-ok">Oui</span></td>
+          <td><span class="badge badge-no">Pas encore</span></td>
+        </tr>
+        <tr>
+          <td><strong>EBICS</strong></td>
+          <td><span class="badge badge-ok">Oui</span></td>
+          <td><span class="badge badge-no">Non</span></td>
+          <td><span class="badge badge-no">Non</span></td>
+          <td><span class="badge badge-no">Non</span></td>
+        </tr>
+        <tr>
+          <td><strong>API directe (Qonto, Stripe)</strong></td>
+          <td><span class="badge badge-ok">Oui</span></td>
+          <td><span class="badge badge-ok">Oui</span></td>
+          <td><span class="badge badge-partial">Partiel</span></td>
+          <td><span class="badge badge-reuse">Reutilisable</span></td>
+        </tr>
+        <tr>
+          <td><strong>Import CSV/OFX</strong></td>
+          <td><span class="badge badge-partial">Fallback</span></td>
+          <td><span class="badge badge-no">Non</span></td>
+          <td><span class="badge badge-ok">Oui</span></td>
+          <td><span class="badge badge-ok">Canal principal</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout">
+    <strong>Constat :</strong> le CSV est un bon canal MVP (c'est ce que beaucoup de TPE font deja), mais l'Open Banking sera attendu tres vite post-beta. Le CSV n'est pas un bon produit a maturite.
+  </div>
+</section>
+
+<!-- SECTION 4 : TROUS -->
+<section>
+  <div class="section-eyebrow">Gap analysis</div>
+  <h2>Les 3 trous critiques de Paperasse</h2>
+
+  <p>Par ordre de priorite, aligne avec la Phase 8.5 de la roadmap :</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Trou</th>
+          <th>Impact</th>
+          <th>Concurrents</th>
+          <th>Statut Paperasse</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>1</strong></td>
+          <td><strong>TVA dans les ecritures</strong></td>
+          <td>Sans TVA, produit limite aux franchises de TVA. Le regime reel simplifie (cible SASU/EURL) est bloque.</td>
+          <td>Pennylane et Indy gerent TVA nativement</td>
+          <td><span class="badge badge-no">Phase 8.5 livrable 1</span></td>
+        </tr>
+        <tr>
+          <td><strong>2</strong></td>
+          <td><strong>Liasse fiscale structuree</strong></td>
+          <td>Indy et Pennylane generent la liasse automatiquement. Sans liasse, pas de cloture complete.</td>
+          <td>2033/2065 auto chez les deux</td>
+          <td><span class="badge badge-no">Phase 8.5 livrable 2</span></td>
+        </tr>
+        <tr>
+          <td><strong>3</strong></td>
+          <td><strong>Lien de partage expert-comptable</strong></td>
+          <td>C'est la promesse "triple couche". Sans partage EC, le positionnement ne tient pas.</td>
+          <td>Pennylane : espace EC. Indy : EC optionnel</td>
+          <td><span class="badge badge-no">Phase 8.5 livrable 3</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Ce que Paperasse ne fera PAS (et c'est OK)</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Fonctionnalite</th>
+          <th>Pennylane</th>
+          <th>Indy</th>
+          <th>Paperasse</th>
+          <th>Pourquoi c'est OK</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Facturation</td>
+          <td><span class="badge badge-ok">Oui</span></td>
+          <td><span class="badge badge-ok">Oui</span></td>
+          <td><span class="badge badge-no">Non</span></td>
+          <td>Les utilisateurs ont deja un outil de facturation</td>
+        </tr>
+        <tr>
+          <td>Compte Pro</td>
+          <td><span class="badge badge-no">Non</span></td>
+          <td><span class="badge badge-ok">Oui</span></td>
+          <td><span class="badge badge-no">Non</span></td>
+          <td>Pas le metier. CSV/API bancaire suffit</td>
+        </tr>
+        <tr>
+          <td>Notes de frais</td>
+          <td><span class="badge badge-ok">Oui</span></td>
+          <td><span class="badge badge-ok">Oui</span></td>
+          <td><span class="badge badge-no">Non</span></td>
+          <td>Nice-to-have post-PMF</td>
+        </tr>
+        <tr>
+          <td>OCR justificatifs</td>
+          <td><span class="badge badge-ok">Oui</span></td>
+          <td><span class="badge badge-ok">Oui</span></td>
+          <td><span class="badge badge-no">Non</span></td>
+          <td>Phase 10+. Le dossier peut exister sans</td>
+        </tr>
+        <tr>
+          <td>Teledeclaration</td>
+          <td><span class="badge badge-ok">Oui</span></td>
+          <td><span class="badge badge-ok">Oui</span></td>
+          <td><span class="badge badge-no">Non</span></td>
+          <td>Agrement PA lourd. L'EC fait le depot</td>
+        </tr>
+        <tr>
+          <td>Paie</td>
+          <td><span class="badge badge-no">Non</span></td>
+          <td><span class="badge badge-no">Non</span></td>
+          <td><span class="badge badge-no">Non</span></td>
+          <td>Hors scope pour tous</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- SECTION 5 : PRICING -->
+<section>
+  <div class="section-eyebrow">Pricing compare</div>
+  <h2>Ou se positionner</h2>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Acteur</th>
+          <th>Freelance / Micro</th>
+          <th>Societe (SASU/EURL)</th>
+          <th>Option EC</th>
+          <th>Modele</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Pennylane</strong></td>
+          <td>Variable (via cabinet)</td>
+          <td>~99&euro;/mois (Essentiel PME)</td>
+          <td>Inclus (cabinet partenaire)</td>
+          <td>Par utilisateur + volume</td>
+        </tr>
+        <tr>
+          <td><strong>Indy</strong></td>
+          <td>0-9&euro;/mois</td>
+          <td>49&euro; HT/mois</td>
+          <td>+49&euro; HT/mois optionnel</td>
+          <td>Forfait par statut</td>
+        </tr>
+        <tr>
+          <td><strong>Tiime</strong></td>
+          <td>0-25&euro;/mois</td>
+          <td>~25&euro;/mois (pas de compta)</td>
+          <td>Non propose</td>
+          <td>Forfait par plan</td>
+        </tr>
+        <tr>
+          <td style="color:var(--clay)"><strong>Paperasse</strong></td>
+          <td>A partir de [X]&euro;/mois</td>
+          <td>A partir de [X]&euro;/mois</td>
+          <td>Inclus (partage EC natif)</td>
+          <td>Cible : &lt; 49&euro;/mois societe</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout">
+    <strong>Positionnement prix :</strong> pour etre credible face a Indy a 49&euro;/mois (societes), Paperasse doit etre significativement en dessous. L'architecture rules-first (pas d'IA couteuse sur chaque transaction) rend ce positionnement economiquement viable.
+  </div>
+</section>
+
+<!-- BOTTOM LINE -->
+<div class="bottom-line">
+  <h2>Bottom line</h2>
+  <p><strong>Le vrai risque n'est pas de manquer des features</strong> (facturation, OCR, paie, teledeclaration). C'est de ne pas livrer les 3 fondamentaux comptables qui rendent le dossier utilisable par un expert-comptable au regime reel simplifie.</p>
+  <p style="margin-top:16px">La Phase 8.5 (TVA, liasse, partage EC) est le seul prerequis. Tout le reste est du scope post-PMF.</p>
+  <p style="margin-top:16px">Paperasse ne battra jamais Pennylane ni Indy sur le perimetre fonctionnel. Le differenciateur est ailleurs : <strong>transparence, auditabilite, cout, et un positionnement EC-first que personne n'occupe.</strong></p>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <span>Sources :</span>
+  <a href="https://www.pennylane.com/fr/logiciel-de-comptabilite">Pennylane</a>
+  <a href="https://www.indy.fr/declaration/">Indy</a>
+  <a href="https://comparatif-compta.fr/solution/tiime">Tiime</a>
+  <a href="https://www.apogea.fr/pennylane-vs-indy-qui-choisir-en-2026/">Comparatif 2026</a>
+  <a href="https://www.indy.fr/prix/">Indy Tarifs</a>
+  <a href="https://digitslane.com/pennylane-tarifs">Pennylane Tarifs</a>
+</footer>
+
+</div>
+</body>
+</html>

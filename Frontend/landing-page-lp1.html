@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Paperasse · Comptabilite automatique pour freelances et TPE</title>
+<meta name="description" content="Paperasse combine règles comptables, IA ciblée et validation par votre expert-comptable pour produire un dossier complet depuis vos relevés bancaires.">
+<style>
+/* ========================================
+   DESIGN SYSTEM — Paperasse LP1
+   Direction : fiable, concret, français
+   Pas le bleu SaaS générique.
+   ======================================== */
+
+:root {
+  /* Palette — Vert profond + neutres chauds */
+  --green-900: #0F3D2B;
+  --green-700: #1B6B4A;
+  --green-500: #2A8F64;
+  --green-100: #E8F5EE;
+  --green-50: #F4FAF7;
+
+  --sand-900: #1C1917;
+  --sand-700: #44403C;
+  --sand-500: #78716C;
+  --sand-300: #D6D3D1;
+  --sand-200: #E7E5E4;
+  --sand-100: #F5F5F4;
+  --sand-50: #FAFAF9;
+  --white: #FFFFFF;
+
+  /* Typo — System stack, rapide, lisible */
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "SF Mono", "Fira Code", "Fira Mono", "Roboto Mono", monospace;
+
+  /* Tailles — Échelle modulaire ~1.25 */
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 1.875rem;
+  --text-4xl: 2.25rem;
+  --text-5xl: 3rem;
+
+  /* Espacement */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --space-20: 5rem;
+  --space-24: 6rem;
+
+  /* Rayons */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+}
+
+/* ========================================
+   RESET & BASE
+   ======================================== */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: 1.6;
+  color: var(--sand-700);
+  background: var(--white);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+img { max-width: 100%; height: auto; display: block; }
+a { color: inherit; text-decoration: none; }
+
+/* ========================================
+   LAYOUT
+   ======================================== */
+
+.container {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0 var(--space-6);
+}
+
+.section {
+  padding: var(--space-12) 0;
+}
+
+@media (min-width: 768px) {
+  .section { padding: var(--space-16) 0; }
+}
+
+/* ========================================
+   TYPOGRAPHIE
+   ======================================== */
+
+h1, h2, h3 {
+  color: var(--sand-900);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+h1 {
+  font-size: var(--text-4xl);
+  font-weight: 700;
+}
+
+h2 {
+  font-size: var(--text-3xl);
+  font-weight: 700;
+}
+
+h3 {
+  font-size: var(--text-xl);
+  font-weight: 600;
+}
+
+@media (min-width: 768px) {
+  h1 { font-size: var(--text-5xl); }
+  h2 { font-size: var(--text-4xl); }
+}
+
+p {
+  max-width: 640px;
+}
+
+strong {
+  color: var(--sand-900);
+  font-weight: 600;
+}
+
+/* ========================================
+   COMPOSANTS
+   ======================================== */
+
+/* --- Bouton CTA --- */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4) var(--space-8);
+  background: var(--green-700);
+  color: var(--white);
+  font-size: var(--text-lg);
+  font-weight: 600;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.15s ease;
+  text-decoration: none;
+}
+
+.btn-primary:hover {
+  background: var(--green-900);
+  transform: translateY(-1px);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+/* --- Pill / Badge --- */
+.badge {
+  display: inline-block;
+  padding: var(--space-1) var(--space-3);
+  background: var(--green-100);
+  color: var(--green-700);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  border-radius: 100px;
+  letter-spacing: 0.02em;
+}
+
+/* --- Note sous CTA --- */
+.cta-note {
+  font-size: var(--text-sm);
+  color: var(--sand-500);
+  margin-top: var(--space-3);
+}
+
+/* ========================================
+   NAV — Minimal, transparent
+   ======================================== */
+
+.nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: rgba(255,255,255,0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--sand-200);
+}
+
+.nav-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 60px;
+}
+
+.nav-logo {
+  font-size: var(--text-xl);
+  font-weight: 700;
+  color: var(--sand-900);
+  letter-spacing: -0.03em;
+}
+
+.nav-logo span {
+  color: var(--green-700);
+}
+
+.nav-cta {
+  padding: var(--space-2) var(--space-6);
+  background: var(--green-700);
+  color: var(--white);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.nav-cta:hover {
+  background: var(--green-900);
+}
+
+/* ========================================
+   HERO
+   ======================================== */
+
+.hero {
+  padding-top: calc(60px + var(--space-12));
+  padding-bottom: var(--space-12);
+  background: var(--sand-50);
+}
+
+@media (min-width: 768px) {
+  .hero {
+    padding-top: calc(60px + var(--space-16));
+    padding-bottom: var(--space-16);
+  }
+}
+
+.hero-content {
+  max-width: 720px;
+}
+
+.hero h1 {
+  margin-bottom: var(--space-6);
+}
+
+.hero .subheadline {
+  font-size: var(--text-lg);
+  color: var(--sand-500);
+  margin-bottom: var(--space-8);
+  max-width: 600px;
+  line-height: 1.5;
+}
+
+.hero .subheadline strong {
+  color: var(--sand-700);
+}
+
+/* Mockup produit */
+.hero-mockup {
+  margin-top: var(--space-12);
+  background: var(--white);
+  border: 1px solid var(--sand-200);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.04);
+}
+
+.mockup-placeholder {
+  background: var(--sand-100);
+  border-radius: var(--radius-md);
+  padding: var(--space-12) var(--space-8);
+  text-align: center;
+  color: var(--sand-500);
+  font-size: var(--text-sm);
+  border: 2px dashed var(--sand-300);
+}
+
+.mockup-placeholder span {
+  display: block;
+  font-size: var(--text-2xl);
+  margin-bottom: var(--space-2);
+}
+
+/* ========================================
+   SECTION — PROBLÈME
+   ======================================== */
+
+.problem {
+  background: var(--white);
+}
+
+.problem-flow {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--sand-500);
+  background: var(--sand-100);
+  padding: var(--space-4) var(--space-6);
+  border-radius: var(--radius-md);
+  margin: var(--space-6) 0;
+  max-width: 520px;
+  line-height: 1.8;
+}
+
+.problem-segments {
+  display: grid;
+  gap: var(--space-6);
+  margin-top: var(--space-8);
+}
+
+@media (min-width: 768px) {
+  .problem-segments {
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-8);
+  }
+}
+
+.segment-card {
+  padding: var(--space-6);
+  background: var(--sand-50);
+  border-radius: var(--radius-md);
+  border-left: 3px solid var(--green-500);
+}
+
+.segment-card h3 {
+  margin-bottom: var(--space-3);
+  font-size: var(--text-lg);
+}
+
+.segment-card p {
+  font-size: var(--text-base);
+  color: var(--sand-700);
+}
+
+.problem-punchline {
+  margin-top: var(--space-8);
+  font-size: var(--text-xl);
+  color: var(--sand-900);
+  font-weight: 600;
+  max-width: 560px;
+}
+
+/* ========================================
+   SECTION — SOLUTION (TRIPLE COUCHE)
+   ======================================== */
+
+.solution {
+  background: var(--green-50);
+}
+
+.solution-header {
+  text-align: center;
+  margin-bottom: var(--space-8);
+}
+
+.solution-header p {
+  margin: var(--space-4) auto 0;
+  text-align: center;
+}
+
+.triple-grid {
+  display: grid;
+  gap: var(--space-6);
+}
+
+@media (min-width: 768px) {
+  .triple-grid {
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: var(--space-8);
+  }
+}
+
+.triple-card {
+  background: var(--white);
+  padding: var(--space-8);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  transition: box-shadow 0.2s ease;
+}
+
+.triple-card:hover {
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+}
+
+.triple-icon {
+  width: 48px;
+  height: 48px;
+  background: var(--green-100);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: var(--space-6);
+  font-size: 1.5rem;
+}
+
+.triple-card h3 {
+  margin-bottom: var(--space-3);
+}
+
+.triple-card p {
+  font-size: var(--text-base);
+  color: var(--sand-500);
+  line-height: 1.6;
+}
+
+.triple-card strong {
+  color: var(--sand-900);
+}
+
+/* ========================================
+   SECTION — COMMENT ÇA MARCHE
+   ======================================== */
+
+.how {
+  background: var(--white);
+}
+
+.how-header {
+  text-align: center;
+  margin-bottom: var(--space-8);
+}
+
+.steps-grid {
+  display: grid;
+  gap: var(--space-6);
+}
+
+@media (min-width: 768px) {
+  .steps-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--space-6);
+  }
+}
+
+.step {
+  position: relative;
+  padding: var(--space-6);
+}
+
+.step-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: var(--green-700);
+  color: var(--white);
+  font-weight: 700;
+  font-size: var(--text-sm);
+  border-radius: 50%;
+  margin-bottom: var(--space-4);
+}
+
+.step h3 {
+  margin-bottom: var(--space-2);
+  font-size: var(--text-lg);
+}
+
+.step p {
+  font-size: var(--text-sm);
+  color: var(--sand-500);
+  line-height: 1.6;
+}
+
+/* Connecteur entre étapes (desktop) */
+@media (min-width: 768px) {
+  .step:not(:last-child)::after {
+    content: "";
+    position: absolute;
+    top: 24px;
+    right: -12px;
+    width: 24px;
+    height: 2px;
+    background: var(--sand-300);
+    transform: translateY(18px);
+  }
+}
+
+/* ========================================
+   SECTION — POUR QUI / PAS POUR QUI
+   ======================================== */
+
+.audience {
+  background: var(--sand-50);
+}
+
+.audience-grid {
+  display: grid;
+  gap: var(--space-8);
+  margin-bottom: var(--space-8);
+}
+
+@media (min-width: 768px) {
+  .audience-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.audience-card {
+  padding: var(--space-8);
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+
+.audience-card .audience-label {
+  display: inline-block;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--green-700);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: var(--space-3);
+}
+
+.audience-card h3 {
+  margin-bottom: var(--space-4);
+}
+
+.audience-card p {
+  color: var(--sand-500);
+  line-height: 1.6;
+}
+
+.audience-card strong {
+  color: var(--sand-900);
+}
+
+/* Bloc exclusion */
+.not-for {
+  background: var(--white);
+  border: 1px solid var(--sand-200);
+  border-radius: var(--radius-md);
+  padding: var(--space-6) var(--space-8);
+  max-width: 640px;
+}
+
+.not-for h3 {
+  font-size: var(--text-base);
+  color: var(--sand-500);
+  font-weight: 600;
+  margin-bottom: var(--space-4);
+}
+
+.not-for ul {
+  list-style: none;
+  padding: 0;
+}
+
+.not-for li {
+  padding: var(--space-2) 0;
+  color: var(--sand-500);
+  font-size: var(--text-sm);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.not-for li::before {
+  content: "—";
+  color: var(--sand-300);
+  flex-shrink: 0;
+}
+
+/* ========================================
+   SECTION — PRICING
+   ======================================== */
+
+.pricing {
+  background: var(--white);
+  text-align: center;
+}
+
+.pricing-card {
+  max-width: 480px;
+  margin: var(--space-8) auto 0;
+  background: var(--sand-50);
+  border: 1px solid var(--sand-200);
+  border-radius: var(--radius-lg);
+  padding: var(--space-8);
+}
+
+.pricing-amount {
+  font-size: var(--text-4xl);
+  font-weight: 700;
+  color: var(--sand-900);
+  margin-bottom: var(--space-2);
+}
+
+.pricing-amount span {
+  font-size: var(--text-lg);
+  font-weight: 400;
+  color: var(--sand-500);
+}
+
+.pricing-note {
+  color: var(--sand-500);
+  font-size: var(--text-sm);
+  margin-top: var(--space-3);
+}
+
+.pricing-terms {
+  font-size: var(--text-sm);
+  color: var(--sand-500);
+  margin-top: var(--space-4);
+}
+
+/* ========================================
+   SECTION — FAQ
+   ======================================== */
+
+.faq {
+  background: var(--sand-50);
+}
+
+.faq-header {
+  text-align: center;
+  margin-bottom: var(--space-8);
+}
+
+.faq-list {
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+.faq-item {
+  border-bottom: 1px solid var(--sand-200);
+  padding: var(--space-6) 0;
+}
+
+.faq-item:first-child {
+  border-top: 1px solid var(--sand-200);
+}
+
+.faq-question {
+  font-weight: 600;
+  color: var(--sand-900);
+  font-size: var(--text-lg);
+  margin-bottom: var(--space-3);
+  cursor: default;
+}
+
+.faq-answer {
+  color: var(--sand-500);
+  line-height: 1.6;
+  max-width: 600px;
+}
+
+/* ========================================
+   SECTION — CTA FINAL
+   ======================================== */
+
+.final-cta {
+  background: var(--green-900);
+  color: var(--white);
+  text-align: center;
+}
+
+.final-cta h2 {
+  color: var(--white);
+  margin-bottom: var(--space-6);
+}
+
+.final-cta p {
+  color: rgba(255,255,255,0.7);
+  margin: 0 auto var(--space-8);
+}
+
+.final-cta .btn-primary {
+  background: var(--white);
+  color: var(--green-900);
+}
+
+.final-cta .btn-primary:hover {
+  background: var(--green-100);
+}
+
+.final-cta .cta-note {
+  color: rgba(255,255,255,0.5);
+}
+
+/* ========================================
+   FOOTER
+   ======================================== */
+
+.footer {
+  background: var(--sand-900);
+  color: var(--sand-500);
+  padding: var(--space-8) 0;
+  font-size: var(--text-sm);
+}
+
+.footer-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  text-align: center;
+}
+
+@media (min-width: 768px) {
+  .footer-inner {
+    flex-direction: row;
+    justify-content: space-between;
+  }
+}
+
+.footer-links {
+  display: flex;
+  gap: var(--space-6);
+}
+
+.footer-links a {
+  color: var(--sand-500);
+  transition: color 0.2s ease;
+}
+
+.footer-links a:hover {
+  color: var(--white);
+}
+
+/* ========================================
+   ANIMATIONS — Fade-in au scroll. C'est tout.
+   ======================================== */
+
+@media (prefers-reduced-motion: no-preference) {
+  .fade-in {
+    opacity: 0;
+    transform: translateY(16px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+
+  .fade-in.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fade-in {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ========================================
+   EMAIL INPUT — Inline avec CTA
+   ======================================== */
+
+.email-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  max-width: 440px;
+}
+
+@media (min-width: 480px) {
+  .email-form {
+    flex-direction: row;
+  }
+}
+
+.email-input {
+  flex: 1;
+  padding: var(--space-4) var(--space-4);
+  border: 1px solid var(--sand-300);
+  border-radius: var(--radius-md);
+  font-size: var(--text-base);
+  font-family: var(--font-sans);
+  color: var(--sand-900);
+  background: var(--white);
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.email-input:focus {
+  border-color: var(--green-500);
+}
+
+.email-input::placeholder {
+  color: var(--sand-500);
+}
+
+.email-form .btn-primary {
+  white-space: nowrap;
+  padding: var(--space-4) var(--space-6);
+}
+
+/* Email form dans le CTA final (fond sombre) */
+.final-cta .email-input {
+  border-color: rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.1);
+  color: var(--white);
+}
+
+.final-cta .email-input::placeholder {
+  color: rgba(255,255,255,0.4);
+}
+
+.final-cta .email-input:focus {
+  border-color: rgba(255,255,255,0.5);
+}
+</style>
+</head>
+<body>
+
+<!-- ===== NAV ===== -->
+<nav class="nav">
+  <div class="container nav-inner">
+    <div class="nav-logo"><span>P</span>aperasse</div>
+    <a href="#waitlist" class="nav-cta">Liste d'attente</a>
+  </div>
+</nav>
+
+<!-- ===== HERO ===== -->
+<section class="hero">
+  <div class="container">
+    <div class="hero-content fade-in">
+      <div class="badge">Beta bientot ouverte</div>
+      <h1 style="margin-top: var(--space-6)">Votre compta est faite.<br>Votre expert-comptable a valide.<br>Vous n'avez rien eu a faire.</h1>
+      <p class="subheadline">Paperasse combine <strong>regles comptables fiables</strong>, <strong>IA ciblee</strong> et <strong>validation par votre expert-comptable</strong> pour produire un dossier complet depuis vos releves bancaires.</p>
+      <form class="email-form" id="waitlist" onsubmit="event.preventDefault();">
+        <input type="email" class="email-input" placeholder="votre@email.com" required>
+        <button type="submit" class="btn-primary">Rejoindre la liste</button>
+      </form>
+      <p class="cta-note">Gratuit. Sans engagement. Acces prioritaire pour les premiers inscrits.</p>
+    </div>
+    <!-- Mockup produit -->
+    <div class="hero-mockup fade-in">
+      <img src="dashboard-paperasse.png" alt="Dashboard Paperasse : tableau de bord avec KPIs, transactions categorisees et suivi de cloture" style="width:100%; border-radius: var(--radius-md);"
+        onerror="this.outerHTML='<div class=mockup-placeholder style=padding:var(--space-8);text-align:center;color:var(--sand-500);font-size:var(--text-sm);border:2px dashed var(--sand-300);border-radius:var(--radius-md);background:var(--sand-100)>Deposer dashboard-paperasse.png dans le dossier Frontend</div>'">
+    </div>
+  </div>
+</section>
+
+<!-- ===== PROBLÈME ===== -->
+<section class="section problem">
+  <div class="container">
+    <h2 class="fade-in">Vous avez cree votre boite pour faire votre metier. Pas votre compta.</h2>
+
+    <div class="problem-flow fade-in">
+      Exporter le releve &rarr; Trier &rarr; Classer &rarr; Envoyer a l'expert-comptable &rarr; Attendre &rarr; Corriger &rarr; Renvoyer &rarr; &#8634;
+    </div>
+
+    <div class="problem-segments fade-in">
+      <div class="segment-card">
+        <h3>Freelance</h3>
+        <p>Vous faites tout vous-meme, ou vous payez un expert-comptable trop cher pour le volume que vous avez.</p>
+      </div>
+      <div class="segment-card">
+        <h3>Dirigeant TPE</h3>
+        <p>Votre expert-comptable passe la moitie de son temps en ressaisie. Vous payez du travail mecanique, pas du conseil.</p>
+      </div>
+    </div>
+
+    <p class="problem-punchline fade-in">80 % de ce travail est de la procedure pure. Ca devrait tourner tout seul.</p>
+  </div>
+</section>
+
+<!-- ===== SOLUTION — TRIPLE COUCHE ===== -->
+<section class="section solution">
+  <div class="container">
+    <div class="solution-header fade-in">
+      <h2>Trois niveaux de controle.<br>Un dossier solide.</h2>
+      <p>La compta, c'est de la procedure, du jugement et de la responsabilite. Paperasse met chaque couche la ou elle est la plus efficace.</p>
+    </div>
+
+    <div class="triple-grid">
+
+      <div class="triple-card fade-in">
+        <div class="triple-icon">&#9881;</div>
+        <h3>Regles comptables</h3>
+        <p>Votre abonnement Notion &rarr; meme compte a chaque fois. Votre loyer &rarr; meme compte. <strong>La compta, c'est d'abord du suivi de procedure.</strong> Le code le fait mieux et plus vite.</p>
+      </div>
+
+      <div class="triple-card fade-in">
+        <div class="triple-icon">&#10038;</div>
+        <h3>IA ciblee</h3>
+        <p>Un virement au libelle flou. Une depense atypique. <strong>L'IA analyse ce que les regles ne couvrent pas.</strong> Chaque suggestion passe par votre validation.</p>
+      </div>
+
+      <div class="triple-card fade-in">
+        <div class="triple-icon">&#10003;</div>
+        <h3>Validation expert-comptable</h3>
+        <p>Avant d'envoyer quoi que ce soit a l'administration, votre expert-comptable accede au dossier, verifie, valide. <strong>Verifie trois fois</strong> : code, IA, humain.</p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ===== COMMENT ÇA MARCHE ===== -->
+<section class="section how">
+  <div class="container">
+    <div class="how-header fade-in">
+      <h2>4 etapes. De vos releves a un dossier valide.</h2>
+    </div>
+
+    <div class="steps-grid">
+      <div class="step fade-in">
+        <div class="step-number">1</div>
+        <h3>Importez</h3>
+        <p>Deposez le CSV de votre banque. Qonto, BNP, SG, Boursorama ou autre. Paperasse detecte le format.</p>
+      </div>
+      <div class="step fade-in">
+        <div class="step-number">2</div>
+        <h3>Verifiez</h3>
+        <p>La majorite est categorisee automatiquement. Vous ne voyez que les cas douteux. Un clic pour valider.</p>
+      </div>
+      <div class="step fade-in">
+        <div class="step-number">3</div>
+        <h3>Generez</h3>
+        <p>Ecritures, FEC, balance, bilan, compte de resultat. Conformes. Telechargeables.</p>
+      </div>
+      <div class="step fade-in">
+        <div class="step-number">4</div>
+        <h3>Faites valider</h3>
+        <p>Votre expert-comptable recoit un lien securise. Il verifie, il valide, c'est trace. Pas de mail, pas d'allers-retours.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== POUR QUI ===== -->
+<section class="section audience">
+  <div class="container">
+    <h2 class="fade-in" style="margin-bottom: var(--space-8)">Freelance ou dirigeant de TPE.</h2>
+
+    <div class="audience-grid fade-in">
+      <div class="audience-card">
+        <div class="audience-label">Freelance</div>
+        <h3>Etre en regle sans devenir comptable</h3>
+        <p>Paperasse prepare tout. Si vous avez un expert-comptable, il passe <strong>30 minutes au lieu de 3 heures</strong>. Si vous n'en avez pas, vous avez un dossier propre pour en trouver un, a moindre cout.</p>
+      </div>
+      <div class="audience-card">
+        <div class="audience-label">Dirigeant TPE/PME</div>
+        <h3>Moins de ressaisie, plus de conseil</h3>
+        <p>Votre expert-comptable recoit un dossier structure qu'il valide directement. <strong>Moins d'heures mecaniques facturees. Plus de conseil a valeur ajoutee.</strong></p>
+      </div>
+    </div>
+
+    <div class="not-for fade-in">
+      <h3>Paperasse n'est pas fait pour</h3>
+      <ul>
+        <li>Les grandes entreprises avec une comptabilite multi-entites complexe</li>
+        <li>Les entreprises qui veulent se passer completement d'expert-comptable</li>
+        <li>Les cabinets comptables (une offre dediee arrive bientot)</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ===== PRICING ===== -->
+<section class="section pricing">
+  <div class="container">
+    <h2 class="fade-in">Un prix juste, rendu possible par l'architecture.</h2>
+    <p class="fade-in" style="margin: var(--space-4) auto 0; text-align: center;">La majorite du traitement passe par des regles, pas par des appels IA couteux. Nos couts sont bas, et on vous en fait profiter.</p>
+
+    <div class="pricing-card fade-in">
+      <div class="pricing-amount">A partir de [X]&euro; <span>/mois</span></div>
+      <p class="pricing-note">Pricing exact annonce au lancement beta</p>
+      <p class="pricing-terms">Pas d'engagement annuel. Pas de frais caches.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===== FAQ ===== -->
+<section class="section faq">
+  <div class="container">
+    <div class="faq-header fade-in">
+      <h2>Questions frequentes</h2>
+    </div>
+
+    <div class="faq-list">
+
+      <div class="faq-item fade-in">
+        <div class="faq-question">Paperasse remplace mon expert-comptable ?</div>
+        <p class="faq-answer">Non. Paperasse prepare. Votre expert-comptable valide. Celui qui prepare n'est pas celui qui signe. C'est un principe comptable, et Paperasse le respecte.</p>
+      </div>
+
+      <div class="faq-item fade-in">
+        <div class="faq-question">C'est fiable ?</div>
+        <p class="faq-answer">La majorite du traitement passe par des regles, le meme type de logique que votre expert-comptable applique manuellement, mais automatise. L'IA ne touche que les cas ambigus, et chaque suggestion passe par votre validation.</p>
+      </div>
+
+      <div class="faq-item fade-in">
+        <div class="faq-question">Difference avec Indy, Pennylane, Georges ?</div>
+        <p class="faq-answer">Trois couches : regles pour le volume, IA pour les cas limites, expert-comptable pour la validation. Un dossier verifiable de bout en bout. Et un cout inferieur grace a l'architecture.</p>
+      </div>
+
+      <div class="faq-item fade-in">
+        <div class="faq-question">Quelles banques ?</div>
+        <p class="faq-answer">Au lancement : Qonto, BNP Paribas, Societe Generale, Boursorama. Plus un import CSV generique pour les autres.</p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ===== CTA FINAL ===== -->
+<section class="section final-cta">
+  <div class="container">
+    <h2 class="fade-in">Recuperez votre temps.<br>Paperasse s'occupe du reste.</h2>
+    <p class="fade-in">Inscrivez-vous. Acces prioritaire pour les premiers inscrits.</p>
+    <form class="email-form fade-in" style="margin: 0 auto; max-width: 440px;" onsubmit="event.preventDefault();">
+      <input type="email" class="email-input" placeholder="votre@email.com" required>
+      <button type="submit" class="btn-primary">Rejoindre la liste</button>
+    </form>
+    <p class="cta-note fade-in">Gratuit. Sans engagement.</p>
+  </div>
+</section>
+
+<!-- ===== FOOTER ===== -->
+<footer class="footer">
+  <div class="container footer-inner">
+    <div>Paperasse · Comptabilite automatique pour freelances et TPE francaises</div>
+    <div class="footer-links">
+      <a href="#">Mentions legales</a>
+      <a href="#">Contact</a>
+    </div>
+  </div>
+</footer>
+
+<!-- ===== JS — Fade-in au scroll, rien d'autre ===== -->
+<script>
+(function() {
+  const targets = document.querySelectorAll('.fade-in');
+  if (!targets.length) return;
+
+  if ('IntersectionObserver' in window) {
+    const observer = new IntersectionObserver(function(entries) {
+      entries.forEach(function(entry) {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
+
+    targets.forEach(function(el) { observer.observe(el); });
+  } else {
+    // Fallback : tout visible
+    targets.forEach(function(el) { el.classList.add('visible'); });
+  }
+})();
+</script>
+
+</body>
+</html>

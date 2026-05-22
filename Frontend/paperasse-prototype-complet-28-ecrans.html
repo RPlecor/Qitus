@@ -1,0 +1,1263 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Paperasse — Prototype MVP complet (28 écrans)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:#F5F4F1;--surface:#FFFFFF;--fg:#1A1A1A;--muted:#6B6B6B;--light:#9A9A9A;
+      --border:#E5E2DC;--border-lt:#EDEBE7;--accent:#1B6B4A;--accent-lt:#E6F2EC;--accent-hv:#15553B;
+      --green:#1B6B4A;--green-bg:#E6F2EC;--red:#C4342D;--red-bg:#FCEEED;
+      --orange:#B45309;--orange-bg:#FEF3E2;--blue:#2563EB;--blue-bg:#EFF4FF;
+      --sidebar-w:220px;--topbar-h:52px;--proto-h:38px;
+      --font:'DM Sans',-apple-system,BlinkMacSystemFont,sans-serif;
+      --mono:'DM Mono',ui-monospace,monospace;
+      --r:8px;--r-lg:12px;--shadow:0 1px 3px rgba(0,0,0,.04),0 1px 2px rgba(0,0,0,.06);
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html{font-family:var(--font);font-size:14px;line-height:1.5;color:var(--fg);background:var(--bg);-webkit-font-smoothing:antialiased}
+    body{min-height:100vh;background:var(--bg);padding-top:var(--proto-h)}
+    a{color:inherit;text-decoration:none}button,input,select,textarea{font:inherit}button{cursor:pointer}
+
+    /* ── PROTO BAR ── */
+    .proto{position:fixed;top:0;left:0;right:0;z-index:999;display:flex;align-items:center;gap:4px;height:var(--proto-h);padding:0 12px;background:var(--fg);overflow-x:auto}
+    .proto button{border:0;border-radius:5px;padding:4px 11px;font-size:11px;font-weight:600;background:0;color:rgba(255,255,255,.45);white-space:nowrap;transition:.12s}
+    .proto button.active{background:rgba(255,255,255,.14);color:#fff}
+    .proto button:hover:not(.active){color:rgba(255,255,255,.75)}
+    .proto .sep{width:1px;height:18px;background:rgba(255,255,255,.12);margin:0 4px;flex-shrink:0}
+
+    /* ── LAYOUT ── */
+    .shell{display:none;min-height:calc(100vh - var(--proto-h))}
+    .shell.active{display:flex}
+    .shell.center{align-items:center;justify-content:center}
+
+    /* ── SIDEBAR ── */
+    .sidebar{position:fixed;top:var(--proto-h);left:0;bottom:0;width:var(--sidebar-w);background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;z-index:10;overflow-y:auto}
+    .s-id{padding:16px 14px;border-bottom:1px solid var(--border-lt)}
+    .s-id strong{display:block;font-size:13px;font-weight:700;letter-spacing:-.01em}
+    .s-id span{display:block;margin-top:2px;font-size:11px;color:var(--muted)}
+    .s-nav{padding:10px 6px;flex:1}
+    .s-item{display:flex;align-items:center;gap:9px;min-height:34px;padding:0 10px;border-radius:6px;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;margin-bottom:1px;transition:.1s}
+    .s-item:hover{background:var(--bg);color:var(--fg)}
+    .s-item.active{background:var(--accent-lt);color:var(--accent);font-weight:600}
+    .s-item.disabled{opacity:.35;pointer-events:none}
+    .s-item .ic{width:16px;text-align:center;font-size:14px;flex-shrink:0}
+    .s-sep{height:1px;background:var(--border-lt);margin:8px 6px}
+    .s-bot{padding:8px 6px 14px;border-top:1px solid var(--border-lt)}
+    .s-bot .s-item{font-size:12px;min-height:30px}
+
+    /* ── MAIN ── */
+    .main{flex:1;margin-left:var(--sidebar-w);display:flex;flex-direction:column}
+    .main.full{margin-left:0}
+    .topbar{position:sticky;top:var(--proto-h);z-index:5;display:flex;align-items:center;justify-content:space-between;height:var(--topbar-h);padding:0 28px;background:rgba(245,244,241,.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--border)}
+    .tb-left{font-size:13px;color:var(--muted)}.tb-left b{color:var(--fg);font-weight:600}
+    .content{padding:22px 28px 48px;flex:1}
+
+    /* ── BUTTONS ── */
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:36px;padding:7px 16px;border:1px solid var(--border);border-radius:var(--r);background:var(--surface);color:var(--fg);font-size:13px;font-weight:600;white-space:nowrap;transition:.12s}
+    .btn:hover{background:var(--bg)}.btn-p{border-color:var(--accent);background:var(--accent);color:#fff}.btn-p:hover{background:var(--accent-hv)}
+    .btn-lg{min-height:44px;padding:10px 24px;font-size:14px;border-radius:10px}
+    .btn-ghost{border:0;background:0;color:var(--muted);font-weight:500}.btn-ghost:hover{color:var(--fg);background:0}
+    .btn-sm{min-height:30px;padding:4px 12px;font-size:12px}
+    .btn-danger{border-color:var(--red);color:var(--red)}.btn-danger:hover{background:var(--red-bg)}
+
+    /* ── FORM ── */
+    .field{margin-bottom:16px}
+    .field label{display:block;margin-bottom:4px;font-size:13px;font-weight:600}
+    .field .help{display:block;margin-top:3px;font-size:11px;color:var(--light)}
+    .field input,.field select,.field textarea{display:block;width:100%;height:38px;border:1px solid var(--border);border-radius:var(--r);padding:0 12px;font-size:13px;color:var(--fg);background:var(--surface);outline:0;transition:border .15s}
+    .field textarea{height:80px;padding:10px 12px;resize:vertical}
+    .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent)}
+    .field input::placeholder{color:var(--light)}
+    .form-info{margin:18px 0;padding:11px 14px;background:var(--blue-bg);border-radius:var(--r);font-size:12px;color:var(--blue);line-height:1.5}
+    .form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .form-actions{display:flex;gap:10px;margin-top:22px}
+    .micro{margin-top:14px;text-align:center;font-size:12px;color:var(--light)}
+
+    /* ── CARDS ── */
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;box-shadow:var(--shadow)}
+
+    /* ── ONBOARDING ── */
+    .ob-screen{display:flex;align-items:center;justify-content:center;min-height:calc(100vh - var(--proto-h));padding:48px 24px}
+    .ob-card{width:100%;max-width:500px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:36px 32px;box-shadow:var(--shadow)}
+    .ob-card h1{font-size:22px;font-weight:700;letter-spacing:-.02em;margin-bottom:6px}
+    .ob-card .sub{color:var(--muted);font-size:13px;line-height:1.55;margin-bottom:24px}
+    .steps-ind{display:flex;gap:6px;margin-bottom:28px}
+    .s-dot{flex:1;height:3px;border-radius:2px;background:var(--border)}
+    .s-dot.done{background:var(--accent)}.s-dot.cur{background:var(--accent);opacity:.5}
+    .ob-success{text-align:center;padding:48px 32px}
+    .ob-success .check{display:inline-flex;align-items:center;justify-content:center;width:56px;height:56px;border-radius:50%;background:var(--green-bg);color:var(--green);font-size:28px;margin-bottom:20px}
+    .ob-success h1{margin-bottom:10px}
+
+    /* ── ALERTS ── */
+    .alert{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;border-radius:var(--r);font-size:13px;margin-bottom:10px}
+    .alert.red{background:var(--red-bg);color:var(--red)}.alert.orange{background:var(--orange-bg);color:var(--orange)}.alert.blue{background:var(--blue-bg);color:var(--blue)}
+    .alert a{font-weight:600;text-decoration:underline;text-underline-offset:2px}
+    .alert .x{border:0;background:0;color:inherit;opacity:.5;cursor:pointer;font-size:15px;padding:0 2px}.alert .x:hover{opacity:1}
+
+    /* ── KPIs ── */
+    .kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:18px 0 24px}
+    .kpi{padding:16px 14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r)}
+    .kpi-label{font-size:12px;color:var(--muted);font-weight:500}
+    .kpi-val{display:block;margin-top:6px;font-family:var(--mono);font-size:24px;font-weight:500;letter-spacing:-.02em;line-height:1.1}
+    .kpi-trend{margin-top:4px;font-size:11px;font-weight:600}
+    .kpi-trend.up{color:var(--green)}.kpi-trend.dn{color:var(--red)}
+    .kpi-per{font-size:10px;color:var(--light);margin-top:1px}
+    [data-tip]{position:relative;cursor:help;border-bottom:1px dotted var(--light)}
+    [data-tip]:hover::after{content:attr(data-tip);position:absolute;left:0;top:calc(100% + 6px);z-index:100;width:240px;padding:7px 10px;background:var(--fg);color:#fff;border-radius:6px;font-size:11px;font-weight:400;line-height:1.45;pointer-events:none}
+
+    /* ── TABLES ── */
+    .tbl{width:100%;border-collapse:collapse;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;font-size:13px}
+    .tbl th{text-align:left;padding:9px 12px;font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;border-bottom:1px solid var(--border);background:var(--bg)}
+    .tbl td{padding:10px 12px;border-bottom:1px solid var(--border-lt);vertical-align:middle}
+    .tbl tr:last-child td{border-bottom:0}
+    .tbl .mono{font-family:var(--mono);font-size:12px}
+    .tbl .r{text-align:right}
+    .cpt{display:inline-block;padding:1px 6px;border-radius:4px;font-family:var(--mono);font-size:11px;background:var(--accent-lt);color:var(--accent)}
+    .st-ok{color:var(--green);font-size:12px;font-weight:600}
+    .st-warn{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:4px;background:var(--orange-bg);color:var(--orange);font-size:11px;font-weight:600}
+    .st-done{display:inline-flex;padding:2px 7px;border-radius:4px;background:var(--green-bg);color:var(--green);font-size:11px;font-weight:600}
+    .tbl-link{display:block;margin-top:8px;text-align:right;font-size:13px;font-weight:600;color:var(--accent)}
+
+    /* ── SECTION HEADERS ── */
+    .sec-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:16px}
+    .sec-head h2{font-size:18px;font-weight:700;letter-spacing:-.015em}
+    .sec-head p{font-size:13px;color:var(--muted)}
+
+    /* ── FILTERS ── */
+    .filters{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+    .pill{min-height:30px;padding:4px 12px;border:1px solid var(--border);border-radius:999px;background:var(--surface);font-size:12px;font-weight:500;color:var(--muted);cursor:pointer;transition:.1s}
+    .pill.active{background:var(--accent-lt);color:var(--accent);border-color:var(--accent);font-weight:600}
+    .pill:hover:not(.active){background:var(--bg);color:var(--fg)}
+    .search-box{height:30px;border:1px solid var(--border);border-radius:var(--r);padding:0 10px;font-size:12px;width:200px;outline:0}
+    .search-box:focus{border-color:var(--accent)}
+
+    /* ── IMPORT ZONE ── */
+    .import-center{max-width:600px;margin:56px auto 0;text-align:center}
+    .import-center h2{font-size:20px;font-weight:700;letter-spacing:-.015em;margin-bottom:6px}
+    .import-center>p{color:var(--muted);font-size:13px;margin-bottom:24px}
+    .drop{border:2px dashed var(--border);border-radius:var(--r-lg);padding:44px 24px;background:var(--surface);cursor:pointer;transition:.2s}
+    .drop:hover{border-color:var(--accent);background:var(--accent-lt)}
+    .drop .ic{font-size:28px;margin-bottom:10px;opacity:.35}
+    .drop strong{display:block;font-size:14px;font-weight:600}
+    .drop span{display:block;margin-top:3px;font-size:12px;color:var(--light)}
+    .ns-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:32px;text-align:left}
+    .ns-card{padding:14px;border:1px solid var(--border);border-radius:var(--r);background:var(--surface)}
+    .ns-num{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;font-family:var(--mono);font-size:10px;font-weight:500;margin-bottom:8px}
+    .ns-num.here{background:var(--accent);color:#fff}.ns-num.wait{background:var(--border);color:var(--muted)}
+    .ns-card h3{font-size:12px;font-weight:700;margin-bottom:3px}.ns-card p{font-size:11px;color:var(--muted);line-height:1.4}
+    .ns-badge{display:inline-block;margin-top:6px;padding:1px 7px;background:var(--accent-lt);color:var(--accent);border-radius:4px;font-size:10px;font-weight:600}
+    .import-note{margin-top:24px;font-size:11px;color:var(--light)}
+
+    /* ── QUICK GRID ── */
+    .q-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:28px}
+    .q-card{padding:18px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);display:flex;flex-direction:column}
+    .q-card h3{font-size:14px;font-weight:700;margin-bottom:5px}
+    .q-card p{font-size:12px;color:var(--muted);line-height:1.5;flex:1;margin-bottom:14px}
+    .q-card .btn{align-self:flex-start}
+    .prog{height:5px;border-radius:3px;background:var(--border-lt);margin:8px 0;overflow:hidden}
+    .prog .fill{height:100%;border-radius:3px;background:var(--accent)}
+
+    /* ── CLÔTURE WORKFLOW ── */
+    .cloture-head{display:flex;align-items:start;justify-content:space-between;gap:24px;margin-bottom:24px}
+    .cloture-head h2{font-size:20px;font-weight:700;letter-spacing:-.015em}
+    .cloture-head .sub{color:var(--muted);font-size:13px;margin-top:4px}
+    .cloture-prog{text-align:right}
+    .cloture-prog strong{display:block;font-size:22px;font-family:var(--mono);letter-spacing:-.02em}
+    .cloture-prog span{font-size:12px;color:var(--muted)}
+    .prog-full{height:8px;border-radius:4px;background:var(--border-lt);margin:20px 0;overflow:hidden}
+    .prog-full .fill{height:100%;border-radius:4px;background:var(--accent);transition:width .3s}
+    .step-list{display:grid;gap:8px}
+    .step-row{display:grid;grid-template-columns:36px 1fr auto;gap:14px;align-items:center;padding:14px 16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r)}
+    .step-row.done{opacity:.7}
+    .step-row.current{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+    .step-idx{display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;font-family:var(--mono);font-size:12px;font-weight:500}
+    .step-row.done .step-idx{background:var(--green-bg);color:var(--green)}
+    .step-row.current .step-idx{background:var(--accent);color:#fff}
+    .step-row.pending .step-idx{background:var(--bg);color:var(--light)}
+    .step-row h3{font-size:14px;font-weight:600;margin-bottom:2px}
+    .step-row p{font-size:12px;color:var(--muted)}
+    .step-actions .btn{font-size:12px;min-height:30px;padding:4px 12px}
+
+    /* ── DOCUMENTS PAGE ── */
+    .doc-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:16px}
+    .doc-card{padding:18px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);display:flex;flex-direction:column}
+    .doc-card h3{font-size:14px;font-weight:700;margin-bottom:4px}
+    .doc-card p{font-size:12px;color:var(--muted);line-height:1.5;flex:1;margin-bottom:14px}
+    .doc-card .meta{font-size:11px;color:var(--light);margin-bottom:12px}
+    .doc-actions{display:flex;gap:8px}
+
+    /* ── PROFILE ── */
+    .profile-card{max-width:560px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:28px 24px}
+    .profile-card h2{font-size:18px;font-weight:700;margin-bottom:4px}
+    .profile-card .sub{color:var(--muted);font-size:13px;margin-bottom:24px}
+    .profile-section{padding:20px 0;border-top:1px solid var(--border-lt)}
+    .profile-section h3{font-size:14px;font-weight:700;margin-bottom:14px}
+    .danger-zone{margin-top:32px;padding:20px;border:1px solid var(--red);border-radius:var(--r);background:var(--red-bg)}
+    .danger-zone h3{color:var(--red);font-size:14px;font-weight:700;margin-bottom:6px}
+    .danger-zone p{font-size:12px;color:var(--red);margin-bottom:12px;opacity:.8}
+
+    /* ── CHAT ── */
+    .chat-fab{position:fixed;bottom:20px;right:20px;z-index:50;width:46px;height:46px;border-radius:50%;background:var(--accent);color:#fff;border:0;box-shadow:0 4px 14px rgba(27,107,74,.3);display:grid;place-items:center;font-size:18px;transition:.15s}
+    .chat-fab:hover{transform:scale(1.06)}
+    .chat-panel{position:fixed;top:var(--proto-h);right:0;bottom:0;z-index:60;width:360px;background:var(--surface);border-left:1px solid var(--border);box-shadow:-4px 0 16px rgba(0,0,0,.05);display:flex;flex-direction:column;transform:translateX(100%);transition:transform .22s ease}
+    .chat-panel.open{transform:translateX(0)}
+    .chat-hd{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border);font-size:14px;font-weight:700}
+    .chat-hd button{border:0;background:0;color:var(--muted);font-size:18px;cursor:pointer;padding:2px}
+    .chat-body{flex:1;padding:20px 18px;overflow-y:auto}
+    .chat-welcome{padding:18px;background:var(--bg);border-radius:var(--r);font-size:13px;color:var(--muted);line-height:1.6}
+    .chat-welcome strong{display:block;color:var(--fg);margin-bottom:6px}
+    .chat-ex{margin-top:12px;padding:0;list-style:none}
+    .chat-ex li{padding:7px 0;border-top:1px solid var(--border-lt);font-size:12px;color:var(--fg);cursor:pointer}
+    .chat-ex li:hover{color:var(--accent)}
+    .chat-legal{padding:6px 18px 10px;font-size:10px;color:var(--light);line-height:1.4}
+    .chat-ft{padding:10px 14px;border-top:1px solid var(--border);display:flex;gap:6px}
+    .chat-in{flex:1;height:36px;border:1px solid var(--border);border-radius:var(--r);padding:0 10px;font-size:13px;outline:0}
+    .chat-in:focus{border-color:var(--accent)}.chat-in::placeholder{color:var(--light)}
+    .chat-send{width:36px;height:36px;border-radius:var(--r);border:0;background:var(--accent);color:#fff;font-size:15px;display:grid;place-items:center}
+
+    /* ── PROCESSING SCREEN ── */
+    .proc-center{max-width:560px;margin:72px auto 0;text-align:center}
+    .proc-center h2{font-size:20px;font-weight:700;letter-spacing:-.015em;margin-bottom:6px}
+    .proc-center>p{color:var(--muted);font-size:13px;margin-bottom:32px}
+    .proc-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:32px 28px;text-align:left}
+    .proc-card h3{font-size:15px;font-weight:700;margin-bottom:16px}
+    .proc-bar{height:8px;border-radius:4px;background:var(--border-lt);overflow:hidden;margin-bottom:20px}
+    .proc-bar .fill{height:100%;border-radius:4px;background:var(--accent);animation:procAnim 3s ease-in-out infinite alternate}
+    @keyframes procAnim{0%{width:45%}100%{width:88%}}
+    .proc-lines{display:grid;gap:0}
+    .proc-line{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border-lt);font-size:13px}
+    .proc-line:last-child{border-bottom:0}
+    .proc-line .label{color:var(--muted)}
+    .proc-line .val{font-family:var(--mono);font-weight:500}
+    .proc-line .val.done{color:var(--green)}
+    .proc-line .val.running{color:var(--accent)}
+    .proc-line .val.wait{color:var(--light)}
+    .proc-spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .proc-result{margin-top:24px;padding:20px;background:var(--green-bg);border-radius:var(--r);text-align:center}
+    .proc-result h3{color:var(--green);font-size:15px;font-weight:700;margin-bottom:6px}
+    .proc-result p{color:var(--green);font-size:13px;opacity:.8;margin-bottom:16px}
+    .proc-stats{display:flex;justify-content:center;gap:32px;margin-bottom:16px}
+    .proc-stat{text-align:center}
+    .proc-stat strong{display:block;font-size:28px;font-family:var(--mono);font-weight:500;color:var(--green);letter-spacing:-.02em}
+    .proc-stat span{display:block;font-size:11px;color:var(--green);opacity:.7;margin-top:2px}
+
+    /* ── CORRECTION MODAL ── */
+    .corr-page .content{max-width:800px}
+    .corr-back{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--accent);margin-bottom:20px;cursor:pointer}
+    .corr-back:hover{text-decoration:underline}
+    .corr-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden}
+    .corr-header{padding:20px 24px;border-bottom:1px solid var(--border);background:var(--orange-bg)}
+    .corr-header h2{font-size:17px;font-weight:700;color:var(--orange);margin-bottom:4px}
+    .corr-header p{font-size:13px;color:var(--orange);opacity:.8}
+    .corr-body{padding:24px}
+    .corr-meta{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px}
+    .corr-meta-item{padding:14px;background:var(--bg);border-radius:var(--r)}
+    .corr-meta-item .label{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}
+    .corr-meta-item .val{font-size:15px;font-weight:600}
+    .corr-sep{height:1px;background:var(--border-lt);margin:24px 0}
+    .corr-section h3{font-size:14px;font-weight:700;margin-bottom:12px}
+    .corr-section p{font-size:13px;color:var(--muted);margin-bottom:14px;line-height:1.55}
+    .corr-suggest{display:grid;gap:8px;margin-bottom:20px}
+    .corr-opt{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--border);border-radius:var(--r);cursor:pointer;transition:.12s}
+    .corr-opt:hover{border-color:var(--accent);background:var(--accent-lt)}
+    .corr-opt.selected{border-color:var(--accent);background:var(--accent-lt)}
+    .corr-radio{width:18px;height:18px;border-radius:50%;border:2px solid var(--border);flex-shrink:0;display:grid;place-items:center;transition:.12s}
+    .corr-opt.selected .corr-radio{border-color:var(--accent)}
+    .corr-opt.selected .corr-radio::after{content:'';width:8px;height:8px;border-radius:50%;background:var(--accent)}
+    .corr-opt-info{flex:1}
+    .corr-opt-info strong{display:block;font-size:13px;font-weight:600}
+    .corr-opt-info span{display:block;font-size:12px;color:var(--muted);margin-top:2px}
+    .corr-confidence{font-family:var(--mono);font-size:11px;color:var(--light);flex-shrink:0}
+    .corr-manual{margin-top:12px}
+    .corr-manual summary{font-size:13px;font-weight:600;color:var(--accent);cursor:pointer;list-style:none}
+    .corr-manual summary::-webkit-details-marker{display:none}
+    .corr-manual .inner{margin-top:12px}
+    .corr-footer{padding:16px 24px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+    .corr-nav{display:flex;gap:8px}
+
+    /* ── NEW: AUTH ── */
+    .ob-card .logo{font-size:18px;font-weight:700;letter-spacing:-.03em;margin-bottom:28px;display:flex;align-items:center;gap:8px}
+    .ob-card .logo span{color:var(--accent)}
+    .ob-card .divider{display:flex;align-items:center;gap:12px;margin:20px 0;font-size:11px;color:var(--light)}
+    .ob-card .divider::before,.ob-card .divider::after{content:'';flex:1;height:1px;background:var(--border)}
+    .micro a{color:var(--accent);font-weight:600}
+    .btn-outline-accent{border-color:var(--accent);color:var(--accent)}.btn-outline-accent:hover{background:var(--accent-lt)}
+    .field input[type=password]{letter-spacing:.15em}
+    .alert.green{background:var(--green-bg);color:var(--green)}
+
+    /* ── NEW: BADGE COUNT ── */
+    .s-item .badge-count{margin-left:auto;background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;min-width:18px;text-align:center}
+
+    /* ── NEW: PRICING ── */
+    .pricing-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;max-width:820px;margin:0 auto}
+    .pricing-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:28px 22px;display:flex;flex-direction:column}
+    .pricing-card.pop{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent),0 4px 16px rgba(27,107,74,.1)}
+    .pricing-card .tier{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:8px}
+    .pricing-card.pop .tier{color:var(--accent)}
+    .pricing-card .price{font-family:var(--mono);font-size:32px;font-weight:500;letter-spacing:-.03em;line-height:1.1}
+    .pricing-card .price span{font-size:14px;font-weight:400;color:var(--muted)}
+    .pricing-card .desc{font-size:12px;color:var(--muted);margin:12px 0 20px;line-height:1.5;flex:1}
+    .pricing-card ul{list-style:none;margin:0 0 20px;padding:0}
+    .pricing-card li{font-size:12px;padding:5px 0;border-bottom:1px solid var(--border-lt);display:flex;align-items:center;gap:8px}
+    .pricing-card li::before{content:'✓';color:var(--green);font-weight:700;font-size:11px}
+    .pricing-card .btn{width:100%}
+    .pop-badge{display:inline-block;padding:2px 8px;background:var(--accent);color:#fff;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:.04em;margin-bottom:12px}
+
+    /* ── NEW: STATUS BADGES ── */
+    .st-err{display:inline-flex;padding:2px 7px;border-radius:4px;background:var(--red-bg);color:var(--red);font-size:11px;font-weight:600}
+    .st-info{display:inline-flex;padding:2px 7px;border-radius:4px;background:var(--blue-bg);color:var(--blue);font-size:11px;font-weight:600}
+
+    /* ── NEW: MAPPING CSV ── */
+    .map-grid{display:grid;grid-template-columns:1fr 40px 1fr;gap:12px;align-items:center}
+    .map-col{padding:10px 14px;background:var(--bg);border-radius:var(--r);font-size:12px}
+    .map-col .lbl{font-family:var(--mono);font-size:11px;color:var(--muted);margin-bottom:4px}
+    .map-col .val{font-weight:600}
+    .map-arrow{text-align:center;color:var(--light);font-size:16px}
+    .map-preview{margin-top:20px;padding:16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r)}
+    .map-preview h4{font-size:13px;font-weight:700;margin-bottom:10px}
+
+    /* ── NEW: CONNECTORS ── */
+    .conn-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:16px}
+    .conn-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:24px;display:flex;flex-direction:column}
+    .conn-card.connected{border-color:var(--accent)}
+    .conn-card h3{font-size:15px;font-weight:700;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+    .conn-card h3 .dot{width:8px;height:8px;border-radius:50%;background:var(--green)}
+    .conn-card .desc{font-size:12px;color:var(--muted);line-height:1.5;margin-bottom:16px;flex:1}
+    .conn-field{padding:10px 12px;background:var(--bg);border-radius:var(--r);margin-bottom:10px}
+    .conn-field .lbl{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px}
+    .conn-field .val{font-family:var(--mono);font-size:12px}
+
+    /* ── NEW: IMMOBILISATIONS ── */
+    .immo-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-top:16px}
+    .immo-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px}
+    .immo-card h3{font-size:14px;font-weight:700;margin-bottom:8px}
+    .immo-row{display:flex;justify-content:space-between;padding:5px 0;font-size:12px;border-bottom:1px solid var(--border-lt)}
+    .immo-row:last-child{border-bottom:none}
+    .immo-row .lbl{color:var(--muted)}.immo-row .val{font-weight:600;font-family:var(--mono)}
+    .immo-bar{height:6px;border-radius:3px;background:var(--border-lt);margin:10px 0 4px;overflow:hidden}
+    .immo-bar .fill{height:100%;border-radius:3px;background:var(--accent)}
+
+    /* ── NEW: RAPPROCHEMENT ── */
+    .rapp-grid{display:grid;grid-template-columns:1fr 60px 1fr;gap:16px;align-items:center;margin:20px 0}
+    .rapp-box{padding:24px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);text-align:center}
+    .rapp-box .lbl{font-size:12px;color:var(--muted);margin-bottom:6px}
+    .rapp-box .amt{font-family:var(--mono);font-size:26px;font-weight:500;letter-spacing:-.02em}
+    .rapp-eq{text-align:center;font-size:24px;color:var(--light)}
+
+    /* ── NEW: NOTIFICATIONS ── */
+    .notif-list{display:grid;gap:6px}
+    .notif-item{display:grid;grid-template-columns:8px 1fr auto;gap:12px;align-items:center;padding:14px 16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);cursor:pointer;transition:.1s}
+    .notif-item:hover{background:var(--bg)}
+    .notif-item.unread{border-left:3px solid var(--accent)}
+    .notif-dot{width:8px;height:8px;border-radius:50%}
+    .notif-dot.red{background:var(--red)}.notif-dot.orange{background:var(--orange)}.notif-dot.blue{background:var(--blue)}.notif-dot.green{background:var(--green)}
+    .notif-body h4{font-size:13px;font-weight:600;margin-bottom:2px}
+    .notif-body p{font-size:12px;color:var(--muted);line-height:1.4}
+    .notif-time{font-family:var(--mono);font-size:11px;color:var(--light);white-space:nowrap}
+
+    /* ── NEW: AUDIT LOG ── */
+    .log-item{display:grid;grid-template-columns:auto 1fr auto;gap:12px;padding:10px 0;border-bottom:1px solid var(--border-lt);font-size:12px;align-items:center}
+    .log-item:last-child{border-bottom:0}
+    .log-icon{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-size:12px}
+    .log-icon.imp{background:var(--blue-bg);color:var(--blue)}
+    .log-icon.cat{background:var(--accent-lt);color:var(--accent)}
+    .log-icon.clo{background:var(--orange-bg);color:var(--orange)}
+    .log-icon.doc{background:var(--green-bg);color:var(--green)}
+    .log-icon.usr{background:var(--bg);color:var(--muted)}
+    .log-text b{color:var(--fg);font-weight:600}
+    .log-text{color:var(--muted)}
+    .log-time{font-family:var(--mono);font-size:11px;color:var(--light)}
+
+    /* ── NEW: ERROR STATES ── */
+    .error-center{max-width:520px;margin:72px auto 0;text-align:center}
+    .error-center .error-icon{display:inline-flex;align-items:center;justify-content:center;width:56px;height:56px;border-radius:50%;font-size:24px;margin-bottom:18px}
+    .error-center h2{font-size:20px;font-weight:700;letter-spacing:-.015em;margin-bottom:8px}
+    .error-center>p{color:var(--muted);font-size:13px;margin-bottom:24px;line-height:1.55}
+    .error-detail{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;text-align:left;margin-bottom:20px}
+    .error-detail pre{background:var(--bg);padding:10px;border-radius:6px;font-family:var(--mono);font-size:11px;color:var(--red);overflow-x:auto;margin-top:8px}
+
+    /* ── NEW: EXERCICE SWITCHER ── */
+    .ex-switch{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;background:var(--surface)}
+    .ex-switch:hover{border-color:var(--accent)}
+    .ex-switch .arrow{font-size:10px;color:var(--muted)}
+    .ex-dropdown{position:absolute;top:calc(100% + 4px);right:0;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow);min-width:240px;z-index:20;overflow:hidden}
+    .ex-opt{padding:10px 14px;font-size:13px;cursor:pointer;display:flex;justify-content:space-between;border-bottom:1px solid var(--border-lt)}
+    .ex-opt:last-child{border-bottom:0}
+    .ex-opt:hover{background:var(--bg)}
+    .ex-opt.active{background:var(--accent-lt);color:var(--accent);font-weight:600}
+    .ex-opt .status{font-size:10px;font-weight:600;padding:1px 6px;border-radius:3px}
+
+    /* ── NEW: PROTO LABEL ── */
+    .proto .lbl{font-size:9px;color:rgba(255,255,255,.25);text-transform:uppercase;letter-spacing:.08em;padding:0 6px;white-space:nowrap}
+
+    /* ── RESPONSIVE ── */
+    @media(max-width:960px){.sidebar{display:none}.main{margin-left:0!important}.kpi-grid{grid-template-columns:1fr 1fr}.q-grid,.doc-grid{grid-template-columns:1fr}.ns-grid{grid-template-columns:1fr}.chat-panel{width:100%}.pricing-grid{grid-template-columns:1fr}.conn-grid,.immo-grid{grid-template-columns:1fr}.rapp-grid{grid-template-columns:1fr;gap:8px}.rapp-eq{display:none}}
+    @media(max-width:640px){.content{padding:16px 16px 40px}.topbar{padding:0 16px}.form-row,.map-grid{grid-template-columns:1fr}.kpi-grid{grid-template-columns:1fr}.map-arrow{display:none}}
+  </style>
+</head>
+<body>
+
+<!-- ══ PROTO NAVIGATION ══ -->
+<div class="proto">
+  <span class="lbl">Auth</span>
+  <button data-go="login">Login</button>
+  <button data-go="signup">Inscription</button>
+  <button data-go="forgot">MDP oublié</button>
+  <button data-go="pricing">Pricing</button>
+  <div class="sep"></div>
+  <span class="lbl">Onboard</span>
+  <button class="active" data-go="onboard-1">Identité</button>
+  <button data-go="onboard-2">Fiscal</button>
+  <button data-go="onboard-3">Exercice</button>
+  <button data-go="onboard-ok">✓ OK</button>
+  <div class="sep"></div>
+  <span class="lbl">Import</span>
+  <button data-go="empty">Vide</button>
+  <button data-go="processing">Traitement</button>
+  <button data-go="csv-mapping">Mapping CSV</button>
+  <button data-go="imports-history">Historique</button>
+  <button data-go="error-parse">Err parsing</button>
+  <button data-go="error-ia">Err IA</button>
+  <div class="sep"></div>
+  <span class="lbl">App</span>
+  <button data-go="dashboard">Dashboard</button>
+  <button data-go="transactions">Transactions</button>
+  <button data-go="correction">Correction</button>
+  <button data-go="ecritures">Écritures</button>
+  <button data-go="documents">Documents</button>
+  <button data-go="connectors">Connecteurs</button>
+  <button data-go="immobilisations">Immobilisations</button>
+  <div class="sep"></div>
+  <span class="lbl">Clôture</span>
+  <button data-go="cloture">Clôture</button>
+  <button data-go="cloture-rapprochement">Rapprochement</button>
+  <button data-go="cloture-amortissements">Amortissements</button>
+  <div class="sep"></div>
+  <span class="lbl">Système</span>
+  <button data-go="notifications">Notifs</button>
+  <button data-go="audit">Audit</button>
+  <button data-go="multi-exercice">Multi-ex</button>
+  <button data-go="profil">Profil</button>
+</div>
+
+<!-- ══════════════════════════════════════ -->
+<!-- ONBOARDING STEP 1 — IDENTITÉ         -->
+<!-- ══════════════════════════════════════ -->
+<div class="shell center active" data-screen="onboard-1">
+  <div class="ob-screen"><div class="ob-card">
+    <div class="steps-ind"><div class="s-dot cur"></div><div class="s-dot"></div><div class="s-dot"></div></div>
+    <h1>Configurons votre entreprise.</h1>
+    <p class="sub">Ces informations permettent à l'IA de catégoriser vos transactions correctement — régime TVA, forme juridique, dates d'exercice. Comptez 2 minutes.</p>
+    <div class="field"><label>Raison sociale</label><input placeholder="DUVAL CONSULTING"><span class="help">Nom officiel tel qu'il figure au KBIS.</span></div>
+    <div class="field"><label>Numéro SIREN</label><input placeholder="123 456 789"><span class="help">9 chiffres, sans espace. Visible sur votre KBIS ou societe.com.</span></div>
+    <div class="field"><label>Forme juridique</label><select><option value="" disabled selected>— Sélectionner —</option><option>Auto-entrepreneur</option><option>EI</option><option>EURL</option><option>SASU</option><option>SARL</option><option>SAS</option><option>SA</option><option>SCI</option><option>Autre</option></select></div>
+    <div class="field"><label>Adresse du siège</label><input placeholder="12 rue des Lilas, 75011 Paris"></div>
+    <div class="form-actions"><button class="btn btn-p btn-lg" style="flex:1" data-go="onboard-2">Suivant →</button></div>
+    <p class="micro">Vous pourrez modifier ces informations à tout moment dans votre profil.</p>
+  </div></div>
+</div>
+
+<!-- ONBOARDING STEP 2 — RÉGIME FISCAL -->
+<div class="shell center" data-screen="onboard-2">
+  <div class="ob-screen"><div class="ob-card">
+    <div class="steps-ind"><div class="s-dot done"></div><div class="s-dot cur"></div><div class="s-dot"></div></div>
+    <h1>Régime fiscal.</h1>
+    <p class="sub">Ces paramètres déterminent comment l'IA calcule votre TVA et votre imposition.</p>
+    <div class="field"><label>Régime de TVA</label><select><option value="" disabled selected>— Sélectionner —</option><option>Franchise en base (pas de TVA)</option><option>Régime réel simplifié</option><option>Régime réel normal</option></select></div>
+    <div class="field"><label>Imposition</label><select><option value="" disabled selected>— Sélectionner —</option><option>Impôt sur les sociétés (IS)</option><option>Impôt sur le revenu (IR)</option></select></div>
+    <div class="form-info">Pas sûr ? Ces informations figurent sur votre dernier avis d'imposition ou votre courrier de la DGFiP. Vous pourrez les modifier plus tard.</div>
+    <div class="form-actions"><button class="btn btn-ghost" data-go="onboard-1">← Retour</button><button class="btn btn-p btn-lg" style="flex:1" data-go="onboard-3">Suivant →</button></div>
+  </div></div>
+</div>
+
+<!-- ONBOARDING STEP 3 — EXERCICE -->
+<div class="shell center" data-screen="onboard-3">
+  <div class="ob-screen"><div class="ob-card">
+    <div class="steps-ind"><div class="s-dot done"></div><div class="s-dot done"></div><div class="s-dot cur"></div></div>
+    <h1>Exercice comptable.</h1>
+    <p class="sub">Les dates de votre exercice en cours. La plupart des entreprises utilisent l'année civile.</p>
+    <div class="form-row">
+      <div class="field"><label>Début de l'exercice</label><input type="text" placeholder="01/01/2025"><span class="help">Premier jour de votre exercice comptable en cours.</span></div>
+      <div class="field"><label>Fin de l'exercice</label><input type="text" placeholder="31/12/2025"><span class="help">Dernier jour de votre exercice comptable en cours.</span></div>
+    </div>
+    <div class="form-info">La plupart des entreprises ont un exercice du 1er janvier au 31 décembre. Si votre exercice est décalé, indiquez les dates exactes.</div>
+    <div class="form-actions"><button class="btn btn-ghost" data-go="onboard-2">← Retour</button><button class="btn btn-p btn-lg" style="flex:1" data-go="onboard-ok">Terminer et accéder à Paperasse</button></div>
+  </div></div>
+</div>
+
+<!-- ONBOARDING SUCCESS -->
+<div class="shell center" data-screen="onboard-ok">
+  <div class="ob-screen"><div class="ob-card ob-success">
+    <div class="check">✓</div>
+    <h1>Votre entreprise est configurée.</h1>
+    <p class="sub">Vous pouvez maintenant importer vos premières transactions.</p>
+    <button class="btn btn-p btn-lg" data-go="empty">Importer un relevé bancaire</button>
+  </div></div>
+</div>
+
+<!-- ══════════════════════════════════════ -->
+<!-- EMPTY STATE — FIRST IMPORT           -->
+<!-- ══════════════════════════════════════ -->
+<div class="shell" data-screen="empty">
+  <aside class="sidebar">
+    <div class="s-id"><strong>DUVAL CONSULTING</strong><span>SASU · Exercice 01/01 – 31/12/2025</span></div>
+    <nav class="s-nav">
+      <div class="s-item active" data-go="empty"><span class="ic">◻</span> Tableau de bord</div>
+      <div class="s-item disabled"><span class="ic">↔</span> Transactions</div>
+      <div class="s-item disabled"><span class="ic">✎</span> Écritures</div>
+      <div class="s-item disabled"><span class="ic">▤</span> Documents</div>
+      <div class="s-item disabled"><span class="ic">✓</span> Clôture annuelle</div>
+    </nav>
+    <div class="s-sep"></div>
+    <div class="s-bot">
+      <div class="s-item" data-go="profil"><span class="ic">⚙</span> Modifier les informations</div>
+      <div class="s-item"><span class="ic">?</span> Documentation</div>
+      <div class="s-item"><span class="ic">→</span> Déconnexion</div>
+    </div>
+  </aside>
+  <div class="main">
+    <div class="topbar"><div class="tb-left"><b>Bonjour Romain</b> — DUVAL CONSULTING · Exercice 01/01 – 31/12/2025</div></div>
+    <div class="content">
+      <div class="import-center">
+        <h2>Importez votre premier relevé.</h2>
+        <p>Glissez un fichier CSV ici, ou cliquez pour le sélectionner. L'IA catégorise vos transactions en quelques minutes.</p>
+        <div class="drop"><div class="ic">↓</div><strong>Glissez votre fichier ici</strong><span>ou cliquez pour parcourir</span><p style="margin-top:12px;font-size:11px;color:var(--light)">Formats acceptés : CSV (relevé bancaire, export Qonto, export Stripe)</p></div>
+        <div class="ns-grid">
+          <div class="ns-card"><div class="ns-num here">1</div><h3>Import</h3><p>Vos transactions sont chargées dans Paperasse.</p><span class="ns-badge">← Vous êtes ici</span></div>
+          <div class="ns-card"><div class="ns-num wait">2</div><h3>Catégorisation</h3><p>L'IA associe chaque transaction à un compte du Plan Comptable Général.</p></div>
+          <div class="ns-card"><div class="ns-num wait">3</div><h3>Résultat</h3><p>Tableau de bord, écritures et documents sont prêts.</p></div>
+        </div>
+        <p class="import-note">Vos données sont chiffrées et hébergées en France. Vous pouvez les supprimer à tout moment.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════ -->
+<!-- IMPORT PROCESSING                    -->
+<!-- ══════════════════════════════════════ -->
+<div class="shell" data-screen="processing">
+  <aside class="sidebar">
+    <div class="s-id"><strong>DUVAL CONSULTING</strong><span>SASU · Exercice 01/01 – 31/12/2025</span></div>
+    <nav class="s-nav">
+      <div class="s-item active"><span class="ic">◻</span> Tableau de bord</div>
+      <div class="s-item disabled"><span class="ic">↔</span> Transactions</div>
+      <div class="s-item disabled"><span class="ic">✎</span> Écritures</div>
+      <div class="s-item disabled"><span class="ic">▤</span> Documents</div>
+      <div class="s-item disabled"><span class="ic">✓</span> Clôture annuelle</div>
+    </nav><div class="s-sep"></div>
+    <div class="s-bot"><div class="s-item" data-go="profil"><span class="ic">⚙</span> Modifier les informations</div><div class="s-item"><span class="ic">?</span> Documentation</div><div class="s-item"><span class="ic">→</span> Déconnexion</div></div>
+  </aside>
+  <div class="main">
+    <div class="topbar"><div class="tb-left"><b>Bonjour Romain</b> — DUVAL CONSULTING · Exercice 01/01 – 31/12/2025</div></div>
+    <div class="content">
+      <div class="proc-center">
+        <h2>Import et catégorisation en cours…</h2>
+        <p>Votre fichier est en cours de traitement. Cette opération prend en général moins de 2 minutes.</p>
+
+        <!-- PHASE 1 : processing -->
+        <div class="proc-card" id="procPhase1">
+          <h3>relevé-bancaire-mai-2025.csv</h3>
+          <div class="proc-bar"><div class="fill"></div></div>
+          <div class="proc-lines">
+            <div class="proc-line"><span class="label">Lecture du fichier</span><span class="val done">✓ Terminé</span></div>
+            <div class="proc-line"><span class="label">Transactions détectées</span><span class="val done">47 lignes</span></div>
+            <div class="proc-line"><span class="label">Catégorisation IA</span><span class="val running"><span class="proc-spinner"></span>En cours…</span></div>
+            <div class="proc-line"><span class="label">Génération des écritures</span><span class="val wait">En attente</span></div>
+          </div>
+        </div>
+
+        <!-- PHASE 2 : résultat (montré en dessous pour le proto) -->
+        <div class="proc-result" style="margin-top:20px">
+          <h3>Import terminé</h3>
+          <p>Votre relevé a été traité avec succès.</p>
+          <div class="proc-stats">
+            <div class="proc-stat"><strong>47</strong><span>transactions importées</span></div>
+            <div class="proc-stat"><strong>44</strong><span>catégorisées</span></div>
+            <div class="proc-stat"><strong>3</strong><span>à vérifier</span></div>
+          </div>
+          <div style="display:flex;gap:10px;justify-content:center">
+            <button class="btn btn-p" data-go="dashboard">Voir le tableau de bord</button>
+            <button class="btn" data-go="transactions">Voir les transactions</button>
+          </div>
+        </div>
+
+        <p class="import-note" style="margin-top:24px">L'IA catégorise vos transactions sur le Plan Comptable Général. Les transactions marquées « à vérifier » nécessitent votre validation.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════ -->
+<!-- DASHBOARD (STATE C)                  -->
+<!-- ══════════════════════════════════════ -->
+<div class="shell" data-screen="dashboard">
+  <aside class="sidebar">
+    <div class="s-id"><strong>DUVAL CONSULTING</strong><span>SASU · Exercice 01/01 – 31/12/2025</span></div>
+    <nav class="s-nav">
+      <div class="s-item active" data-go="dashboard"><span class="ic">◻</span> Tableau de bord</div>
+      <div class="s-item" data-go="transactions"><span class="ic">↔</span> Transactions</div>
+      <div class="s-item" data-go="ecritures"><span class="ic">✎</span> Écritures</div>
+      <div class="s-item" data-go="documents"><span class="ic">▤</span> Documents</div>
+      <div class="s-item" data-go="cloture"><span class="ic">✓</span> Clôture annuelle</div>
+    </nav><div class="s-sep"></div>
+    <div class="s-bot"><div class="s-item" data-go="profil"><span class="ic">⚙</span> Modifier les informations</div><div class="s-item"><span class="ic">?</span> Documentation</div><div class="s-item"><span class="ic">→</span> Déconnexion</div></div>
+  </aside>
+  <div class="main">
+    <div class="topbar"><div class="tb-left"><b>Bonjour Romain</b> — DUVAL CONSULTING · Exercice 01/01 – 31/12/2025</div><button class="btn btn-p" data-go="empty">Importer des transactions</button></div>
+    <div class="content">
+      <div class="alert red">Échéance TVA (CA3) dans 18 jours. Vérifiez vos montants avant le 15 juin 2025. <span><a href="#">Voir les écritures TVA →</a> <button class="x">×</button></span></div>
+      <div class="alert orange">3 transactions n'ont pas pu être catégorisées automatiquement. <span><a data-go="transactions" href="#">Vérifier maintenant →</a> <button class="x">×</button></span></div>
+      <div class="kpi-grid">
+        <div class="kpi"><div class="kpi-label"><span data-tip="Total des ventes et prestations enregistrées sur l'exercice (comptes 70).">Chiffre d'affaires</span></div><span class="kpi-val">127 400 €</span><div class="kpi-trend up">↑ 12 % vs N-1</div><div class="kpi-per">Exercice en cours</div></div>
+        <div class="kpi"><div class="kpi-label"><span data-tip="Total des dépenses enregistrées sur l'exercice (comptes 60 à 65).">Charges</span></div><span class="kpi-val">89 200 €</span><div class="kpi-trend dn">↑ 8 % vs N-1</div><div class="kpi-per">Exercice en cours</div></div>
+        <div class="kpi"><div class="kpi-label"><span data-tip="Chiffre d'affaires moins charges. Le résultat fiscal définitif est calculé lors de la clôture.">Résultat courant</span></div><span class="kpi-val">38 200 €</span><div class="kpi-trend up">↑ 22 % vs N-1</div><div class="kpi-per">Exercice en cours</div></div>
+        <div class="kpi"><div class="kpi-label"><span data-tip="Solde issu de votre dernier relevé importé. Ne reflète pas les opérations non encore enregistrées.">Trésorerie</span></div><span class="kpi-val">24 680 €</span><div class="kpi-trend" style="color:var(--muted)">—</div><div class="kpi-per">Au 12/05/2025</div></div>
+      </div>
+      <div class="sec-head"><h2>Dernières transactions</h2><a class="btn btn-sm" data-go="transactions">Tout voir →</a></div>
+      <table class="tbl"><thead><tr><th>Date</th><th>Libellé</th><th>Compte</th><th class="r">Montant</th><th>Statut</th></tr></thead><tbody>
+        <tr><td class="mono">12/05</td><td>OVH Cloud — Hébergement</td><td><span class="cpt">613100</span> Sous-traitance</td><td class="mono r">−47,88 €</td><td><span class="st-ok">✓</span></td></tr>
+        <tr><td class="mono">11/05</td><td>Virement client — Facture #287</td><td><span class="cpt">411000</span> Clients</td><td class="mono r" style="color:var(--green)">+3 600,00 €</td><td><span class="st-ok">✓</span></td></tr>
+        <tr><td class="mono">10/05</td><td>URSSAF — Cotisations T2</td><td><span class="cpt">645100</span> Charges sociales</td><td class="mono r">−1 420,00 €</td><td><span class="st-ok">✓</span></td></tr>
+        <tr><td class="mono">09/05</td><td>Amazon — Fournitures bureau</td><td><span class="cpt">606400</span> Fournitures admin.</td><td class="mono r">−124,50 €</td><td><span class="st-ok">✓</span></td></tr>
+        <tr><td class="mono">08/05</td><td>Notion — Abonnement annuel</td><td style="color:var(--light)">—</td><td class="mono r">−192,00 €</td><td><span class="st-warn">⚠ À vérifier</span></td></tr>
+        <tr><td class="mono">07/05</td><td>Virement client — Facture #286</td><td><span class="cpt">411000</span> Clients</td><td class="mono r" style="color:var(--green)">+2 100,00 €</td><td><span class="st-ok">✓</span></td></tr>
+      </tbody></table>
+      <div class="q-grid">
+        <div class="q-card"><h3>Une question comptable ?</h3><p>Posez-la en français. L'IA répond avec le contexte de votre entreprise.</p><button class="btn" onclick="toggleChat()">Ouvrir le chat</button></div>
+        <div class="q-card"><h3>Clôture 2025</h3><p>4 étapes sur 12 complétées.</p><div class="prog"><div class="fill" style="width:33%"></div></div><button class="btn btn-p" data-go="cloture">Reprendre</button></div>
+        <div class="q-card"><h3>Documents</h3><p>FEC, bilan, compte de résultat — générés à la demande, prêts pour le greffe.</p><button class="btn" data-go="documents">Voir les documents</button></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════ -->
+<!-- TRANSACTIONS (full list)             -->
+<!-- ══════════════════════════════════════ -->
+<div class="shell" data-screen="transactions">
+  <aside class="sidebar"><div class="s-id"><strong>DUVAL CONSULTING</strong><span>SASU · Exercice 01/01 – 31/12/2025</span></div><nav class="s-nav"><div class="s-item" data-go="dashboard"><span class="ic">◻</span> Tableau de bord</div><div class="s-item active" data-go="transactions"><span class="ic">↔</span> Transactions</div><div class="s-item" data-go="ecritures"><span class="ic">✎</span> Écritures</div><div class="s-item" data-go="documents"><span class="ic">▤</span> Documents</div><div class="s-item" data-go="cloture"><span class="ic">✓</span> Clôture annuelle</div></nav><div class="s-sep"></div><div class="s-bot"><div class="s-item" data-go="profil"><span class="ic">⚙</span> Modifier les informations</div><div class="s-item"><span class="ic">?</span> Documentation</div><div class="s-item"><span class="ic">→</span> Déconnexion</div></div></aside>
+  <div class="main">
+    <div class="topbar"><div class="tb-left"><b>Transactions</b> — 142 transactions importées</div><button class="btn btn-p">Importer des transactions</button></div>
+    <div class="content">
+      <div class="filters">
+        <button class="pill active">Toutes (142)</button>
+        <button class="pill">Catégorisées (139)</button>
+        <button class="pill">À vérifier (3)</button>
+        <input class="search-box" placeholder="Rechercher…">
+      </div>
+      <table class="tbl"><thead><tr><th>Date</th><th>Libellé</th><th>Compte PCG</th><th class="r">Débit</th><th class="r">Crédit</th><th>Statut</th></tr></thead><tbody>
+        <tr><td class="mono">12/05</td><td>OVH Cloud — Hébergement</td><td><span class="cpt">613100</span> Sous-traitance</td><td class="mono r">47,88 €</td><td class="mono r">—</td><td><span class="st-ok">✓ Catégorisé</span></td></tr>
+        <tr><td class="mono">11/05</td><td>Virement client — Facture #287</td><td><span class="cpt">411000</span> Clients</td><td class="mono r">—</td><td class="mono r">3 600,00 €</td><td><span class="st-ok">✓ Catégorisé</span></td></tr>
+        <tr><td class="mono">10/05</td><td>URSSAF — Cotisations T2</td><td><span class="cpt">645100</span> Charges sociales</td><td class="mono r">1 420,00 €</td><td class="mono r">—</td><td><span class="st-ok">✓ Catégorisé</span></td></tr>
+        <tr><td class="mono">09/05</td><td>Amazon — Fournitures bureau</td><td><span class="cpt">606400</span> Fournitures admin.</td><td class="mono r">124,50 €</td><td class="mono r">—</td><td><span class="st-ok">✓ Catégorisé</span></td></tr>
+        <tr style="background:var(--orange-bg)"><td class="mono">08/05</td><td>Notion — Abonnement annuel</td><td style="color:var(--light)">— Non catégorisé</td><td class="mono r">192,00 €</td><td class="mono r">—</td><td><span class="st-warn">⚠ À vérifier</span></td></tr>
+        <tr><td class="mono">07/05</td><td>Virement client — Facture #286</td><td><span class="cpt">411000</span> Clients</td><td class="mono r">—</td><td class="mono r">2 100,00 €</td><td><span class="st-ok">✓ Catégorisé</span></td></tr>
+        <tr><td class="mono">06/05</td><td>Swile — Titres-restaurant</td><td><span class="cpt">647500</span> Avantages sociaux</td><td class="mono r">380,00 €</td><td class="mono r">—</td><td><span class="st-ok">✓ Catégorisé</span></td></tr>
+        <tr><td class="mono">05/05</td><td>EDF Pro — Électricité</td><td><span class="cpt">606100</span> Énergie</td><td class="mono r">156,30 €</td><td class="mono r">—</td><td><span class="st-ok">✓ Catégorisé</span></td></tr>
+        <tr style="background:var(--orange-bg)"><td class="mono">04/05</td><td>Virement reçu — Réf. inconnue</td><td style="color:var(--light)">— Non catégorisé</td><td class="mono r">—</td><td class="mono r">850,00 €</td><td><span class="st-warn">⚠ À vérifier</span></td></tr>
+        <tr><td class="mono">03/05</td><td>Stripe — Commission avril</td><td><span class="cpt">622600</span> Honoraires</td><td class="mono r">34,20 €</td><td class="mono r">—</td><td><span class="st-ok">✓ Catégorisé</span></td></tr>
+      </tbody></table>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;font-size:12px;color:var(--muted)"><span>Affichage 1-10 sur 142</span><div style="display:flex;gap:6px"><button class="btn btn-sm" disabled>← Précédent</button><button class="btn btn-sm">Suivant →</button></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════ -->
+<!-- ÉCRITURES                            -->
+<!-- ══════════════════════════════════════ -->
+<div class="shell" data-screen="ecritures">
+  <aside class="sidebar"><div class="s-id"><strong>DUVAL CONSULTING</strong><span>SASU · Exercice 01/01 – 31/12/2025</span></div><nav class="s-nav"><div class="s-item" data-go="dashboard"><span class="ic">◻</span> Tableau de bord</div><div class="s-item" data-go="transactions"><span class="ic">↔</span> Transactions</div><div class="s-item active" data-go="ecritures"><span class="ic">✎</span> Écritures</div><div class="s-item" data-go="documents"><span class="ic">▤</span> Documents</div><div class="s-item" data-go="cloture"><span class="ic">✓</span> Clôture annuelle</div></nav><div class="s-sep"></div><div class="s-bot"><div class="s-item" data-go="profil"><span class="ic">⚙</span> Modifier les informations</div><div class="s-item"><span class="ic">?</span> Documentation</div><div class="s-item"><span class="ic">→</span> Déconnexion</div></div></aside>
+  <div class="main">
+    <div class="topbar"><div class="tb-left"><b>Écritures comptables</b> — Journal général</div><button class="btn">Exporter CSV</button></div>
+    <div class="content">
+      <div class="filters">
+        <button class="pill active">Toutes</button>
+        <button class="pill">Achats (AH)</button>
+        <button class="pill">Ventes (VE)</button>
+        <button class="pill">Banque (BQ)</button>
+        <button class="pill">Opérations diverses (OD)</button>
+        <input class="search-box" placeholder="Rechercher une écriture…">
+      </div>
+      <table class="tbl"><thead><tr><th>N°</th><th>Date</th><th>Journal</th><th>Libellé</th><th>Compte</th><th class="r">Débit</th><th class="r">Crédit</th></tr></thead><tbody>
+        <tr><td class="mono">001</td><td class="mono">12/05</td><td class="mono">AH</td><td>OVH Cloud — Hébergement</td><td><span class="cpt">613100</span></td><td class="mono r">39,90 €</td><td class="mono r">—</td></tr>
+        <tr><td class="mono">001</td><td class="mono">12/05</td><td class="mono">AH</td><td>OVH Cloud — TVA déductible</td><td><span class="cpt">445660</span></td><td class="mono r">7,98 €</td><td class="mono r">—</td></tr>
+        <tr><td class="mono">001</td><td class="mono">12/05</td><td class="mono">AH</td><td>OVH Cloud — Fournisseur</td><td><span class="cpt">401000</span></td><td class="mono r">—</td><td class="mono r">47,88 €</td></tr>
+        <tr style="background:var(--bg)"><td colspan="7" style="padding:4px"></td></tr>
+        <tr><td class="mono">002</td><td class="mono">11/05</td><td class="mono">VE</td><td>Client — Facture #287</td><td><span class="cpt">411000</span></td><td class="mono r">3 600,00 €</td><td class="mono r">—</td></tr>
+        <tr><td class="mono">002</td><td class="mono">11/05</td><td class="mono">VE</td><td>Facture #287 — Produit HT</td><td><span class="cpt">706000</span></td><td class="mono r">—</td><td class="mono r">3 000,00 €</td></tr>
+        <tr><td class="mono">002</td><td class="mono">11/05</td><td class="mono">VE</td><td>Facture #287 — TVA collectée</td><td><span class="cpt">445710</span></td><td class="mono r">—</td><td class="mono r">600,00 €</td></tr>
+        <tr style="background:var(--bg)"><td colspan="7" style="padding:4px"></td></tr>
+        <tr><td class="mono">003</td><td class="mono">10/05</td><td class="mono">BQ</td><td>URSSAF — Cotisations T2</td><td><span class="cpt">645100</span></td><td class="mono r">1 420,00 €</td><td class="mono r">—</td></tr>
+        <tr><td class="mono">003</td><td class="mono">10/05</td><td class="mono">BQ</td><td>URSSAF — Banque</td><td><span class="cpt">512000</span></td><td class="mono r">—</td><td class="mono r">1 420,00 €</td></tr>
+      </tbody></table>
+      <p style="margin-top:12px;font-size:12px;color:var(--light)">Les écritures sont générées automatiquement en partie double à partir de vos transactions catégorisées.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════ -->
+<!-- DOCUMENTS                            -->
+<!-- ══════════════════════════════════════ -->
+<div class="shell" data-screen="documents">
+  <aside class="sidebar"><div class="s-id"><strong>DUVAL CONSULTING</strong><span>SASU · Exercice 01/01 – 31/12/2025</span></div><nav class="s-nav"><div class="s-item" data-go="dashboard"><span class="ic">◻</span> Tableau de bord</div><div class="s-item" data-go="transactions"><span class="ic">↔</span> Transactions</div><div class="s-item" data-go="ecritures"><span class="ic">✎</span> Écritures</div><div class="s-item active" data-go="documents"><span class="ic">▤</span> Documents</div><div class="s-item" data-go="cloture"><span class="ic">✓</span> Clôture annuelle</div></nav><div class="s-sep"></div><div class="s-bot"><div class="s-item" data-go="profil"><span class="ic">⚙</span> Modifier les informations</div><div class="s-item"><span class="ic">?</span> Documentation</div><div class="s-item"><span class="ic">→</span> Déconnexion</div></div></aside>
+  <div class="main">
+    <div class="topbar"><div class="tb-left"><b>Documents</b> — Exercice 2025</div></div>
+    <div class="content">
+      <div class="sec-head"><h2>Documents comptables</h2><p style="font-size:13px;color:var(--muted)">Générés à la demande à partir de vos écritures.</p></div>
+      <div class="doc-grid">
+        <div class="doc-card">
+          <h3>Fichier des Écritures Comptables (FEC)</h3>
+          <p>Format 18 colonnes conforme à l'article A.47 A-1 du Livre des procédures fiscales. Obligatoire en cas de contrôle fiscal.</p>
+          <div class="meta">Dernière génération : 10/05/2025 · 142 écritures</div>
+          <div class="doc-actions"><button class="btn btn-p btn-sm">Générer le FEC</button><button class="btn btn-sm">Télécharger (.txt)</button></div>
+        </div>
+        <div class="doc-card">
+          <h3>Balance générale</h3>
+          <p>Liste de tous les comptes avec totaux de débits, crédits et soldes. Outil de vérification avant clôture.</p>
+          <div class="meta">Dernière génération : 10/05/2025</div>
+          <div class="doc-actions"><button class="btn btn-p btn-sm">Générer</button><button class="btn btn-sm">Télécharger (.pdf)</button></div>
+        </div>
+        <div class="doc-card">
+          <h3>Bilan</h3>
+          <p>Patrimoine de l'entreprise à la date de clôture : actif (ce que l'entreprise possède) et passif (ce qu'elle doit).</p>
+          <div class="meta" style="color:var(--orange)">Disponible après la clôture annuelle.</div>
+          <div class="doc-actions"><button class="btn btn-sm" disabled>Non disponible</button></div>
+        </div>
+        <div class="doc-card">
+          <h3>Compte de résultat</h3>
+          <p>Revenus et charges de l'exercice. Indique si l'entreprise est bénéficiaire ou déficitaire.</p>
+          <div class="meta" style="color:var(--orange)">Disponible après la clôture annuelle.</div>
+          <div class="doc-actions"><button class="btn btn-sm" disabled>Non disponible</button></div>
+        </div>
+        <div class="doc-card">
+          <h3>Liasse fiscale (brouillon)</h3>
+          <p>Formulaires 2033 ou 2065-SD pré-remplis à partir de vos écritures. À valider avec votre expert-comptable avant dépôt.</p>
+          <div class="meta" style="color:var(--orange)">Disponible après la clôture annuelle.</div>
+          <div class="doc-actions"><button class="btn btn-sm" disabled>Non disponible</button></div>
+        </div>
+        <div class="doc-card">
+          <h3>Grand livre</h3>
+          <p>Détail de toutes les écritures classées par compte. Utile pour les vérifications et la préparation d'audit.</p>
+          <div class="meta">Dernière génération : 10/05/2025</div>
+          <div class="doc-actions"><button class="btn btn-p btn-sm">Générer</button><button class="btn btn-sm">Télécharger (.pdf)</button></div>
+        </div>
+      </div>
+      <p style="margin-top:20px;font-size:12px;color:var(--light)">Les documents marqués « après la clôture annuelle » seront générés lors du workflow de clôture guidé.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════ -->
+<!-- CLÔTURE ANNUELLE                     -->
+<!-- ══════════════════════════════════════ -->
+<div class="shell" data-screen="cloture">
+  <aside class="sidebar"><div class="s-id"><strong>DUVAL CONSULTING</strong><span>SASU · Exercice 01/01 – 31/12/2025</span></div><nav class="s-nav"><div class="s-item" data-go="dashboard"><span class="ic">◻</span> Tableau de bord</div><div class="s-item" data-go="transactions"><span class="ic">↔</span> Transactions</div><div class="s-item" data-go="ecritures"><span class="ic">✎</span> Écritures</div><div class="s-item" data-go="documents"><span class="ic">▤</span> Documents</div><div class="s-item active" data-go="cloture"><span class="ic">✓</span> Clôture annuelle</div></nav><div class="s-sep"></div><div class="s-bot"><div class="s-item" data-go="profil"><span class="ic">⚙</span> Modifier les informations</div><div class="s-item"><span class="ic">?</span> Documentation</div><div class="s-item"><span class="ic">→</span> Déconnexion</div></div></aside>
+  <div class="main">
+    <div class="topbar"><div class="tb-left"><b>Clôture annuelle</b> — Exercice 2025</div></div>
+    <div class="content">
+      <div class="cloture-head">
+        <div><h2>Clôture de l'exercice 2025</h2><p class="sub">12 étapes guidées. L'IA vous accompagne à chaque étape. Vous pouvez interrompre et reprendre à tout moment.</p></div>
+        <div class="cloture-prog"><strong>4 / 12</strong><span>étapes complétées</span></div>
+      </div>
+      <div class="prog-full"><div class="fill" style="width:33%"></div></div>
+      <div class="step-list">
+        <div class="step-row done"><div class="step-idx">✓</div><div><h3>1. Vérification de la balance</h3><p>Contrôle de l'équilibre débit/crédit et des soldes anormaux.</p></div><div class="step-actions"><span class="st-done">Terminé</span></div></div>
+        <div class="step-row done"><div class="step-idx">✓</div><div><h3>2. Rapprochement bancaire</h3><p>Comparaison entre les relevés importés et les écritures en banque.</p></div><div class="step-actions"><span class="st-done">Terminé</span></div></div>
+        <div class="step-row done"><div class="step-idx">✓</div><div><h3>3. Lettrage des comptes tiers</h3><p>Rapprochement des factures et paiements sur les comptes clients et fournisseurs.</p></div><div class="step-actions"><span class="st-done">Terminé</span></div></div>
+        <div class="step-row done"><div class="step-idx">✓</div><div><h3>4. Régularisations de fin d'exercice</h3><p>Charges constatées d'avance, produits à recevoir, factures non parvenues.</p></div><div class="step-actions"><span class="st-done">Terminé</span></div></div>
+        <div class="step-row current"><div class="step-idx">5</div><div><h3>5. Amortissements</h3><p>Calcul et enregistrement des dotations aux amortissements des immobilisations.</p></div><div class="step-actions"><button class="btn btn-p btn-sm">Commencer cette étape</button></div></div>
+        <div class="step-row pending"><div class="step-idx">6</div><div><h3>6. Provisions</h3><p>Évaluation des risques et charges à provisionner (litiges, créances douteuses).</p></div><div class="step-actions"></div></div>
+        <div class="step-row pending"><div class="step-idx">7</div><div><h3>7. Calcul de la TVA annuelle</h3><p>Vérification des montants de TVA collectée et déductible sur l'exercice.</p></div><div class="step-actions"></div></div>
+        <div class="step-row pending"><div class="step-idx">8</div><div><h3>8. Calcul de l'impôt (IS ou IR)</h3><p>Détermination du résultat fiscal et calcul de l'impôt dû.</p></div><div class="step-actions"></div></div>
+        <div class="step-row pending"><div class="step-idx">9</div><div><h3>9. Écritures de clôture</h3><p>Enregistrement de l'affectation du résultat et des écritures de solde.</p></div><div class="step-actions"></div></div>
+        <div class="step-row pending"><div class="step-idx">10</div><div><h3>10. Génération des états financiers</h3><p>Bilan, compte de résultat et annexes à partir des écritures définitives.</p></div><div class="step-actions"></div></div>
+        <div class="step-row pending"><div class="step-idx">11</div><div><h3>11. Liasse fiscale</h3><p>Pré-remplissage des formulaires 2033 ou 2065-SD selon votre régime.</p></div><div class="step-actions"></div></div>
+        <div class="step-row pending"><div class="step-idx">12</div><div><h3>12. Export et archivage</h3><p>Génération du FEC définitif, des PDFs et archivage de l'exercice.</p></div><div class="step-actions"></div></div>
+      </div>
+      <p style="margin-top:20px;font-size:12px;color:var(--light)">Assurez-vous d'avoir importé toutes les transactions de l'exercice avant de finaliser la clôture. L'IA signale les anomalies détectées à chaque étape.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════ -->
+<!-- PROFIL ENTREPRISE                    -->
+<!-- ══════════════════════════════════════ -->
+<div class="shell" data-screen="profil">
+  <aside class="sidebar"><div class="s-id"><strong>DUVAL CONSULTING</strong><span>SASU · Exercice 01/01 – 31/12/2025</span></div><nav class="s-nav"><div class="s-item" data-go="dashboard"><span class="ic">◻</span> Tableau de bord</div><div class="s-item" data-go="transactions"><span class="ic">↔</span> Transactions</div><div class="s-item" data-go="ecritures"><span class="ic">✎</span> Écritures</div><div class="s-item" data-go="documents"><span class="ic">▤</span> Documents</div><div class="s-item" data-go="cloture"><span class="ic">✓</span> Clôture annuelle</div></nav><div class="s-sep"></div><div class="s-bot"><div class="s-item active" data-go="profil"><span class="ic">⚙</span> Modifier les informations</div><div class="s-item"><span class="ic">?</span> Documentation</div><div class="s-item"><span class="ic">→</span> Déconnexion</div></div></aside>
+  <div class="main">
+    <div class="topbar"><div class="tb-left"><b>Profil entreprise</b></div></div>
+    <div class="content">
+      <div class="profile-card">
+        <h2>Informations de l'entreprise</h2>
+        <p class="sub">Ces informations sont utilisées par l'IA pour catégoriser vos transactions et générer vos documents.</p>
+        <div class="profile-section"><h3>Identité</h3>
+          <div class="form-row"><div class="field"><label>Raison sociale</label><input value="DUVAL CONSULTING"></div><div class="field"><label>SIREN</label><input value="987 654 321"></div></div>
+          <div class="form-row"><div class="field"><label>Forme juridique</label><select><option>SASU</option></select></div><div class="field"><label>Adresse</label><input value="42 rue de la Paix, 75002 Paris"></div></div>
+        </div>
+        <div class="profile-section"><h3>Régime fiscal</h3>
+          <div class="form-row"><div class="field"><label>Régime de TVA</label><select><option>Régime réel normal</option></select></div><div class="field"><label>Imposition</label><select><option>Impôt sur les sociétés (IS)</option></select></div></div>
+        </div>
+        <div class="profile-section"><h3>Exercice comptable</h3>
+          <div class="form-row"><div class="field"><label>Début</label><input value="01/01/2025"></div><div class="field"><label>Fin</label><input value="31/12/2025"></div></div>
+        </div>
+        <div class="form-actions"><button class="btn btn-p">Enregistrer les modifications</button></div>
+      </div>
+      <div class="danger-zone">
+        <h3>Zone de suppression</h3>
+        <p>La suppression est irréversible. Toutes vos données comptables, écritures et documents seront définitivement effacés.</p>
+        <button class="btn btn-danger btn-sm">Supprimer mon compte et mes données</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════ -->
+<!-- CORRECTION TRANSACTION              -->
+<!-- ══════════════════════════════════════ -->
+<div class="shell corr-page" data-screen="correction">
+  <aside class="sidebar"><div class="s-id"><strong>DUVAL CONSULTING</strong><span>SASU · Exercice 01/01 – 31/12/2025</span></div><nav class="s-nav"><div class="s-item" data-go="dashboard"><span class="ic">◻</span> Tableau de bord</div><div class="s-item active" data-go="transactions"><span class="ic">↔</span> Transactions</div><div class="s-item" data-go="ecritures"><span class="ic">✎</span> Écritures</div><div class="s-item" data-go="documents"><span class="ic">▤</span> Documents</div><div class="s-item" data-go="cloture"><span class="ic">✓</span> Clôture annuelle</div></nav><div class="s-sep"></div><div class="s-bot"><div class="s-item" data-go="profil"><span class="ic">⚙</span> Modifier les informations</div><div class="s-item"><span class="ic">?</span> Documentation</div><div class="s-item"><span class="ic">→</span> Déconnexion</div></div></aside>
+  <div class="main">
+    <div class="topbar"><div class="tb-left"><b>Correction de transaction</b></div></div>
+    <div class="content">
+      <a class="corr-back" data-go="transactions">← Retour aux transactions</a>
+
+      <div class="corr-card">
+        <div class="corr-header">
+          <h2>⚠ Transaction non catégorisée</h2>
+          <p>L'IA n'a pas pu identifier le compte comptable avec certitude. Choisissez la bonne catégorie ci-dessous.</p>
+        </div>
+
+        <div class="corr-body">
+          <!-- Transaction info -->
+          <div class="corr-meta">
+            <div class="corr-meta-item">
+              <div class="label">Date</div>
+              <div class="val">08/05/2025</div>
+            </div>
+            <div class="corr-meta-item">
+              <div class="label">Montant</div>
+              <div class="val" style="font-family:var(--mono)">−192,00 €</div>
+            </div>
+            <div class="corr-meta-item">
+              <div class="label">Libellé bancaire</div>
+              <div class="val">NOTION LABS INC — CARTE *4821</div>
+            </div>
+            <div class="corr-meta-item">
+              <div class="label">Référence</div>
+              <div class="val" style="font-family:var(--mono);font-size:12px">VIR-2025-05-08-NOTION-192</div>
+            </div>
+          </div>
+
+          <div class="corr-sep"></div>
+
+          <!-- AI suggestions -->
+          <div class="corr-section">
+            <h3>Suggestions de l'IA</h3>
+            <p>Paperasse a identifié 3 catégories possibles. Sélectionnez celle qui correspond ou saisissez le compte manuellement.</p>
+
+            <div class="corr-suggest">
+              <div class="corr-opt selected" onclick="selectOpt(this)">
+                <div class="corr-radio"></div>
+                <div class="corr-opt-info">
+                  <strong>651100 — Abonnements et services en ligne</strong>
+                  <span>Logiciel SaaS, outil de productivité. Notion est un outil de gestion de notes et projets.</span>
+                </div>
+                <span class="corr-confidence">87 %</span>
+              </div>
+              <div class="corr-opt" onclick="selectOpt(this)">
+                <div class="corr-radio"></div>
+                <div class="corr-opt-info">
+                  <strong>606300 — Fournitures informatiques</strong>
+                  <span>Licences logicielles, consommables IT.</span>
+                </div>
+                <span class="corr-confidence">9 %</span>
+              </div>
+              <div class="corr-opt" onclick="selectOpt(this)">
+                <div class="corr-radio"></div>
+                <div class="corr-opt-info">
+                  <strong>618100 — Documentation générale</strong>
+                  <span>Abonnements presse, documentation professionnelle.</span>
+                </div>
+                <span class="corr-confidence">4 %</span>
+              </div>
+            </div>
+
+            <!-- Manual entry -->
+            <details class="corr-manual">
+              <summary>Saisir un compte manuellement</summary>
+              <div class="inner">
+                <div class="form-row">
+                  <div class="field"><label>Numéro de compte PCG</label><input placeholder="Ex : 606400"><span class="help">Saisissez le numéro de compte du Plan Comptable Général.</span></div>
+                  <div class="field"><label>Libellé du compte</label><input placeholder="Ex : Fournitures administratives"><span class="help">Le libellé sera utilisé dans les écritures et documents.</span></div>
+                </div>
+              </div>
+            </details>
+          </div>
+
+          <div class="corr-sep"></div>
+
+          <!-- Learning -->
+          <div class="corr-section">
+            <h3>Mémorisation</h3>
+            <p>Souhaitez-vous que Paperasse applique automatiquement cette catégorie aux prochaines transactions de ce fournisseur ?</p>
+            <div style="display:flex;gap:12px;margin-top:8px">
+              <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="radio" name="memo" checked> Oui, toujours catégoriser « NOTION LABS » en 651100</label>
+            </div>
+            <div style="margin-top:6px">
+              <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="radio" name="memo"> Non, me demander à chaque fois</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="corr-footer">
+          <div class="corr-nav">
+            <button class="btn btn-sm" disabled>← Précédente</button>
+            <button class="btn btn-sm">Suivante →</button>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-sm" data-go="transactions">Annuler</button>
+            <button class="btn btn-p btn-sm" data-go="transactions">Valider la catégorisation</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Counter -->
+      <p style="margin-top:16px;font-size:12px;color:var(--muted);text-align:center">Transaction 1 sur 3 à vérifier</p>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════════ -->
+<!-- NEW SCREENS — 12 GAPS IDENTIFIED IN §1.4 BACKEND ARCHITECTURE v2   -->
+<!-- ══════════════════════════════════════════════════════════════════════ -->
+
+<!-- GAP #1a — LOGIN -->
+<div class="shell center" data-screen="login">
+  <div class="ob-screen"><div class="ob-card" style="max-width:440px">
+    <div class="logo"><span>◻</span> Paperasse</div>
+    <h1>Connectez-vous.</h1>
+    <p class="sub">Accédez à votre comptabilité en quelques secondes.</p>
+    <div class="field"><label>Adresse e-mail</label><input type="email" placeholder="romain@duvalconsulting.fr"></div>
+    <div class="field"><label>Mot de passe</label><input type="password" placeholder="••••••••"><span class="help" style="text-align:right"><a href="#" data-go="forgot" style="color:var(--accent);font-weight:600">Mot de passe oublié ?</a></span></div>
+    <div class="form-actions"><button class="btn btn-p btn-lg" style="flex:1" data-go="onboard-1">Se connecter</button></div>
+    <div class="divider">ou</div>
+    <button class="btn btn-lg" style="width:100%">Continuer avec Google</button>
+    <p class="micro">Pas encore de compte ? <a data-go="signup" href="#">Créer un compte</a></p>
+  </div></div>
+</div>
+
+<!-- GAP #1b — INSCRIPTION -->
+<div class="shell center" data-screen="signup">
+  <div class="ob-screen"><div class="ob-card" style="max-width:440px">
+    <div class="logo"><span>◻</span> Paperasse</div>
+    <h1>Créez votre compte.</h1>
+    <p class="sub">Essai gratuit de 14 jours. Aucune carte bancaire requise.</p>
+    <div class="form-row"><div class="field"><label>Prénom</label><input placeholder="Romain"></div><div class="field"><label>Nom</label><input placeholder="Duval"></div></div>
+    <div class="field"><label>Adresse e-mail professionnelle</label><input type="email" placeholder="romain@duvalconsulting.fr"></div>
+    <div class="field"><label>Mot de passe</label><input type="password" placeholder="Min. 8 caractères"><span class="help">Au moins 8 caractères, une majuscule et un chiffre.</span></div>
+    <div style="margin:16px 0;font-size:12px;color:var(--muted);line-height:1.5"><label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer"><input type="checkbox" style="margin-top:3px"> J'accepte les <a href="#" style="color:var(--accent);font-weight:600">conditions générales</a> et la <a href="#" style="color:var(--accent);font-weight:600">politique de confidentialité</a>.</label></div>
+    <div class="form-actions"><button class="btn btn-p btn-lg" style="flex:1" data-go="pricing">Créer mon compte</button></div>
+    <div class="divider">ou</div>
+    <button class="btn btn-lg" style="width:100%">S'inscrire avec Google</button>
+    <p class="micro">Déjà un compte ? <a data-go="login" href="#">Se connecter</a></p>
+  </div></div>
+</div>
+
+<!-- GAP #1c — MOT DE PASSE OUBLIÉ -->
+<div class="shell center" data-screen="forgot">
+  <div class="ob-screen"><div class="ob-card" style="max-width:440px">
+    <div class="logo"><span>◻</span> Paperasse</div>
+    <h1>Mot de passe oublié ?</h1>
+    <p class="sub">Entrez votre adresse e-mail. Vous recevrez un lien de réinitialisation valable 1 heure.</p>
+    <div class="field"><label>Adresse e-mail</label><input type="email" placeholder="romain@duvalconsulting.fr"></div>
+    <div class="form-actions"><button class="btn btn-p btn-lg" style="flex:1">Envoyer le lien</button></div>
+    <p class="micro"><a data-go="login" href="#">← Retour à la connexion</a></p>
+  </div></div>
+</div>
+
+<!-- GAP #2 — PRICING -->
+<div class="shell center" data-screen="pricing">
+  <div class="ob-screen" style="max-width:900px;width:100%">
+    <div style="text-align:center;margin-bottom:36px">
+      <h1 style="font-size:26px;font-weight:700;letter-spacing:-.02em;margin-bottom:8px">Choisissez votre formule.</h1>
+      <p style="color:var(--muted);font-size:14px">Essai gratuit de 14 jours sur toutes les formules. Aucune carte bancaire requise.</p>
+    </div>
+    <div class="pricing-grid">
+      <div class="pricing-card">
+        <div class="tier">Solo</div>
+        <div class="price">19 €<span> / mois HT</span></div>
+        <div class="desc">Pour les auto-entrepreneurs et micro-entreprises avec un volume de transactions modéré.</div>
+        <ul><li>Chat IA comptable illimité</li><li>Catégorisation automatique</li><li>Import CSV (5 / mois)</li><li>Tableau de bord</li><li>Génération FEC</li></ul>
+        <button class="btn btn-outline-accent btn-lg" data-go="onboard-1">Démarrer l'essai</button>
+      </div>
+      <div class="pricing-card pop">
+        <div class="pop-badge">Recommandé</div>
+        <div class="tier">Entreprise</div>
+        <div class="price">49 €<span> / mois HT</span></div>
+        <div class="desc">Pour les SASU, EURL, SARL avec clôture annuelle et documents complets.</div>
+        <ul><li>Tout Solo +</li><li>Clôture annuelle guidée par l'IA</li><li>Liasse fiscale brouillon</li><li>PDFs professionnels</li><li>Connecteurs Qonto / Stripe</li><li>15 imports / mois</li></ul>
+        <button class="btn btn-p btn-lg" data-go="onboard-1">Démarrer l'essai</button>
+      </div>
+      <div class="pricing-card">
+        <div class="tier">Entreprise+</div>
+        <div class="price">99 €<span> / mois HT</span></div>
+        <div class="desc">Pour les structures plus complexes avec multi-activités et besoins avancés.</div>
+        <ul><li>Tout Entreprise +</li><li>Simulation contrôle fiscal</li><li>Audit pré-approbation</li><li>50 imports / mois</li><li>Support prioritaire</li></ul>
+        <button class="btn btn-outline-accent btn-lg" data-go="onboard-1">Démarrer l'essai</button>
+      </div>
+    </div>
+    <p style="text-align:center;margin-top:24px;font-size:12px;color:var(--light)">Ne remplace pas un expert-comptable. Données hébergées en France.</p>
+  </div>
+</div>
+
+<!-- GAP #3 — HISTORIQUE IMPORTS -->
+<div class="shell" data-screen="imports-history">
+  <aside class="sidebar"><div class="s-id"><strong>DUVAL CONSULTING</strong><span>SASU · Exercice 01/01 – 31/12/2025</span></div><nav class="s-nav"><div class="s-item" data-go="dashboard"><span class="ic">◻</span> Tableau de bord</div><div class="s-item active"><span class="ic">↑</span> Imports</div><div class="s-item" data-go="transactions"><span class="ic">↔</span> Transactions</div><div class="s-item" data-go="ecritures"><span class="ic">✎</span> Écritures</div><div class="s-item" data-go="documents"><span class="ic">▤</span> Documents</div><div class="s-item" data-go="cloture"><span class="ic">✓</span> Clôture annuelle</div></nav><div class="s-sep"></div><div class="s-bot"><div class="s-item" data-go="connectors"><span class="ic">⚡</span> Connecteurs</div><div class="s-item" data-go="notifications"><span class="ic">🔔</span> Notifications <span class="badge-count">3</span></div><div class="s-item" data-go="profil"><span class="ic">⚙</span> Profil</div></div></aside>
+  <div class="main"><div class="topbar"><div class="tb-left"><b>Historique des imports</b> — 7 imports</div><button class="btn btn-p" data-go="empty">Importer</button></div>
+    <div class="content">
+      <div class="filters"><button class="pill active">Tous (7)</button><button class="pill">Terminés (5)</button><button class="pill">En erreur (1)</button><button class="pill">En cours (1)</button></div>
+      <table class="tbl"><thead><tr><th>Date</th><th>Fichier / Source</th><th>Format</th><th class="r">Tx</th><th class="r">Catég.</th><th class="r">À vérif.</th><th>Durée</th><th>Statut</th></tr></thead><tbody>
+        <tr><td class="mono">12/05</td><td>relevé-bancaire-mai-2025.csv</td><td><span class="cpt">Qonto</span></td><td class="mono r">47</td><td class="mono r">44</td><td class="mono r">3</td><td class="mono">1m42s</td><td><span class="st-done">Terminé</span></td></tr>
+        <tr><td class="mono">08/05</td><td>Qonto — Fetch automatique</td><td><span class="cpt">API</span></td><td class="mono r">12</td><td class="mono r">12</td><td class="mono r">0</td><td class="mono">48s</td><td><span class="st-done">Terminé</span></td></tr>
+        <tr><td class="mono">01/05</td><td>stripe-avril-2025.json</td><td><span class="cpt">Stripe</span></td><td class="mono r">28</td><td class="mono r">28</td><td class="mono r">0</td><td class="mono">1m05s</td><td><span class="st-done">Terminé</span></td></tr>
+        <tr><td class="mono">15/04</td><td>releve-bnp-mars-2025.csv</td><td><span class="cpt">BNP</span></td><td class="mono r">31</td><td class="mono r">29</td><td class="mono r">2</td><td class="mono">1m28s</td><td><span class="st-done">Terminé</span></td></tr>
+        <tr style="background:var(--orange-bg)"><td class="mono">10/04</td><td>export-banque-inconnue.csv</td><td style="color:var(--light)">—</td><td class="mono r">—</td><td class="mono r">—</td><td class="mono r">—</td><td class="mono">—</td><td><span class="st-warn" data-go="csv-mapping" style="cursor:pointer">⚠ Mapping requis</span></td></tr>
+        <tr style="background:var(--red-bg)"><td class="mono">02/04</td><td>fichier-corrompu.csv</td><td style="color:var(--light)">—</td><td class="mono r">—</td><td class="mono r">—</td><td class="mono r">—</td><td class="mono">—</td><td><span class="st-err" data-go="error-parse" style="cursor:pointer">✕ Erreur</span></td></tr>
+        <tr><td class="mono">01/04</td><td>relevé-bancaire-mars-2025.csv</td><td><span class="cpt">Qonto</span></td><td class="mono r">42</td><td class="mono r">40</td><td class="mono r">2</td><td class="mono">1m35s</td><td><span class="st-done">Terminé</span></td></tr>
+      </tbody></table>
+    </div>
+  </div>
+</div>
+
+<!-- GAP #7 — MAPPING CSV MANUEL -->
+<div class="shell" data-screen="csv-mapping">
+  <aside class="sidebar"><div class="s-id"><strong>DUVAL CONSULTING</strong><span>SASU · Exercice 01/01 – 31/12/2025</span></div><nav class="s-nav"><div class="s-item" data-go="dashboard"><span class="ic">◻</span> Tableau de bord</div><div class="s-item active"><span class="ic">↑</span> Imports</div><div class="s-item" data-go="transactions"><span class="ic">↔</span> Transactions</div><div class="s-item" data-go="ecritures"><span class="ic">✎</span> Écritures</div><div class="s-item" data-go="documents"><span class="ic">▤</span> Documents</div><div class="s-item" data-go="cloture"><span class="ic">✓</span> Clôture</div></nav><div class="s-sep"></div><div class="s-bot"><div class="s-item" data-go="profil"><span class="ic">⚙</span> Profil</div></div></aside>
+  <div class="main"><div class="topbar"><div class="tb-left"><b>Mapping de colonnes</b> — export-banque-inconnue.csv</div></div>
+    <div class="content" style="max-width:720px">
+      <a href="#" data-go="imports-history" style="display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--accent);margin-bottom:20px">← Retour aux imports</a>
+      <div class="alert orange">Le format de ce fichier n'a pas été reconnu automatiquement. Indiquez à quoi correspond chaque colonne.</div>
+      <h2 style="font-size:18px;font-weight:700;margin-bottom:16px">Colonnes détectées</h2>
+      <div style="display:grid;gap:12px">
+        <div class="map-grid"><div class="map-col"><div class="lbl">Colonne A</div><div class="val">Datum</div><div style="font-family:var(--mono);font-size:10px;color:var(--light);margin-top:4px">Ex : 03.01.2025</div></div><div class="map-arrow">→</div><div class="field" style="margin:0"><label>Correspond à</label><select><option>Date de l'opération</option><option>Libellé</option><option>Montant</option><option>— Ignorer —</option></select></div></div>
+        <div class="map-grid"><div class="map-col"><div class="lbl">Colonne B</div><div class="val">Bezeichnung</div><div style="font-family:var(--mono);font-size:10px;color:var(--light);margin-top:4px">Ex : Überweisung OVH SAS</div></div><div class="map-arrow">→</div><div class="field" style="margin:0"><label>Correspond à</label><select><option>Libellé</option></select></div></div>
+        <div class="map-grid"><div class="map-col"><div class="lbl">Colonne C</div><div class="val">Betrag</div><div style="font-family:var(--mono);font-size:10px;color:var(--light);margin-top:4px">Ex : -29,99</div></div><div class="map-arrow">→</div><div class="field" style="margin:0"><label>Correspond à</label><select><option>Montant (signé)</option></select></div></div>
+      </div>
+      <div class="form-info" style="margin-top:20px">Format détecté : <strong>DD.MM.YYYY</strong> · Séparateur : <strong>point-virgule</strong> · Encodage : <strong>UTF-8</strong></div>
+      <div class="map-preview"><h4>Aperçu (3 premières lignes)</h4><table class="tbl" style="margin-top:8px"><thead><tr><th>Date</th><th>Libellé</th><th class="r">Montant</th></tr></thead><tbody><tr><td class="mono">03/01/2025</td><td>Überweisung OVH SAS</td><td class="mono r">−29,99 €</td></tr><tr><td class="mono">05/01/2025</td><td>Kartenzahlung Amazon</td><td class="mono r">−78,45 €</td></tr><tr><td class="mono">08/01/2025</td><td>Gutschrift Startup Innov</td><td class="mono r" style="color:var(--green)">+3 500,00 €</td></tr></tbody></table></div>
+      <div class="form-actions" style="margin-top:24px"><button class="btn btn-ghost" data-go="imports-history">Annuler</button><button class="btn btn-p" style="flex:1">Valider et lancer l'import</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- GAP #8 — CONNECTEURS -->
+<div class="shell" data-screen="connectors">
+  <aside class="sidebar"><div class="s-id"><strong>DUVAL CONSULTING</strong><span>SASU · Exercice 01/01 – 31/12/2025</span></div><nav class="s-nav"><div class="s-item" data-go="dashboard"><span class="ic">◻</span> Tableau de bord</div><div class="s-item" data-go="transactions"><span class="ic">↔</span> Transactions</div><div class="s-item" data-go="ecritures"><span class="ic">✎</span> Écritures</div><div class="s-item" data-go="documents"><span class="ic">▤</span> Documents</div><div class="s-item" data-go="cloture"><span class="ic">✓</span> Clôture</div></nav><div class="s-sep"></div><div class="s-bot"><div class="s-item active" data-go="connectors"><span class="ic">⚡</span> Connecteurs</div><div class="s-item" data-go="profil"><span class="ic">⚙</span> Profil</div></div></aside>
+  <div class="main"><div class="topbar"><div class="tb-left"><b>Connecteurs</b> — Récupération automatique</div></div>
+    <div class="content">
+      <p style="font-size:13px;color:var(--muted);margin-bottom:20px">Connectez Qonto ou Stripe pour récupérer vos transactions automatiquement, sans CSV.</p>
+      <div class="conn-grid">
+        <div class="conn-card connected"><h3><span class="dot"></span> Qonto</h3><div class="desc">Récupère toutes les transactions de votre compte Qonto via l'API.</div><div class="conn-field"><div class="lbl">Organisation</div><div class="val">duval-consulting</div></div><div class="conn-field"><div class="lbl">Clé API</div><div class="val">••••••••••••dK4m</div></div><div class="conn-field"><div class="lbl">Dernier fetch</div><div class="val">12/05/2025 — 12 transactions</div></div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn btn-p btn-sm">Récupérer</button><button class="btn btn-sm">Modifier</button><button class="btn btn-danger btn-sm">Déconnecter</button></div></div>
+        <div class="conn-card"><h3>Stripe</h3><div class="desc">Récupère charges, commissions, payouts et remboursements.</div><div class="form-info" style="margin:0 0 14px">Non connecté. Clé secrète disponible dans Dashboard > Développeurs > Clés API.</div><div class="field"><label>Nom du compte</label><input placeholder="Ex : Mon SaaS"></div><div class="field"><label>Clé secrète</label><input type="password" placeholder="sk_live_..."><span class="help">Chiffrée AES-256-GCM, jamais visible en clair.</span></div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn btn-p btn-sm">Connecter</button><button class="btn btn-sm">Tester</button></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- GAP #4 — IMMOBILISATIONS -->
+<div class="shell" data-screen="immobilisations">
+  <aside class="sidebar"><div class="s-id"><strong>DUVAL CONSULTING</strong><span>SASU · Exercice 01/01 – 31/12/2025</span></div><nav class="s-nav"><div class="s-item" data-go="dashboard"><span class="ic">◻</span> Tableau de bord</div><div class="s-item" data-go="transactions"><span class="ic">↔</span> Transactions</div><div class="s-item" data-go="ecritures"><span class="ic">✎</span> Écritures</div><div class="s-item" data-go="documents"><span class="ic">▤</span> Documents</div><div class="s-item active" data-go="cloture"><span class="ic">✓</span> Clôture</div></nav><div class="s-sep"></div><div class="s-bot"><div class="s-item" data-go="profil"><span class="ic">⚙</span> Profil</div></div></aside>
+  <div class="main"><div class="topbar"><div class="tb-left"><b>Immobilisations</b> — Exercice 2025</div><button class="btn btn-p">Ajouter</button></div>
+    <div class="content">
+      <div class="alert blue">Biens durables > 500 € HT, durée > 1 an. L'IA calcule les amortissements lors de la clôture.</div>
+      <div class="immo-grid">
+        <div class="immo-card"><h3>MacBook Pro 14" M3</h3><div class="immo-row"><span class="lbl">Compte</span><span class="val">2183</span></div><div class="immo-row"><span class="lbl">Acquisition</span><span class="val">10/02/2025</span></div><div class="immo-row"><span class="lbl">Montant HT</span><span class="val">1 899,00 €</span></div><div class="immo-row"><span class="lbl">Méthode</span><span class="val">Linéaire · 3 ans</span></div><div class="immo-row"><span class="lbl">Dotation 2025</span><span class="val">563,89 €</span></div><div class="immo-row"><span class="lbl">VNC 31/12</span><span class="val">1 335,11 €</span></div><div class="immo-bar"><div class="fill" style="width:30%"></div></div><div style="font-size:10px;color:var(--muted)">30 % amorti</div><div style="display:flex;gap:8px;margin-top:12px"><button class="btn btn-sm">Modifier</button><button class="btn btn-danger btn-sm">Supprimer</button></div></div>
+        <div class="immo-card"><h3>Licence Figma Pro (3 ans)</h3><div class="immo-row"><span class="lbl">Compte</span><span class="val">2051</span></div><div class="immo-row"><span class="lbl">Acquisition</span><span class="val">15/06/2023</span></div><div class="immo-row"><span class="lbl">Montant HT</span><span class="val">267,00 €</span></div><div class="immo-row"><span class="lbl">Méthode</span><span class="val">Linéaire · 3 ans</span></div><div class="immo-row"><span class="lbl">Dotation 2025</span><span class="val">89,00 €</span></div><div class="immo-row"><span class="lbl">VNC 31/12</span><span class="val">0,00 €</span></div><div class="immo-bar"><div class="fill" style="width:100%"></div></div><div style="font-size:10px;color:var(--muted)">100 % amorti</div><div style="display:flex;gap:8px;margin-top:12px"><button class="btn btn-sm">Modifier</button><button class="btn btn-danger btn-sm">Supprimer</button></div></div>
+      </div>
+      <div style="margin-top:20px;padding:16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r)"><div style="display:flex;justify-content:space-between;font-size:14px;font-weight:700"><span>Total dotations 2025</span><span style="font-family:var(--mono)">652,89 €</span></div><div style="font-size:12px;color:var(--muted);margin-top:4px">Écritures OD générées automatiquement à l'étape 5 de la clôture.</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- GAP #11 — RAPPROCHEMENT BANCAIRE -->
+<div class="shell" data-screen="cloture-rapprochement">
+  <aside class="sidebar"><div class="s-id"><strong>DUVAL CONSULTING</strong><span>SASU · Exercice 01/01 – 31/12/2025</span></div><nav class="s-nav"><div class="s-item" data-go="dashboard"><span class="ic">◻</span> Tableau de bord</div><div class="s-item" data-go="transactions"><span class="ic">↔</span> Transactions</div><div class="s-item" data-go="ecritures"><span class="ic">✎</span> Écritures</div><div class="s-item" data-go="documents"><span class="ic">▤</span> Documents</div><div class="s-item active" data-go="cloture"><span class="ic">✓</span> Clôture</div></nav><div class="s-sep"></div><div class="s-bot"><div class="s-item" data-go="profil"><span class="ic">⚙</span> Profil</div></div></aside>
+  <div class="main"><div class="topbar"><div class="tb-left"><b>Clôture — Étape 2</b> · Rapprochement bancaire</div></div>
+    <div class="content" style="max-width:680px">
+      <a href="#" data-go="cloture" style="display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--accent);margin-bottom:20px">← Retour à la clôture</a>
+      <h2 style="font-size:20px;font-weight:700;margin-bottom:6px">Rapprochement bancaire</h2>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:24px">Vérifiez que le solde bancaire au 31/12/2025 correspond au solde comptable.</p>
+      <div class="rapp-grid">
+        <div class="rapp-box"><div class="lbl">Solde comptable (5121)</div><div class="amt">18 742,56 €</div><div style="font-size:11px;color:var(--light);margin-top:4px">Calculé depuis les écritures</div></div>
+        <div class="rapp-eq">=</div>
+        <div class="rapp-box" style="border-color:var(--accent)"><div class="lbl">Solde relevé au 31/12/2025</div><div class="field" style="margin:8px 0 0"><input type="text" placeholder="Saisissez le solde" style="text-align:center;font-family:var(--mono);font-size:20px;height:48px"></div></div>
+      </div>
+      <div class="alert green" style="margin-top:20px">Si les soldes sont identiques, l'étape est validée. En cas d'écart, Paperasse identifie les transactions manquantes.</div>
+      <div class="form-actions" style="margin-top:24px"><button class="btn btn-ghost" data-go="cloture">← Retour</button><button class="btn btn-p" style="flex:1">Valider le rapprochement</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- GAP #5 — DÉTAIL ÉTAPE CLÔTURE (AMORTISSEMENTS) -->
+<div class="shell" data-screen="cloture-amortissements">
+  <aside class="sidebar"><div class="s-id"><strong>DUVAL CONSULTING</strong><span>SASU · Exercice 01/01 – 31/12/2025</span></div><nav class="s-nav"><div class="s-item" data-go="dashboard"><span class="ic">◻</span> Tableau de bord</div><div class="s-item" data-go="transactions"><span class="ic">↔</span> Transactions</div><div class="s-item" data-go="ecritures"><span class="ic">✎</span> Écritures</div><div class="s-item" data-go="documents"><span class="ic">▤</span> Documents</div><div class="s-item active" data-go="cloture"><span class="ic">✓</span> Clôture</div></nav><div class="s-sep"></div><div class="s-bot"><div class="s-item" data-go="immobilisations"><span class="ic">⊞</span> Immobilisations</div><div class="s-item" data-go="profil"><span class="ic">⚙</span> Profil</div></div></aside>
+  <div class="main"><div class="topbar"><div class="tb-left"><b>Clôture — Étape 5</b> · Amortissements</div></div>
+    <div class="content" style="max-width:720px">
+      <a href="#" data-go="cloture" style="display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--accent);margin-bottom:20px">← Retour à la clôture</a>
+      <h2 style="font-size:20px;font-weight:700;margin-bottom:6px">Calcul des amortissements</h2>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:16px">L'IA a calculé les dotations pour vos 2 immobilisations.</p>
+      <table class="tbl"><thead><tr><th>Immobilisation</th><th>Compte</th><th>Méthode</th><th class="r">Dotation 2025</th></tr></thead><tbody>
+        <tr><td><b>MacBook Pro 14" M3</b><br><span style="font-size:11px;color:var(--muted)">10/02/2025 · 1 899 € · 3 ans</span></td><td class="mono">2183</td><td>Linéaire (325/365j)</td><td class="mono r"><b>563,89 €</b></td></tr>
+        <tr><td><b>Licence Figma Pro</b><br><span style="font-size:11px;color:var(--muted)">15/06/2023 · 267 € · 3 ans</span></td><td class="mono">2051</td><td>Linéaire</td><td class="mono r"><b>89,00 €</b></td></tr>
+      </tbody></table>
+      <div style="margin-top:16px;padding:14px 16px;background:var(--accent-lt);border-radius:var(--r);display:flex;justify-content:space-between;align-items:center"><span style="font-size:14px;font-weight:700">Total dotations</span><span style="font-family:var(--mono);font-size:20px;font-weight:500;color:var(--accent)">652,89 €</span></div>
+      <h3 style="margin-top:24px;font-size:14px;font-weight:700;margin-bottom:12px">Écritures OD générées</h3>
+      <table class="tbl"><thead><tr><th>Réf</th><th>Libellé</th><th>Compte</th><th class="r">Débit</th><th class="r">Crédit</th></tr></thead><tbody>
+        <tr><td class="mono">OD-05-1</td><td>Dot. amort. MacBook Pro (prorata)</td><td class="mono">68112</td><td class="mono r">563,89 €</td><td class="mono r">—</td></tr>
+        <tr><td class="mono">OD-05-1</td><td>Dot. amort. MacBook Pro</td><td class="mono">28183</td><td class="mono r">—</td><td class="mono r">563,89 €</td></tr>
+        <tr style="background:var(--bg)"><td colspan="5" style="padding:3px"></td></tr>
+        <tr><td class="mono">OD-05-2</td><td>Dot. amort. Licence Figma</td><td class="mono">68111</td><td class="mono r">89,00 €</td><td class="mono r">—</td></tr>
+        <tr><td class="mono">OD-05-2</td><td>Dot. amort. Licence Figma</td><td class="mono">28051</td><td class="mono r">—</td><td class="mono r">89,00 €</td></tr>
+      </tbody></table>
+      <div class="form-actions" style="margin-top:24px"><button class="btn btn-ghost" data-go="cloture">← Étape précédente</button><button class="btn btn-p" style="flex:1">Valider → Étape 6</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- GAP #9 — NOTIFICATIONS -->
+<div class="shell" data-screen="notifications">
+  <aside class="sidebar"><div class="s-id"><strong>DUVAL CONSULTING</strong><span>SASU · Exercice 01/01 – 31/12/2025</span></div><nav class="s-nav"><div class="s-item" data-go="dashboard"><span class="ic">◻</span> Tableau de bord</div><div class="s-item" data-go="transactions"><span class="ic">↔</span> Transactions</div><div class="s-item" data-go="ecritures"><span class="ic">✎</span> Écritures</div><div class="s-item" data-go="documents"><span class="ic">▤</span> Documents</div><div class="s-item" data-go="cloture"><span class="ic">✓</span> Clôture</div></nav><div class="s-sep"></div><div class="s-bot"><div class="s-item active" data-go="notifications"><span class="ic">🔔</span> Notifications <span class="badge-count">3</span></div><div class="s-item" data-go="profil"><span class="ic">⚙</span> Profil</div></div></aside>
+  <div class="main"><div class="topbar"><div class="tb-left"><b>Notifications</b> — 3 non lues</div><button class="btn btn-sm">Tout marquer comme lu</button></div>
+    <div class="content">
+      <div class="filters"><button class="pill active">Toutes (8)</button><button class="pill">Non lues (3)</button><button class="pill">Échéances</button><button class="pill">Imports</button></div>
+      <div class="notif-list">
+        <div class="notif-item unread"><div class="notif-dot red"></div><div class="notif-body"><h4>Échéance TVA (CA3) dans 18 jours</h4><p>Déclaration de TVA mai due le 15 juin 2025.</p></div><div class="notif-time">2h</div></div>
+        <div class="notif-item unread"><div class="notif-dot orange"></div><div class="notif-body"><h4>3 transactions à vérifier</h4><p>Import du 12/05 : 3 transactions non catégorisées.</p></div><div class="notif-time">5h</div></div>
+        <div class="notif-item unread"><div class="notif-dot orange"></div><div class="notif-body"><h4>Alerte seuil TVA — CA à 32 000 €</h4><p>CA approche le seuil franchise (36 800 €).</p></div><div class="notif-time">Hier</div></div>
+        <div class="notif-item"><div class="notif-dot green"></div><div class="notif-body"><h4>Import terminé — 47 transactions</h4><p>44 catégorisées, 3 à vérifier.</p></div><div class="notif-time">12/05</div></div>
+        <div class="notif-item"><div class="notif-dot blue"></div><div class="notif-body"><h4>Qonto — Fetch automatique</h4><p>12 transactions récupérées.</p></div><div class="notif-time">08/05</div></div>
+        <div class="notif-item"><div class="notif-dot green"></div><div class="notif-body"><h4>FEC généré — 142 écritures</h4><p>Fichier disponible dans Documents.</p></div><div class="notif-time">01/05</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- GAP #10 — AUDIT TRAIL -->
+<div class="shell" data-screen="audit">
+  <aside class="sidebar"><div class="s-id"><strong>DUVAL CONSULTING</strong><span>SASU · Exercice 01/01 – 31/12/2025</span></div><nav class="s-nav"><div class="s-item" data-go="dashboard"><span class="ic">◻</span> Tableau de bord</div><div class="s-item" data-go="transactions"><span class="ic">↔</span> Transactions</div><div class="s-item" data-go="ecritures"><span class="ic">✎</span> Écritures</div><div class="s-item" data-go="documents"><span class="ic">▤</span> Documents</div><div class="s-item" data-go="cloture"><span class="ic">✓</span> Clôture</div></nav><div class="s-sep"></div><div class="s-bot"><div class="s-item active"><span class="ic">📋</span> Journal d'activité</div><div class="s-item" data-go="profil"><span class="ic">⚙</span> Profil</div></div></aside>
+  <div class="main"><div class="topbar"><div class="tb-left"><b>Journal d'activité</b></div><button class="btn btn-sm">Exporter CSV</button></div>
+    <div class="content">
+      <div class="filters"><button class="pill active">Tout</button><button class="pill">Imports</button><button class="pill">Catégorisations</button><button class="pill">Clôture</button><button class="pill">Documents</button></div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px">
+        <div class="log-item"><div class="log-icon imp">↑</div><div class="log-text"><b>Import terminé</b> — relevé-mai-2025.csv · 47 tx · 44 catégorisées</div><div class="log-time">12/05 14:32</div></div>
+        <div class="log-item"><div class="log-icon cat">✎</div><div class="log-text"><b>Catégorisation corrigée</b> — Notion Labs → 651100 · Règle créée</div><div class="log-time">12/05 14:45</div></div>
+        <div class="log-item"><div class="log-icon imp">↑</div><div class="log-text"><b>Fetch Qonto</b> — 12 transactions via API</div><div class="log-time">08/05 08:15</div></div>
+        <div class="log-item"><div class="log-icon doc">▤</div><div class="log-text"><b>FEC généré</b> — fec-2025.txt · 142 écritures · generate-fec.js</div><div class="log-time">01/05 10:22</div></div>
+        <div class="log-item"><div class="log-icon clo">✓</div><div class="log-text"><b>Clôture étape 4</b> — PCA/CCA · AXA 40,27 € + Canva 1,57 €</div><div class="log-time">25/04 16:10</div></div>
+        <div class="log-item"><div class="log-icon usr">⚙</div><div class="log-text"><b>Profil modifié</b> — Adresse siège mise à jour</div><div class="log-time">20/04 09:30</div></div>
+        <div class="log-item"><div class="log-icon imp">↑</div><div class="log-text"><b>Import échoué</b> — fichier-corrompu.csv · Encodage non supporté</div><div class="log-time">02/04 09:18</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- GAP #6a — ERREUR PARSING -->
+<div class="shell" data-screen="error-parse">
+  <aside class="sidebar"><div class="s-id"><strong>DUVAL CONSULTING</strong><span>SASU · Exercice 01/01 – 31/12/2025</span></div><nav class="s-nav"><div class="s-item" data-go="dashboard"><span class="ic">◻</span> Tableau de bord</div><div class="s-item active" data-go="imports-history"><span class="ic">↑</span> Imports</div><div class="s-item" data-go="transactions"><span class="ic">↔</span> Transactions</div><div class="s-item" data-go="ecritures"><span class="ic">✎</span> Écritures</div><div class="s-item" data-go="documents"><span class="ic">▤</span> Documents</div><div class="s-item" data-go="cloture"><span class="ic">✓</span> Clôture</div></nav><div class="s-sep"></div><div class="s-bot"><div class="s-item" data-go="profil"><span class="ic">⚙</span> Profil</div></div></aside>
+  <div class="main"><div class="topbar"><div class="tb-left"><b>Erreur d'import</b></div></div>
+    <div class="content"><div class="error-center">
+      <div class="error-icon" style="background:var(--red-bg);color:var(--red)">✕</div>
+      <h2>L'import a échoué.</h2>
+      <p>Le fichier <b>fichier-corrompu.csv</b> n'a pas pu être traité.</p>
+      <div class="error-detail"><div style="font-size:13px;font-weight:600;margin-bottom:4px">Détail</div><div style="font-size:12px;color:var(--muted)">Encodage non supporté (UTF-16 LE). Paperasse supporte UTF-8 et ISO-8859-1.</div><pre>ParseError: Unexpected byte at position 0
+Expected: UTF-8 BOM (EF BB BF) or ASCII
+Found: FF FE (UTF-16 LE BOM)</pre></div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:20px;text-align:left;line-height:1.6"><b>Pour résoudre :</b><br>1. Ouvrez le fichier dans Excel<br>2. Enregistrez en CSV UTF-8<br>3. Réimportez</div>
+      <div style="display:flex;gap:10px;justify-content:center"><button class="btn btn-p" data-go="empty">Réimporter</button><button class="btn" data-go="imports-history">Retour</button></div>
+    </div></div>
+  </div>
+</div>
+
+<!-- GAP #6b — ERREUR TIMEOUT IA -->
+<div class="shell" data-screen="error-ia">
+  <aside class="sidebar"><div class="s-id"><strong>DUVAL CONSULTING</strong><span>SASU · Exercice 01/01 – 31/12/2025</span></div><nav class="s-nav"><div class="s-item" data-go="dashboard"><span class="ic">◻</span> Tableau de bord</div><div class="s-item active" data-go="imports-history"><span class="ic">↑</span> Imports</div><div class="s-item" data-go="transactions"><span class="ic">↔</span> Transactions</div><div class="s-item" data-go="ecritures"><span class="ic">✎</span> Écritures</div><div class="s-item" data-go="documents"><span class="ic">▤</span> Documents</div><div class="s-item" data-go="cloture"><span class="ic">✓</span> Clôture</div></nav><div class="s-sep"></div><div class="s-bot"><div class="s-item" data-go="profil"><span class="ic">⚙</span> Profil</div></div></aside>
+  <div class="main"><div class="topbar"><div class="tb-left"><b>Erreur de catégorisation</b></div></div>
+    <div class="content"><div class="error-center">
+      <div class="error-icon" style="background:var(--orange-bg);color:var(--orange)">⏱</div>
+      <h2>La catégorisation a pris trop de temps.</h2>
+      <p>47 transactions importées, mais 23 n'ont pas encore été catégorisées (timeout batch 2).</p>
+      <div style="display:flex;gap:24px;justify-content:center;margin-bottom:24px">
+        <div style="text-align:center"><div style="font-family:var(--mono);font-size:28px;font-weight:500;color:var(--green)">24</div><div style="font-size:11px;color:var(--muted)">catégorisées</div></div>
+        <div style="text-align:center"><div style="font-family:var(--mono);font-size:28px;font-weight:500;color:var(--orange)">23</div><div style="font-size:11px;color:var(--muted)">en attente</div></div>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:center"><button class="btn btn-p">Relancer</button><button class="btn" data-go="transactions">Voir les transactions</button></div>
+    </div></div>
+  </div>
+</div>
+
+<!-- GAP #12 — MULTI-EXERCICE -->
+<div class="shell" data-screen="multi-exercice">
+  <aside class="sidebar">
+    <div class="s-id"><strong>DUVAL CONSULTING</strong><span>SASU · Exercice 01/01 – 31/12/2025</span>
+      <div style="position:relative;margin-top:10px"><div class="ex-switch" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='block'?'none':'block'">2025 (en cours) <span class="arrow">▾</span></div>
+        <div class="ex-dropdown" style="display:block"><div class="ex-opt active"><span>01/01/2025 – 31/12/2025</span><span class="status" style="background:var(--accent-lt);color:var(--accent)">En cours</span></div><div class="ex-opt"><span>01/01/2024 – 31/12/2024</span><span class="status" style="background:var(--green-bg);color:var(--green)">Clôturé</span></div><div class="ex-opt"><span>15/06/2023 – 31/12/2023</span><span class="status" style="background:var(--green-bg);color:var(--green)">Clôturé</span></div><div class="ex-opt" style="color:var(--accent);font-weight:600;border-bottom:0">+ Créer un exercice</div></div>
+      </div>
+    </div>
+    <nav class="s-nav"><div class="s-item active" data-go="dashboard"><span class="ic">◻</span> Tableau de bord</div><div class="s-item" data-go="transactions"><span class="ic">↔</span> Transactions</div><div class="s-item" data-go="ecritures"><span class="ic">✎</span> Écritures</div><div class="s-item" data-go="documents"><span class="ic">▤</span> Documents</div><div class="s-item" data-go="cloture"><span class="ic">✓</span> Clôture</div></nav><div class="s-sep"></div><div class="s-bot"><div class="s-item" data-go="profil"><span class="ic">⚙</span> Profil</div></div>
+  </aside>
+  <div class="main"><div class="topbar"><div class="tb-left"><b>Bonjour Romain</b> — Exercice 2025</div><div class="ex-switch">2025 (en cours) <span class="arrow">▾</span></div></div>
+    <div class="content">
+      <div class="alert blue">Exercice <b>2025 (en cours)</b>. Changez d'exercice via le sélecteur dans la sidebar.</div>
+      <table class="tbl" style="margin-top:16px"><thead><tr><th>Exercice</th><th>Transactions</th><th>Écritures</th><th>Documents</th><th>Statut</th><th></th></tr></thead><tbody>
+        <tr><td><b>01/01/2025 – 31/12/2025</b></td><td class="mono">142</td><td class="mono">284</td><td class="mono">3</td><td><span class="st-info">En cours</span></td><td><span class="st-ok">Actif</span></td></tr>
+        <tr><td>01/01/2024 – 31/12/2024</td><td class="mono">318</td><td class="mono">636</td><td class="mono">8</td><td><span class="st-done">Clôturé</span></td><td><button class="btn btn-sm">Consulter</button></td></tr>
+        <tr><td>15/06/2023 – 31/12/2023</td><td class="mono">87</td><td class="mono">174</td><td class="mono">6</td><td><span class="st-done">Clôturé</span></td><td><button class="btn btn-sm">Consulter</button></td></tr>
+      </tbody></table>
+      <p style="margin-top:16px;font-size:11px;color:var(--light)">Les exercices clôturés sont en lecture seule. Documents téléchargeables.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ── CHAT FAB + PANEL ── -->
+<button class="chat-fab" onclick="toggleChat()" id="chatFab" aria-label="Ouvrir le chat comptable">💬</button>
+<div class="chat-panel" id="chatPanel">
+  <div class="chat-hd">Chat comptable <button onclick="toggleChat()">×</button></div>
+  <div class="chat-body"><div class="chat-welcome"><strong>Posez une question sur votre comptabilité, votre fiscalité ou vos obligations.</strong>Je réponds avec le contexte de DUVAL CONSULTING.<ul class="chat-ex"><li>Comment comptabiliser un acompte client ?</li><li>Quel est mon seuil de franchise TVA ?</li><li>Est-ce que je dois provisionner mes congés payés ?</li></ul></div></div>
+  <div class="chat-legal">Paperasse est un outil d'aide. Les réponses ne constituent pas un avis d'expert-comptable. Vérifiez les informations importantes avec un professionnel.</div>
+  <div class="chat-ft"><input class="chat-in" placeholder="Votre question…"><button class="chat-send">→</button></div>
+</div>
+
+<script>
+  // Navigation
+  function go(screen){
+    document.querySelectorAll('.shell').forEach(s=>s.classList.remove('active'));
+    const t=document.querySelector('[data-screen="'+screen+'"]');
+    if(t)t.classList.add('active');
+    document.querySelectorAll('.proto button').forEach(b=>b.classList.toggle('active',b.dataset.go===screen));
+    // Chat fab visibility
+    const fab=document.getElementById('chatFab');
+    const noChat=['login','signup','forgot','pricing','onboard-1','onboard-2','onboard-3','onboard-ok'];
+    if(fab)fab.style.display=noChat.includes(screen)?'none':'grid';
+    // Close chat on nav
+    document.getElementById('chatPanel').classList.remove('open');
+    window.scrollTo({top:0});
+  }
+  document.querySelectorAll('[data-go]').forEach(el=>{
+    el.addEventListener('click',e=>{e.preventDefault();go(el.dataset.go)});
+  });
+  function toggleChat(){document.getElementById('chatPanel').classList.toggle('open')}
+  document.querySelectorAll('.x').forEach(b=>b.addEventListener('click',()=>b.closest('.alert').remove()));
+  // Correction radio selection
+  function selectOpt(el){
+    el.closest('.corr-suggest').querySelectorAll('.corr-opt').forEach(o=>o.classList.remove('selected'));
+    el.classList.add('selected');
+  }
+</script>
+</body>
+</html>

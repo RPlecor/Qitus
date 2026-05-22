@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Architecture Backend v3 — Paperasse SaaS MVP</title>
+<style>
+  :root{--ivory:#FAF9F5;--paper:#FFFFFF;--slate:#141413;--clay:#D97757;--clay-d:#B85C3E;--oat:#E3DACC;--olive:#788C5D;--olive-bg:#EFF4E9;--g100:#F0EEE6;--g200:#E6E3DA;--g300:#D1CFC5;--g500:#87867F;--g700:#3D3D3A;--red:#C0392B;--red-bg:#FDEDEC;--amber:#D4A017;--amber-bg:#FFF8E1;--blue:#2E6B8A;--blue-bg:#E8F4F8;--purple:#6C3483;--purple-bg:#F4ECF7;--serif:ui-serif,Georgia,"Times New Roman",serif;--sans:system-ui,-apple-system,"Segoe UI",sans-serif;--mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--sans);color:var(--slate);background:var(--ivory);line-height:1.55;font-size:14px;-webkit-font-smoothing:antialiased}
+  .toc{position:fixed;top:0;left:0;width:240px;height:100vh;overflow-y:auto;background:var(--paper);border-right:1.5px solid var(--g300);padding:24px 14px 48px;z-index:100;font-size:11.5px}
+  .toc-brand{font-family:var(--serif);font-size:14px;font-weight:700;letter-spacing:-.02em;margin-bottom:3px}
+  .toc-sub{font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--g500);margin-bottom:16px}
+  .toc-v{display:inline-block;padding:1px 6px;background:var(--olive-bg);color:var(--olive);border-radius:3px;font-family:var(--mono);font-size:8px;font-weight:700;letter-spacing:.05em;margin-left:4px}
+  .toc a{display:block;padding:3px 0 3px 9px;color:var(--g700);text-decoration:none;border-left:2px solid transparent;transition:.12s;line-height:1.3;font-size:11px}
+  .toc a:hover{color:var(--clay);border-left-color:var(--clay)}
+  .toc a.s{padding-left:18px;font-size:10px;color:var(--g500)}
+  .toc .sep{height:1px;background:var(--g200);margin:8px 0}
+  .main{margin-left:240px;max-width:920px;padding:36px 40px 72px}
+  .mb{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:28px}
+  .mp{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--g500);background:var(--g100);padding:3px 9px;border-radius:3px}
+  .mp b{color:var(--slate)}
+  .mp.new{background:var(--olive-bg);color:var(--olive)}
+  h1{font-family:var(--serif);font-size:clamp(26px,3.8vw,40px);font-weight:700;letter-spacing:-.018em;line-height:1.1;margin-bottom:8px}
+  h1 em{font-style:italic;color:var(--clay)}
+  .sub{font-size:14.5px;color:var(--g700);line-height:1.5;max-width:680px;margin-bottom:36px}
+  h2{font-family:var(--serif);font-size:21px;font-weight:700;letter-spacing:-.015em;line-height:1.15;margin-top:52px;margin-bottom:6px;padding-top:18px;border-top:1.5px solid var(--g300)}
+  h2 .n{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--clay);display:block;margin-bottom:2px}
+  h3{font-family:var(--sans);font-size:14.5px;font-weight:700;margin-top:24px;margin-bottom:8px}
+  h4{font-size:12.5px;font-weight:700;margin-top:18px;margin-bottom:5px;color:var(--g700)}
+  p{margin-bottom:10px;max-width:720px}
+  ul,ol{margin:5px 0 12px 20px;max-width:720px}
+  li{margin-bottom:4px}
+  code,.c{font-family:var(--mono);font-size:11px;background:var(--g100);padding:1px 5px;border-radius:3px;color:var(--clay-d)}
+  .cl{border-left:4px solid var(--blue);background:var(--blue-bg);padding:12px 16px;margin:14px 0;border-radius:0 6px 6px 0;font-size:13px;line-height:1.5;max-width:720px}
+  .cl b{color:var(--blue)}
+  .cl.w{background:var(--amber-bg);border-left-color:var(--amber)}.cl.w b{color:var(--amber)}
+  .cl.d{background:var(--red-bg);border-left-color:var(--red)}.cl.d b{color:var(--red)}
+  .cl.ok{background:var(--olive-bg);border-left-color:var(--olive)}.cl.ok b{color:var(--olive)}
+  .cl.p{background:var(--purple-bg);border-left-color:var(--purple)}.cl.p b{color:var(--purple)}
+  .tw{overflow-x:auto;margin:12px 0 20px;border-radius:7px;border:1px solid var(--g200);background:var(--paper)}
+  table{width:100%;border-collapse:collapse;font-size:12px;line-height:1.4}
+  thead th{background:var(--g100);font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--g700);text-align:left;padding:7px 10px;border-bottom:1.5px solid var(--g300);white-space:nowrap}
+  td{padding:7px 10px;border-bottom:1px solid var(--g200);vertical-align:top}
+  tr:last-child td{border-bottom:none}
+  tr:hover{background:var(--g100)}
+  td b{color:var(--slate)}
+  .bg{display:inline-block;font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.04em;padding:2px 6px;border-radius:3px;font-weight:700}
+  .bg.b{background:var(--olive-bg);color:var(--olive)}
+  .bg.r{background:var(--blue-bg);color:var(--blue)}
+  .bg.h{background:var(--purple-bg);color:var(--purple)}
+  .bg.crit{background:var(--red);color:#fff}
+  .bg.high{background:var(--red-bg);color:var(--red)}
+  .bg.med{background:var(--amber-bg);color:var(--amber)}
+  .bg.low{background:var(--olive-bg);color:var(--olive)}
+  .af{display:flex;align-items:center;gap:0;margin:16px 0;flex-wrap:wrap;justify-content:center}
+  .ab{background:var(--paper);border:1.5px solid var(--g300);border-radius:5px;padding:8px 12px;font-size:10.5px;text-align:center;min-width:100px}
+  .ab .al{font-family:var(--mono);font-size:8px;text-transform:uppercase;letter-spacing:.07em;color:var(--g500);margin-bottom:2px}
+  .ab .at{font-weight:700;font-size:11.5px}
+  .aa{font-size:14px;color:var(--g300);padding:0 4px}
+  pre{background:var(--slate);color:#E8E6DF;padding:14px 16px;border-radius:7px;overflow-x:auto;font-family:var(--mono);font-size:11px;line-height:1.5;margin:12px 0 18px;max-width:100%}
+  .pg{display:grid;gap:6px;margin:14px 0 20px}
+  .ps{display:grid;grid-template-columns:28px 1fr;gap:10px;padding:10px 12px;background:var(--paper);border:1px solid var(--g200);border-radius:5px}
+  .pn{width:24px;height:24px;border-radius:50%;background:var(--clay);color:#fff;font-family:var(--mono);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center}
+  .ps h4{margin:0 0 2px;font-size:12px}.ps p{margin:0;font-size:11px;color:var(--g700)}
+  .eg{margin:14px 0}
+  .eg h4{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--clay);margin-bottom:6px;padding-bottom:3px;border-bottom:1px solid var(--g200)}
+  .ep{display:grid;grid-template-columns:65px 1fr auto;gap:6px;padding:4px 0;font-size:11.5px;border-bottom:1px solid var(--g100)}
+  .ep:last-child{border-bottom:none}
+  .mt{font-family:var(--mono);font-size:9.5px;font-weight:700;padding:1px 5px;border-radius:3px}
+  .mt.g{background:#E8F4F8;color:#2E6B8A}.mt.po{background:#EFF4E9;color:#4A7C2E}.mt.pa{background:#FFF8E1;color:#B45309}.mt.de{background:#FDEDEC;color:#C0392B}
+  .pt{font-family:var(--mono);font-size:11px;color:var(--slate)}
+  .ds{color:var(--g500);font-size:10.5px}
+  .ft{margin-top:48px;padding-top:18px;border-top:1.5px solid var(--g300);font-size:11px;color:var(--g500);font-style:italic;max-width:720px;line-height:1.5}
+  .ck{margin:16px 0 20px;max-width:720px}
+  .ck label{display:flex;align-items:flex-start;gap:8px;padding:6px 0;font-size:12.5px;cursor:pointer;border-bottom:1px solid var(--g100)}
+  .ck input{margin-top:2px;accent-color:var(--olive)}
+  @media(max-width:880px){.toc{display:none}.main{margin-left:0;padding:18px 16px 48px}.af{flex-direction:column}.aa{transform:rotate(90deg)}}
+</style>
+</head>
+<body>
+
+<nav class="toc">
+  <div class="toc-brand">Architecture Backend <span class="toc-v">V3</span></div>
+  <div class="toc-sub">Paperasse SaaS · Mai 2026 · 28 écrans couverts</div>
+  <a href="#delta3">Changements vs v2</a>
+  <a href="#delta">Changements vs v1</a>
+  <div class="sep"></div>
+  <a href="#ctx">1. Contexte & périmètre</a>
+  <a href="#repo" class="s">1.1 Inventaire repo</a>
+  <a href="#brm" class="s">1.2 Build vs Reuse</a>
+  <a href="#fe" class="s">1.3 Audit frontend</a>
+  <a href="#gaps" class="s">1.4 Gaps frontend</a>
+  <div class="sep"></div>
+  <a href="#stack">2. Stack technique</a>
+  <a href="#adapter">3. PaperasseAdapter</a>
+  <a href="#data">4. Modèle de données</a>
+  <div class="sep"></div>
+  <a href="#svc">5. Services</a>
+  <a href="#svc-import" class="s">5.2 Import pipeline</a>
+  <a href="#svc-docs" class="s">5.3 Documents (REUSE)</a>
+  <a href="#svc-cloture" class="s">5.4 Clôture (HYBRID)</a>
+  <a href="#svc-chat" class="s">5.5 Chat</a>
+  <div class="sep"></div>
+  <a href="#ia">6. Intégration IA</a>
+  <a href="#api">7. API endpoints</a>
+  <a href="#sec">8. Sécurité & RGPD</a>
+  <a href="#infra">9. Infrastructure</a>
+  <a href="#open">10. Points ouverts</a>
+  <a href="#plan">11. Plan de livraison</a>
+  <a href="#check">12. Checklist architecte</a>
+</nav>
+
+<div class="main">
+
+  <div class="mb">
+    <span class="mp"><b>Version</b> 3.0</span>
+    <span class="mp new"><b>Corrigée</b> audit 28 écrans</span>
+    <span class="mp"><b>44 routes API</b></span>
+    <span class="mp"><b>Output</b> Specs + Plan implémentation</span>
+  </div>
+
+  <h1>Architecture <em>Backend</em> — Paperasse SaaS MVP</h1>
+  <p class="sub">Version corrigée intégrant l'audit repo Paperasse + l'audit croisé des 28 écrans du prototype frontend. 28/28 écrans couverts, 44 routes API documentées.</p>
+
+  <!-- DELTA V3 -->
+  <h2 id="delta3"><span class="n">Delta v3</span>Ajouts post-audit 28 écrans</h2>
+  <div class="cl ok"><b>9 endpoints ajoutés + 1 champ modèle</b> — comblent les 6 trous identifiés par l'audit croisé frontend × backend v2.</div>
+  <div class="tw"><table>
+    <thead><tr><th>Ajout</th><th>Écran</th><th>Raison</th></tr></thead>
+    <tbody>
+      <tr><td><code>GET /api/imports/:id/detected-columns</code></td><td>Mapping CSV</td><td>GenericParser détecte les colonnes mais ne les expose pas</td></tr>
+      <tr><td><code>POST /api/imports/:id/retry</code></td><td>Historique imports</td><td>Réessayer un import échoué</td></tr>
+      <tr><td><code>POST /api/imports/:id/retry-categorization</code></td><td>Erreur IA</td><td>Relancer les batches IA sans re-parser</td></tr>
+      <tr><td><code>PATCH /api/notifications/read-all</code></td><td>Notifications</td><td>Bouton "Tout marquer comme lu"</td></tr>
+      <tr><td><code>GET /api/activity-log</code></td><td>Audit trail</td><td>Modèle + middleware existaient, pas de route lecture</td></tr>
+      <tr><td><code>GET /api/activity-log/export</code></td><td>Audit trail</td><td>Bouton "Exporter CSV"</td></tr>
+      <tr><td><code>GET /api/fiscal-years</code></td><td>Multi-exercice</td><td>Lister les exercices</td></tr>
+      <tr><td><code>POST /api/fiscal-years</code></td><td>Multi-exercice</td><td>"Créer un exercice" dans le dropdown</td></tr>
+      <tr><td><code>PATCH /api/fiscal-years/:id/activate</code></td><td>Multi-exercice</td><td>Switcher l'exercice actif</td></tr>
+      <tr><td><code>GET /api/exports/all</code></td><td>RGPD §8.3</td><td>Mentionné dans le texte mais absent des routes</td></tr>
+      <tr><td><code>Integration.lastFetchCount Int?</code></td><td>Connecteurs</td><td>Proto affiche "12 transactions" pour le dernier fetch</td></tr>
+    </tbody>
+  </table></div>
+
+  <!-- DELTA -->
+  <h2 id="delta"><span class="n">Delta</span>Changements vs v1</h2>
+  <div class="cl p"><b>3 principes directeurs v2 :</b><br>1. Ne pas réécrire ce qui fonctionne (scripts 93/93 evals).<br>2. L'IA exécute la logique métier, le backend orchestre.<br>3. L'adapter est le composant critique (Prisma ↔ formats Paperasse).</div>
+
+  <div class="tw"><table>
+    <thead><tr><th>Composant</th><th>v1 (erreur)</th><th>v2 (corrigé)</th></tr></thead>
+    <tbody>
+      <tr><td>Génération FEC</td><td>Service backend à construire</td><td><span class="bg r">REUSE</span> <code>generate-fec.js</code> via adapter</td></tr>
+      <tr><td>Génération états financiers</td><td>Service backend à construire</td><td><span class="bg r">REUSE</span> <code>generate-statements.js</code></td></tr>
+      <tr><td>Génération PDFs</td><td>Puppeteer ou @react-pdf à décider</td><td><span class="bg r">REUSE</span> <code>generate-pdfs.js</code> + templates HTML</td></tr>
+      <tr><td>Calcul IS</td><td>ISCalculator backend hardcodé</td><td><span class="bg h">HYBRID</span> L'IA calcule via skill, backend valide</td></tr>
+      <tr><td>Calcul amortissements</td><td>Service backend</td><td><span class="bg h">HYBRID</span> IA calcule, backend valide (double-check)</td></tr>
+      <tr><td>Calcul PCA/CCA</td><td>Service backend</td><td><span class="bg h">HYBRID</span> IA calcule, backend valide</td></tr>
+      <tr><td>Workflow clôture</td><td>12 steps hardcodés en TypeScript</td><td><span class="bg h">HYBRID</span> Backend orchestre, IA exécute via <code>cloture-workflow.md</code></td></tr>
+      <tr><td>Connecteurs Qonto/Stripe</td><td>"V1, après le MVP"</td><td><span class="bg r">REUSE</span> Scripts existants, intégrables dès MVP (optionnel)</td></tr>
+      <tr><td>PCG data</td><td>"Charger en mémoire"</td><td><span class="bg r">REUSE</span> <code>data/pcg_YYYY.json</code> lu depuis le fork</td></tr>
+      <tr><td>Fraîcheur réglementaire</td><td>"Pipeline à construire"</td><td><span class="bg r">REUSE</span> <code>update_data.py</code> en cron quotidien</td></tr>
+      <tr><td>Calendrier fiscal</td><td>"Hardcodé dans le backend"</td><td><span class="bg r">REUSE</span> Le skill comptable gère dynamiquement</td></tr>
+      <tr><td>—</td><td>Pas de composant adapter</td><td><span class="bg b">BUILD</span> <b>PaperasseAdapter</b> — nouveau composant critique</td></tr>
+    </tbody>
+  </table></div>
+
+  <!-- 1. CONTEXTE -->
+  <h2 id="ctx"><span class="n">Section 01</span>Contexte et périmètre</h2>
+
+  <h3 id="repo">1.1 Inventaire du repo Paperasse — 6 couches de logique métier</h3>
+
+  <h4>Scripts Node.js exécutables (logique déterministe, pas IA)</h4>
+  <div class="tw"><table>
+    <thead><tr><th>Script</th><th>Input</th><th>Output</th><th>Statut</th></tr></thead>
+    <tbody>
+      <tr><td><code>generate-statements.js</code></td><td><code>journal-entries.json</code> + <code>company.json</code></td><td>Bilan, CR, Balance (JSON)</td><td>93/93 evals</td></tr>
+      <tr><td><code>generate-fec.js</code></td><td><code>journal-entries.json</code> + <code>company.json</code></td><td>FEC 18 col. .txt (art. L.47 A-I LPF)</td><td>Fonctionnel</td></tr>
+      <tr><td><code>generate-pdfs.js</code></td><td>JSON + <code>company.json</code> + templates HTML</td><td>PDFs A4 professionnels</td><td>Fonctionnel</td></tr>
+      <tr><td><code>update_data.py</code></td><td><code>data/sources.json</code></td><td>PCG, nomenclature liasse mis à jour</td><td>Fonctionnel</td></tr>
+      <tr><td><code>qonto/fetch.js</code></td><td><code>company.json</code> + <code>.env</code></td><td><code>data/transactions/*.json</code></td><td>Fonctionnel</td></tr>
+      <tr><td><code>stripe/fetch.js</code></td><td><code>company.json</code> + <code>.env</code></td><td><code>data/transactions/*.json</code></td><td>Fonctionnel</td></tr>
+    </tbody>
+  </table></div>
+
+  <h4>Données de référence open-source</h4>
+  <div class="tw"><table>
+    <thead><tr><th>Fichier</th><th>Contenu</th><th>Source</th></tr></thead>
+    <tbody>
+      <tr><td><code>data/pcg_YYYY.json</code></td><td>PCG 800+ comptes et libellés</td><td>data.gouv.fr</td></tr>
+      <tr><td><code>data/nomenclature-liasse-fiscale.csv</code></td><td>Clés/libellés cases liasse</td><td>data.gouv.fr</td></tr>
+      <tr><td><code>data/sources.json</code></td><td>Tracking fraîcheur données</td><td>Interne repo</td></tr>
+    </tbody>
+  </table></div>
+
+  <h4>Templates avec placeholders</h4>
+  <div class="tw"><table>
+    <thead><tr><th>Template</th><th>Format</th><th>Usage</th></tr></thead>
+    <tbody>
+      <tr><td><code>declaration-confidentialite.html</code></td><td>HTML → PDF</td><td>Rempli par <code>generate-pdfs.js</code></td></tr>
+      <tr><td><code>2065-sd.html</code></td><td>HTML → PDF</td><td>Déclaration IS pré-remplie</td></tr>
+      <tr><td><code>approbation-comptes.md</code></td><td>Markdown</td><td>PV adapté forme juridique</td></tr>
+      <tr><td><code>liasse-fiscale-2033.md</code></td><td>Markdown</td><td>Cases 2033-A à 2033-D</td></tr>
+      <tr><td><code>depot-greffe-checklist.md</code></td><td>Markdown</td><td>Checklist complète</td></tr>
+    </tbody>
+  </table></div>
+
+  <h4>Skills IA — logique métier encodée</h4>
+  <div class="tw"><table>
+    <thead><tr><th>Skill</th><th>Logique métier</th><th>Architecture</th></tr></thead>
+    <tbody>
+      <tr><td><code>comptable/SKILL.md</code></td><td>PCG mapping, TVA (6 régimes), IS, amortissements, PCA/CCA, rapprochement, calendrier fiscal</td><td>L'IA fait le calcul. Backend ne hardcode PAS.</td></tr>
+      <tr><td><code>cloture-workflow.md</code></td><td>12 étapes avec prérequis, actions, résultats</td><td>L'IA exécute. Backend orchestre et persiste.</td></tr>
+      <tr><td><code>controleur-fiscal</code></td><td>8 axes DGFIP, chefs de redressement</td><td>V1</td></tr>
+      <tr><td><code>commissaire-aux-comptes</code></td><td>7 phases NEP, opinion motivée</td><td>V1</td></tr>
+      <tr><td><code>notaire</code></td><td>Frais, succession, donation, SCI</td><td>V2</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3 id="brm">1.2 Matrice Build vs Reuse</h3>
+  <div class="tw"><table>
+    <thead><tr><th>Composant</th><th>Verdict</th><th>Détail</th></tr></thead>
+    <tbody>
+      <tr><td>Parsers CSV bancaires</td><td><span class="bg b">BUILD</span></td><td>N'existe pas dans le repo</td></tr>
+      <tr><td>Normalisation transactions</td><td><span class="bg b">BUILD</span></td><td>S'aligner sur <code>data/transactions/</code></td></tr>
+      <tr><td>Catégorisation IA</td><td><span class="bg r">REUSE</span></td><td>Skill comptable = prompt système</td></tr>
+      <tr><td>Calcul IS</td><td><span class="bg h">HYBRID</span></td><td>IA calcule via skill, backend valide</td></tr>
+      <tr><td>Calcul amortissements</td><td><span class="bg h">HYBRID</span></td><td>IA + double-check backend</td></tr>
+      <tr><td>Calcul PCA/CCA</td><td><span class="bg h">HYBRID</span></td><td>IA + double-check backend</td></tr>
+      <tr><td>Workflow clôture (orchestration)</td><td><span class="bg b">BUILD</span></td><td>État, progression, persistence, UI</td></tr>
+      <tr><td>Workflow clôture (logique métier)</td><td><span class="bg r">REUSE</span></td><td>IA exécute via <code>cloture-workflow.md</code></td></tr>
+      <tr><td>Génération FEC</td><td><span class="bg r">REUSE</span></td><td><code>generate-fec.js</code> via adapter</td></tr>
+      <tr><td>Génération états financiers</td><td><span class="bg r">REUSE</span></td><td><code>generate-statements.js</code></td></tr>
+      <tr><td>Génération PDFs</td><td><span class="bg r">REUSE</span></td><td><code>generate-pdfs.js</code> + templates</td></tr>
+      <tr><td>Connecteur Qonto</td><td><span class="bg r">REUSE</span></td><td><code>qonto/fetch.js</code> dans pipeline import</td></tr>
+      <tr><td>Connecteur Stripe</td><td><span class="bg r">REUSE</span></td><td><code>stripe/fetch.js</code> dans pipeline import</td></tr>
+      <tr><td>PCG data</td><td><span class="bg r">REUSE</span></td><td><code>data/pcg_YYYY.json</code> filesystem</td></tr>
+      <tr><td>Fraîcheur réglementaire</td><td><span class="bg r">REUSE</span></td><td><code>update_data.py</code> cron quotidien</td></tr>
+      <tr><td>Calendrier fiscal</td><td><span class="bg r">REUSE</span></td><td>Le skill gère dynamiquement</td></tr>
+      <tr><td>PaperasseAdapter</td><td><span class="bg b">BUILD</span></td><td>Pont Prisma ↔ formats repo</td></tr>
+      <tr><td>Auth / Subscription / Rate limit</td><td><span class="bg b">BUILD</span></td><td>N'existe pas</td></tr>
+      <tr><td>Multi-tenancy / BDD / API</td><td><span class="bg b">BUILD</span></td><td>Repo = single-user filesystem</td></tr>
+      <tr><td>Chat IA (infra web)</td><td><span class="bg b">BUILD</span></td><td>Skill existe, infra SSE non</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3 id="fe">1.3 Écrans frontend identifiés</h3>
+  <div class="tw"><table>
+    <thead><tr><th>#</th><th>Écran</th><th>Route</th><th>Endpoints</th></tr></thead>
+    <tbody>
+      <tr><td>1-4</td><td>Onboarding (3 steps + succès)</td><td><code>/onboarding/*</code></td><td><code>POST/PATCH /api/companies</code></td></tr>
+      <tr><td>5</td><td>Import — vide</td><td><code>/dashboard</code></td><td><code>GET /api/imports</code></td></tr>
+      <tr><td>6</td><td>Import — traitement</td><td><code>/imports/:id/processing</code></td><td><code>GET .../status</code> (SSE)</td></tr>
+      <tr><td>7</td><td>Dashboard</td><td><code>/dashboard</code></td><td><code>GET /api/dashboard/kpis</code></td></tr>
+      <tr><td>8</td><td>Transactions</td><td><code>/transactions</code></td><td><code>GET /api/transactions</code></td></tr>
+      <tr><td>9</td><td>Correction</td><td><code>/transactions/:id/review</code></td><td><code>GET .../suggestions</code>, <code>PATCH .../categorize</code></td></tr>
+      <tr><td>10</td><td>Écritures</td><td><code>/ecritures</code></td><td><code>GET /api/journal-entries</code></td></tr>
+      <tr><td>11</td><td>Documents</td><td><code>/documents</code></td><td><code>GET/POST /api/documents</code></td></tr>
+      <tr><td>12</td><td>Clôture</td><td><code>/cloture</code></td><td><code>GET/POST /api/cloture</code></td></tr>
+      <tr><td>13</td><td>Profil</td><td><code>/profil</code></td><td><code>GET/PATCH/DELETE /api/companies</code></td></tr>
+      <tr><td>14</td><td>Chat IA</td><td>Global</td><td><code>POST /api/chat/message</code> (SSE)</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3 id="gaps">1.4 Gaps frontend — 12/12 couverts (v3)</h3>
+  <div class="cl ok"><b>Tous les gaps sont couverts.</b> Les ajouts v3 sont indiqués dans la dernière colonne.</div>
+  <div class="tw"><table>
+    <thead><tr><th>#</th><th>Manquant</th><th>Impact</th><th>Crit.</th><th>API v3</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td><b>Auth</b></td><td>Clerk</td><td><span class="bg crit">Crit</span></td><td><span class="bg low">✅</span></td></tr>
+      <tr><td>2</td><td><b>Abonnement</b></td><td>Stripe Billing</td><td><span class="bg crit">Crit</span></td><td><span class="bg low">✅</span></td></tr>
+      <tr><td>3</td><td><b>Historique imports</b></td><td><code>/api/imports</code></td><td><span class="bg high">Haute</span></td><td><span class="bg low">✅</span> + <code>retry</code></td></tr>
+      <tr><td>4</td><td><b>Immobilisations</b></td><td>CRUD</td><td><span class="bg high">Haute</span></td><td><span class="bg low">✅</span></td></tr>
+      <tr><td>5</td><td><b>Détail clôture</b></td><td>Sous-routes</td><td><span class="bg high">Haute</span></td><td><span class="bg low">✅</span></td></tr>
+      <tr><td>6</td><td><b>Erreurs</b></td><td>Retry</td><td><span class="bg high">Haute</span></td><td><span class="bg low">✅</span> + <code>retry-cat.</code></td></tr>
+      <tr><td>7</td><td><b>Mapping CSV</b></td><td>Column mapping</td><td><span class="bg high">Haute</span></td><td><span class="bg low">✅</span> + <code>detected-cols</code></td></tr>
+      <tr><td>8</td><td><b>Connecteurs</b></td><td>Integrations</td><td><span class="bg med">Moy</span></td><td><span class="bg low">✅</span> + <code>lastFetchCount</code></td></tr>
+      <tr><td>9</td><td><b>Notifications</b></td><td>Table + SSE</td><td><span class="bg med">Moy</span></td><td><span class="bg low">✅</span> + <code>read-all</code></td></tr>
+      <tr><td>10</td><td><b>Audit trail</b></td><td>activity_log</td><td><span class="bg med">Moy</span></td><td><span class="bg low">✅</span> + <code>GET + export</code></td></tr>
+      <tr><td>11</td><td><b>Rapprochement</b></td><td>Step clôture</td><td><span class="bg med">Moy</span></td><td><span class="bg low">✅</span></td></tr>
+      <tr><td>12</td><td><b>Multi-exercice</b></td><td>fiscal_year_id</td><td><span class="bg low">Basse</span></td><td><span class="bg low">✅</span> + <code>fiscal-years</code></td></tr>
+    </tbody>
+  </table></div>
+
+  <!-- 2. STACK -->
+  <h2 id="stack"><span class="n">Section 02</span>Stack technique</h2>
+  <div class="tw"><table>
+    <thead><tr><th>Couche</th><th>Techno</th><th>Justification</th></tr></thead>
+    <tbody>
+      <tr><td>Runtime</td><td><b>Node.js 20 LTS</b></td><td>Scripts Paperasse = JS → compatibilité directe</td></tr>
+      <tr><td>Langage</td><td><b>TypeScript 5.x</b></td><td>Type safety, cohérence ShopPilote</td></tr>
+      <tr><td>Framework</td><td><b>Remix v2+</b></td><td>SSR landing, cohérence ShopPilote</td></tr>
+      <tr><td>ORM</td><td><b>Prisma 5.x</b></td><td>Migrations, type-safe queries</td></tr>
+      <tr><td>BDD</td><td><b>PostgreSQL 16</b></td><td>Données structurées, JSON columns</td></tr>
+      <tr><td>Queue</td><td><b>BullMQ 5.x</b></td><td>Import, catégorisation, docs async</td></tr>
+      <tr><td>Cache</td><td><b>Redis 7.x</b></td><td>BullMQ + cache prompt + rate limit</td></tr>
+      <tr><td>IA</td><td><b>Anthropic Claude Sonnet</b></td><td>Skills Paperasse conçus pour Claude</td></tr>
+      <tr><td>Auth</td><td><b>Clerk</b></td><td>Onboarding rapide, SSO futur</td></tr>
+      <tr><td>Storage</td><td><b>Scaleway S3</b></td><td>Souveraineté FR</td></tr>
+      <tr><td>Hosting</td><td><b>Render</b></td><td>Cohérence ShopPilote</td></tr>
+      <tr><td><b>Repo Paperasse</b></td><td><b>Fork Git (MIT)</b></td><td>Scripts, skills, data, templates — submodule</td></tr>
+    </tbody>
+  </table></div>
+
+  <!-- 3. ADAPTER -->
+  <h2 id="adapter"><span class="n">Section 03</span>Composant critique : PaperasseAdapter</h2>
+  <p>Le <b>pont entre PostgreSQL (Prisma) et le filesystem du repo Paperasse</b>. Sans lui, les scripts ne tournent pas.</p>
+
+  <h3>Interface</h3>
+  <pre>interface PaperasseAdapter {
+  // BDD → Paperasse (alimenter les scripts)
+  toCompanyJson(company): PaperasseCompanyJson;
+  toJournalEntriesJson(entries): PaperasseJournalEntry[];
+  toImmobilisationsJson(immos): PaperasseImmobilisation[];
+
+  // Paperasse → BDD (ingérer les résultats)
+  fromTransactionsJson(data): CreateTransactionInput[];
+  fromAIJournalEntries(data): CreateJournalEntryInput[];
+
+  // Filesystem (préparer l'env des scripts)
+  prepareWorkDir(company, entries): Promise&lt;string&gt;;
+  cleanupWorkDir(workDir): Promise&lt;void&gt;;
+}</pre>
+
+  <h3>Flux d'exécution type (génération FEC)</h3>
+  <div class="pg">
+    <div class="ps"><div class="pn">1</div><div><h4>Charge depuis PostgreSQL</h4><p>Company + JournalEntries via Prisma</p></div></div>
+    <div class="ps"><div class="pn">2</div><div><h4>prepareWorkDir()</h4><p>Crée <code>/tmp/paperasse-{uuid}/</code>, écrit <code>company.json</code> + <code>data/journal-entries.json</code> (via adapter), copie <code>data/pcg_YYYY.json</code> et <code>templates/</code> depuis le fork</p></div></div>
+    <div class="ps"><div class="pn">3</div><div><h4>Exécute le script</h4><p><code>child_process.execFile('node', ['scripts/generate-fec.js'], { cwd: workDir })</code></p></div></div>
+    <div class="ps"><div class="pn">4</div><div><h4>Récupère le résultat</h4><p>Lit <code>workDir/output/fec-2025.txt</code></p></div></div>
+    <div class="ps"><div class="pn">5</div><div><h4>Upload S3 + BDD</h4><p>S3.upload() → prisma.document.create({ generatedBy: 'script:generate-fec' })</p></div></div>
+    <div class="ps"><div class="pn">6</div><div><h4>cleanupWorkDir()</h4><p>Supprime le répertoire temporaire (RGPD)</p></div></div>
+  </div>
+
+  <div class="cl w"><b>Variante :</b> si les scripts exportent leurs fonctions (<code>module.exports = { generateFEC }</code>), l'adapter les importe directement — pas besoin de workDir ni child_process. L'architecte doit auditer les scripts pour le déterminer.</div>
+
+  <!-- 4. DATA MODEL -->
+  <h2 id="data"><span class="n">Section 04</span>Modèle de données</h2>
+  <p><b>22 tables, 18 enums.</b> Le schéma Prisma complet est dans le fichier <code>.md</code>. Points structurants :</p>
+
+  <div class="tw"><table>
+    <thead><tr><th>Domaine</th><th>Tables</th><th>Relations clés</th></tr></thead>
+    <tbody>
+      <tr><td><b>Auth & Tenancy</b></td><td><code>User</code>, <code>Company</code>, <code>Subscription</code></td><td>User → Company (1:N)</td></tr>
+      <tr><td><b>Exercice</b></td><td><code>FiscalYear</code></td><td>Pivot central — toutes entités métier rattachées</td></tr>
+      <tr><td><b>Integrations</b></td><td><code>Integration</code></td><td>Qonto/Stripe config + secrets chiffrés AES-256-GCM</td></tr>
+      <tr><td><b>Import</b></td><td><code>BankAccount</code>, <code>Import</code></td><td>Import → Transaction (1:N), <b>status NEEDS_MAPPING ajouté</b></td></tr>
+      <tr><td><b>Transactions</b></td><td><code>Transaction</code>, <code>Categorization</code>, <code>CorrectionRule</code></td><td>Tx ↔ Categ (1:1), CorrectionRule = règles apprentissage</td></tr>
+      <tr><td><b>Journal</b></td><td><code>JournalEntry</code>, <code>JournalLine</code></td><td>Format compatible <code>journal-entries.json</code> du repo</td></tr>
+      <tr><td><b>Clôture</b></td><td><code>ClotureState</code>, <code>Immobilisation</code></td><td>stepsState en JSON (structure variable par étape)</td></tr>
+      <tr><td><b>Documents</b></td><td><code>Document</code></td><td><b>generatedBy</b> trace le script source, <b>scriptVersion</b> trace le commit du fork</td></tr>
+      <tr><td><b>Chat</b></td><td><code>ChatSession</code>, <code>ChatMessage</code></td><td>Tracking tokens/coûts par message</td></tr>
+      <tr><td><b>Audit</b></td><td><code>ActivityLog</code>, <code>Notification</code></td><td>Indexés par companyId + createdAt</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="cl"><b>Contraintes critiques :</b> Multi-tenancy par <code>companyId</code>. Montants en <code>Decimal</code> (jamais Float). <code>Document.generatedBy</code> = traçabilité du script. <code>Document.scriptVersion</code> = hash commit du fork utilisé.</div>
+
+  <!-- 5. SERVICES -->
+  <h2 id="svc"><span class="n">Section 05</span>Architecture des services</h2>
+
+  <h3>5.1 Vue d'ensemble</h3>
+  <div class="af">
+    <div class="ab"><div class="al">Client</div><div class="at">Remix</div></div>
+    <div class="aa">→</div>
+    <div class="ab"><div class="al">API</div><div class="at">Routes + Middleware</div></div>
+    <div class="aa">→</div>
+    <div class="ab"><div class="al">Services</div><div class="at">Import · IA · Docs · Clôture · Chat</div></div>
+    <div class="aa">→</div>
+    <div class="ab" style="border-color:var(--clay);background:#FFF5F0"><div class="al" style="color:var(--clay)">Critique</div><div class="at">PaperasseAdapter</div></div>
+    <div class="aa">→</div>
+    <div class="ab"><div class="al">Fork</div><div class="at">scripts/ · data/ · templates/ · skills/</div></div>
+  </div>
+
+  <h3 id="svc-import">5.2 Service Import — pipeline</h3>
+
+  <h4>Source CSV (BUILD)</h4>
+  <div class="tw"><table>
+    <thead><tr><th>Étape</th><th>Action</th><th>B/R</th></tr></thead>
+    <tbody>
+      <tr><td>1. detect_format</td><td>5 premières lignes → encodage, séparateur, banque</td><td><span class="bg b">BUILD</span></td></tr>
+      <tr><td>2. parse_normalize</td><td>Parser spécifique → Transaction normalisée</td><td><span class="bg b">BUILD</span></td></tr>
+      <tr><td>2b. needs_mapping</td><td>Si GenericParser → colonnes détectées, attend mapping user</td><td><span class="bg b">BUILD</span></td></tr>
+      <tr><td>3. apply_rules</td><td>Match CorrectionRules → pré-catégorise</td><td><span class="bg b">BUILD</span></td></tr>
+      <tr><td>4. ai_categorize</td><td>Batch 15-25 tx, skill comptable = prompt</td><td><span class="bg r">REUSE</span> skill</td></tr>
+      <tr><td>5. gen_entries</td><td>HIGH/MEDIUM → JournalEntry partie double</td><td><span class="bg b">BUILD</span></td></tr>
+    </tbody>
+  </table></div>
+
+  <h4>Source Qonto / Stripe API (REUSE)</h4>
+  <div class="tw"><table>
+    <thead><tr><th>Étape</th><th>Action</th><th>B/R</th></tr></thead>
+    <tbody>
+      <tr><td>1. fetch</td><td>Exécute <code>integrations/qonto/fetch.js</code> ou <code>stripe/fetch.js</code></td><td><span class="bg r">REUSE</span></td></tr>
+      <tr><td>2. normalize</td><td><code>PaperasseAdapter.fromTransactionsJson()</code></td><td><span class="bg b">BUILD</span> adapter</td></tr>
+      <tr><td>3-5</td><td>Identique au CSV (rules, IA, journal)</td><td>Idem</td></tr>
+    </tbody>
+  </table></div>
+
+  <h4>Parsers CSV (BUILD)</h4>
+  <div class="tw"><table>
+    <thead><tr><th>Parser</th><th>Headers</th><th>Particularités</th></tr></thead>
+    <tbody>
+      <tr><td><b>QontoParser</b></td><td><code>ID de l'opération;...;Sens;Contrepartie</code></td><td>Colonne Sens, contrepartie séparée</td></tr>
+      <tr><td><b>BnpParser</b></td><td><code>Date opération;...;Montant(EUR)</code></td><td>Montant signé, DD/MM/YYYY</td></tr>
+      <tr><td><b>SgParser</b></td><td><code>Date;Libellé opération;Détail;Montant</code></td><td>Libellé + détail séparés</td></tr>
+      <tr><td><b>BoursoramaParser</b></td><td><code>dateOp;dateVal;label;amount</code></td><td>Point décimal, YYYY-MM-DD</td></tr>
+      <tr><td><b>GenericParser</b></td><td>Fallback</td><td>→ <code>NEEDS_MAPPING</code> → mapping manuel UI</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3 id="svc-docs">5.3 Service Documents — quasi-intégralement REUSE</h3>
+  <div class="tw"><table>
+    <thead><tr><th>Job BullMQ</th><th>Script Paperasse</th><th>B/R</th></tr></thead>
+    <tbody>
+      <tr><td>generate_fec</td><td><code>generate-fec.js</code></td><td><span class="bg r">REUSE</span></td></tr>
+      <tr><td>generate_statements</td><td><code>generate-statements.js</code></td><td><span class="bg r">REUSE</span></td></tr>
+      <tr><td>generate_pdfs</td><td><code>generate-pdfs.js</code> + templates HTML</td><td><span class="bg r">REUSE</span></td></tr>
+      <tr><td>upload_to_s3</td><td>—</td><td><span class="bg b">BUILD</span></td></tr>
+    </tbody>
+  </table></div>
+  <p>Chaque job : adapter.prepareWorkDir() → exec script → lire output → S3 upload → prisma.document.create() → cleanupWorkDir().</p>
+
+  <h3 id="svc-cloture">5.4 Service Clôture — HYBRID (backend orchestre, IA exécute)</h3>
+  <div class="cl p"><b>Principe :</b> Le backend ne hardcode PAS les règles comptables. Le skill <code>comptable</code> + <code>cloture-workflow.md</code> contiennent la logique. Le backend gère l'état, persiste, collecte les inputs, appelle l'IA, et valide les résultats (double-check arithmétique).</div>
+
+  <div class="tw"><table>
+    <thead><tr><th>Étape</th><th>Backend fait</th><th>IA fait (via skill)</th><th>Script</th></tr></thead>
+    <tbody>
+      <tr><td>1. Balance</td><td>Charge JournalLines, ΣD=ΣC</td><td>Analyse soldes anormaux</td><td>—</td></tr>
+      <tr><td>2. Rapprochement</td><td>Collecte solde réel user</td><td>—</td><td>—</td></tr>
+      <tr><td>3. Lettrage</td><td>Charge 401/411, cherche matchs</td><td>Propose lettrages ambigus</td><td>—</td></tr>
+      <tr><td>4. PCA/CCA</td><td>Collecte validation user</td><td>Détecte charges annuelles, prorata, écritures OD</td><td>—</td></tr>
+      <tr><td>5. Amortissements</td><td>Charge immobilisations user</td><td>Calcule dotations, propose écritures OD</td><td>—</td></tr>
+      <tr><td>6. Provisions</td><td>Collecte risques user</td><td>Évalue montants, propose écritures OD</td><td>—</td></tr>
+      <tr><td>7. TVA</td><td>—</td><td>Calcule collectée - déductible</td><td>—</td></tr>
+      <tr><td>8. IS/IR</td><td>—</td><td>Calcule résultat fiscal + IS (PME 15%)</td><td>—</td></tr>
+      <tr><td>9. Écritures clôture</td><td>Persiste toutes OD étapes 4-8</td><td>Affectation du résultat</td><td>—</td></tr>
+      <tr><td>10. États financiers</td><td>Déclenche script</td><td>—</td><td><code>generate-statements.js</code></td></tr>
+      <tr><td>11. Liasse fiscale</td><td>Déclenche script</td><td>Remplit template avec montants</td><td><code>generate-pdfs.js</code></td></tr>
+      <tr><td>12. Export</td><td>Déclenche script + S3</td><td>—</td><td><code>generate-fec.js</code> + <code>generate-pdfs.js</code></td></tr>
+    </tbody>
+  </table></div>
+
+  <h4>Double-check backend (validation arithmétique)</h4>
+  <ul>
+    <li><b>Étape 5 :</b> dotation = montant_HT × (jours/365) / durée_vie. Si écart > 1 € vs IA → alerte.</li>
+    <li><b>Étape 8 :</b> IS = résultat × 15% (si < 42 500 €) + surplus × 25%. Vérification stricte.</li>
+    <li><b>Étape 10 :</b> Total Actif = Total Passif. Déséquilibre = blocage.</li>
+  </ul>
+
+  <h3 id="svc-chat">5.5 Service Chat</h3>
+  <div class="tw"><table>
+    <thead><tr><th>Composant</th><th>B/R</th></tr></thead>
+    <tbody>
+      <tr><td>Prompt système (skill comptable complet)</td><td><span class="bg r">REUSE</span></td></tr>
+      <tr><td>Contexte entreprise dans prompt</td><td><span class="bg b">BUILD</span> adapter.toCompanyJson() + KPIs</td></tr>
+      <tr><td>Streaming SSE</td><td><span class="bg b">BUILD</span></td></tr>
+      <tr><td>Historique conversation</td><td><span class="bg b">BUILD</span> ChatMessage, 5 derniers injectés</td></tr>
+      <tr><td>Cost tracking</td><td><span class="bg b">BUILD</span> trackAICost() middleware</td></tr>
+    </tbody>
+  </table></div>
+
+  <!-- 6. IA -->
+  <h2 id="ia"><span class="n">Section 06</span>Intégration IA</h2>
+
+  <h3>Composition des prompts</h3>
+  <div class="tw"><table>
+    <thead><tr><th>Contexte</th><th>Blocs prompt</th><th>Tokens</th></tr></thead>
+    <tbody>
+      <tr><td><b>Catégorisation (batch)</b></td><td>Skill compta (tronqué) + PCG sous-ensemble + company + corrections + instructions JSON</td><td>~12-15k input</td></tr>
+      <tr><td><b>Chat</b></td><td>Skill compta complet + company + KPIs + historique 5 msg</td><td>~18-28k input</td></tr>
+      <tr><td><b>Clôture (par étape)</b></td><td>Skill compta + cloture-workflow.md + company + état clôture + données étape</td><td>~16-28k input</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Coûts estimés</h3>
+  <div class="tw"><table>
+    <thead><tr><th>Opération</th><th>Coût</th></tr></thead>
+    <tbody>
+      <tr><td>Catégorisation batch 20 tx</td><td>~0,09 €</td></tr>
+      <tr><td>Message chat</td><td>~0,08 €</td></tr>
+      <tr><td>Étape clôture IA</td><td>~0,14 €</td></tr>
+      <tr><td><b>Import 200 tx</b></td><td><b>~0,90 €</b></td></tr>
+      <tr><td><b>Mois utilisateur moyen</b></td><td><b>~1,70 €</b></td></tr>
+      <tr><td><b>Clôture complète</b></td><td><b>~2-4 €</b></td></tr>
+    </tbody>
+  </table></div>
+  <div class="cl w"><b>⚠ Estimations</b> basées sur pricing Anthropic Sonnet 4 ($3/M input, $15/M output). À valider par tests réels.</div>
+
+  <!-- 7. API -->
+  <h2 id="api"><span class="n">Section 07</span>API — endpoints</h2>
+
+  <h3>Middleware chaîne</h3>
+  <div class="af">
+    <div class="ab"><div class="at">clerkAuth()</div></div><div class="aa">→</div>
+    <div class="ab"><div class="at">loadUser()</div></div><div class="aa">→</div>
+    <div class="ab"><div class="at">loadCompany()</div></div><div class="aa">→</div>
+    <div class="ab"><div class="at">checkSub()</div></div><div class="aa">→</div>
+    <div class="ab"><div class="at">rateLimit()</div></div><div class="aa">→</div>
+    <div class="ab"><div class="at">activityLog()</div></div>
+  </div>
+
+  <div class="eg"><h4>Webhooks</h4>
+    <div class="ep"><span class="mt po">POST</span><span class="pt">/webhooks/clerk</span><span class="ds">User created/updated</span></div>
+    <div class="ep"><span class="mt po">POST</span><span class="pt">/webhooks/stripe</span><span class="ds">Subscription events</span></div>
+  </div>
+  <div class="eg"><h4>Company & Onboarding</h4>
+    <div class="ep"><span class="mt po">POST</span><span class="pt">/api/companies</span><span class="ds">Créer (+ SIREN lookup)</span></div>
+    <div class="ep"><span class="mt g">GET</span><span class="pt">/api/companies/:id</span><span class="ds">Récupérer</span></div>
+    <div class="ep"><span class="mt pa">PATCH</span><span class="pt">/api/companies/:id</span><span class="ds">Modifier</span></div>
+    <div class="ep"><span class="mt de">DELETE</span><span class="pt">/api/companies/:id</span><span class="ds">Soft delete</span></div>
+    <div class="ep"><span class="mt g">GET</span><span class="pt">/api/siren/:siren</span><span class="ds">API Annuaire Entreprises</span></div>
+  </div>
+  <div class="eg"><h4>Integrations (Qonto, Stripe) — NOUVEAU v2</h4>
+    <div class="ep"><span class="mt g">GET</span><span class="pt">/api/integrations</span><span class="ds">Liste connecteurs</span></div>
+    <div class="ep"><span class="mt po">POST</span><span class="pt">/api/integrations</span><span class="ds">Ajouter (type, credentials chiffrés)</span></div>
+    <div class="ep"><span class="mt pa">PATCH</span><span class="pt">/api/integrations/:id</span><span class="ds">Modifier</span></div>
+    <div class="ep"><span class="mt de">DELETE</span><span class="pt">/api/integrations/:id</span><span class="ds">Supprimer</span></div>
+    <div class="ep"><span class="mt po">POST</span><span class="pt">/api/integrations/:id/test</span><span class="ds">Tester connexion</span></div>
+    <div class="ep"><span class="mt po">POST</span><span class="pt">/api/integrations/:id/fetch</span><span class="ds">Déclencher fetch → pipeline</span></div>
+  </div>
+  <div class="eg"><h4>Imports</h4>
+    <div class="ep"><span class="mt po">POST</span><span class="pt">/api/imports</span><span class="ds">Upload CSV → pipeline</span></div>
+    <div class="ep"><span class="mt g">GET</span><span class="pt">/api/imports</span><span class="ds">Historique</span></div>
+    <div class="ep"><span class="mt g">GET</span><span class="pt">/api/imports/:id/status</span><span class="ds">Statut SSE</span></div>
+    <div class="ep"><span class="mt g">GET</span><span class="pt">/api/imports/:id/detected-columns</span><span class="ds">Colonnes détectées GenericParser <b>(v3)</b></span></div>
+    <div class="ep"><span class="mt po">POST</span><span class="pt">/api/imports/:id/column-mapping</span><span class="ds">Mapping manuel (NEEDS_MAPPING)</span></div>
+    <div class="ep"><span class="mt po">POST</span><span class="pt">/api/imports/:id/retry</span><span class="ds">Réessayer un import échoué <b>(v3)</b></span></div>
+    <div class="ep"><span class="mt po">POST</span><span class="pt">/api/imports/:id/retry-categorization</span><span class="ds">Relancer batches IA échoués <b>(v3)</b></span></div>
+  </div>
+  <div class="eg"><h4>Transactions</h4>
+    <div class="ep"><span class="mt g">GET</span><span class="pt">/api/transactions</span><span class="ds">Liste paginée + filtres</span></div>
+    <div class="ep"><span class="mt g">GET</span><span class="pt">/api/transactions/:id</span><span class="ds">Détail + suggestions</span></div>
+    <div class="ep"><span class="mt pa">PATCH</span><span class="pt">/api/transactions/:id/categorize</span><span class="ds">Confirmer/corriger</span></div>
+  </div>
+  <div class="eg"><h4>Journal & Dashboard</h4>
+    <div class="ep"><span class="mt g">GET</span><span class="pt">/api/journal-entries</span><span class="ds">Paginé, filtré par journal</span></div>
+    <div class="ep"><span class="mt g">GET</span><span class="pt">/api/journal-entries/export</span><span class="ds">Export CSV</span></div>
+    <div class="ep"><span class="mt g">GET</span><span class="pt">/api/dashboard/kpis</span><span class="ds">CA, charges, résultat, trésorerie</span></div>
+    <div class="ep"><span class="mt g">GET</span><span class="pt">/api/dashboard/alerts</span><span class="ds">Alertes actives</span></div>
+  </div>
+  <div class="eg"><h4>Documents</h4>
+    <div class="ep"><span class="mt g">GET</span><span class="pt">/api/documents</span><span class="ds">Liste générés</span></div>
+    <div class="ep"><span class="mt po">POST</span><span class="pt">/api/documents/:type/generate</span><span class="ds">Lancer génération (via scripts Paperasse)</span></div>
+    <div class="ep"><span class="mt g">GET</span><span class="pt">/api/documents/:id/download</span><span class="ds">URL signée S3</span></div>
+  </div>
+  <div class="eg"><h4>Clôture & Immobilisations</h4>
+    <div class="ep"><span class="mt g">GET</span><span class="pt">/api/cloture</span><span class="ds">État workflow</span></div>
+    <div class="ep"><span class="mt po">POST</span><span class="pt">/api/cloture/start</span><span class="ds">Démarrer</span></div>
+    <div class="ep"><span class="mt g">GET</span><span class="pt">/api/cloture/steps/:step</span><span class="ds">Détail étape</span></div>
+    <div class="ep"><span class="mt po">POST</span><span class="pt">/api/cloture/steps/:step</span><span class="ds">Exécuter étape</span></div>
+    <div class="ep"><span class="mt g">GET</span><span class="pt">/api/immobilisations</span><span class="ds">Liste</span></div>
+    <div class="ep"><span class="mt po">POST</span><span class="pt">/api/immobilisations</span><span class="ds">Ajouter</span></div>
+    <div class="ep"><span class="mt pa">PATCH</span><span class="pt">/api/immobilisations/:id</span><span class="ds">Modifier</span></div>
+    <div class="ep"><span class="mt de">DELETE</span><span class="pt">/api/immobilisations/:id</span><span class="ds">Supprimer</span></div>
+  </div>
+  <div class="eg"><h4>Chat & Corrections</h4>
+    <div class="ep"><span class="mt po">POST</span><span class="pt">/api/chat/message</span><span class="ds">Envoyer (SSE streaming)</span></div>
+    <div class="ep"><span class="mt g">GET</span><span class="pt">/api/chat/history</span><span class="ds">Historique session</span></div>
+    <div class="ep"><span class="mt g">GET</span><span class="pt">/api/corrections</span><span class="ds">Règles apprises</span></div>
+    <div class="ep"><span class="mt de">DELETE</span><span class="pt">/api/corrections/:id</span><span class="ds">Supprimer règle</span></div>
+  </div>
+  <div class="eg"><h4>Notifications</h4>
+    <div class="ep"><span class="mt g">GET</span><span class="pt">/api/notifications</span><span class="ds">Non lues</span></div>
+    <div class="ep"><span class="mt pa">PATCH</span><span class="pt">/api/notifications/read-all</span><span class="ds">Tout marquer comme lu <b>(v3)</b></span></div>
+    <div class="ep"><span class="mt pa">PATCH</span><span class="pt">/api/notifications/:id/read</span><span class="ds">Marquer lue</span></div>
+    <div class="ep"><span class="mt pa">PATCH</span><span class="pt">/api/notifications/:id/dismiss</span><span class="ds">Masquer</span></div>
+  </div>
+  <div class="eg"><h4>Journal d'activité (v3)</h4>
+    <div class="ep"><span class="mt g">GET</span><span class="pt">/api/activity-log</span><span class="ds">Paginé, filtré par type <b>(v3)</b></span></div>
+    <div class="ep"><span class="mt g">GET</span><span class="pt">/api/activity-log/export</span><span class="ds">Export CSV <b>(v3)</b></span></div>
+  </div>
+  <div class="eg"><h4>Exercices comptables (v3)</h4>
+    <div class="ep"><span class="mt g">GET</span><span class="pt">/api/fiscal-years</span><span class="ds">Liste exercices <b>(v3)</b></span></div>
+    <div class="ep"><span class="mt po">POST</span><span class="pt">/api/fiscal-years</span><span class="ds">Créer exercice <b>(v3)</b></span></div>
+    <div class="ep"><span class="mt pa">PATCH</span><span class="pt">/api/fiscal-years/:id/activate</span><span class="ds">Switcher actif <b>(v3)</b></span></div>
+  </div>
+  <div class="eg"><h4>Portabilité RGPD (v3)</h4>
+    <div class="ep"><span class="mt g">GET</span><span class="pt">/api/exports/all</span><span class="ds">Export complet JSON + CSV <b>(v3)</b></span></div>
+  </div>
+  <p style="font-size:12px;color:var(--g500);margin-top:12px"><b>44 routes API au total</b> — 35 en v2 + 9 ajoutées en v3.</p>
+
+  <!-- 8. SÉCURITÉ -->
+  <h2 id="sec"><span class="n">Section 08</span>Sécurité et conformité</h2>
+  <div class="tw"><table>
+    <thead><tr><th>Donnée</th><th>At rest</th><th>In transit</th></tr></thead>
+    <tbody>
+      <tr><td>PostgreSQL</td><td>AES-256 (Render)</td><td>TLS 1.3</td></tr>
+      <tr><td>S3</td><td>AES-256 (Scaleway)</td><td>TLS 1.3</td></tr>
+      <tr><td>Credentials intégrations</td><td>AES-256-GCM, clé/company</td><td>TLS 1.3</td></tr>
+      <tr><td>WorkDir temporaires</td><td>Éphémère, supprimé immédiatement</td><td>Local serveur</td></tr>
+    </tbody>
+  </table></div>
+  <h3>Rate limiting</h3>
+  <div class="tw"><table>
+    <thead><tr><th>Tier</th><th>API/min</th><th>IA/mois</th><th>Imports/mois</th></tr></thead>
+    <tbody>
+      <tr><td>Solo</td><td>60</td><td>100</td><td>5</td></tr>
+      <tr><td>Entreprise</td><td>120</td><td>300</td><td>15</td></tr>
+      <tr><td>Entreprise+</td><td>200</td><td>1000</td><td>50</td></tr>
+    </tbody>
+  </table></div>
+
+  <!-- 9. INFRA -->
+  <h2 id="infra"><span class="n">Section 09</span>Infrastructure</h2>
+  <h3>Structure du déploiement</h3>
+  <pre>/app/
+├── src/                     # TypeScript SaaS
+│   ├── services/            # Import, IA, Docs, Clôture, Chat
+│   ├── adapter/
+│   │   └── paperasse-adapter.ts   # LE composant critique
+│   └── ...
+├── paperasse/               # Fork repo (git submodule)
+│   ├── comptable/SKILL.md
+│   ├── scripts/generate-fec.js
+│   ├── integrations/qonto/fetch.js
+│   ├── data/pcg_2025.json
+│   └── templates/
+└── prisma/schema.prisma</pre>
+
+  <h3>Cron jobs</h3>
+  <div class="tw"><table>
+    <thead><tr><th>Cron</th><th>Fréquence</th><th>Action</th></tr></thead>
+    <tbody>
+      <tr><td><code>update_data.py</code></td><td>Quotidien 03:00</td><td>Fraîcheur PCG, nomenclature, sources</td></tr>
+      <tr><td>Reset AI counters</td><td>1er du mois</td><td><code>aiRequestsThisMonth = 0</code></td></tr>
+      <tr><td>Cleanup workDirs</td><td>Toutes les heures</td><td>Supprime workDirs > 1h (RGPD)</td></tr>
+      <tr><td>Échéances fiscales</td><td>Quotidien 08:00</td><td>Calendrier fiscal → Notifications si < 30j</td></tr>
+    </tbody>
+  </table></div>
+
+  <!-- 10. POINTS OUVERTS -->
+  <h2 id="open"><span class="n">Section 10</span>Points ouverts</h2>
+  <div class="tw"><table>
+    <thead><tr><th>#</th><th>Question</th><th>Recommandation</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>Scripts : importables ou CLI-only ?</td><td>Auditer. Si export → import direct. Sinon → workDir + exec.</td></tr>
+      <tr><td>2</td><td>Fork : git submodule ou copie ?</td><td>Submodule — pull updates facilement.</td></tr>
+      <tr><td>3</td><td>Streaming : SSE ou WebSocket ?</td><td>SSE — request-response.</td></tr>
+      <tr><td>4</td><td>S3 : Scaleway ou R2 ?</td><td>Scaleway — souveraineté FR.</td></tr>
+      <tr><td>5</td><td>Multi-company dès MVP ?</td><td>Non. Schéma prêt, activer V1.</td></tr>
+      <tr><td>6</td><td>Connecteurs Qonto/Stripe dès MVP ?</td><td>Oui en option — scripts existent, coût intégration faible.</td></tr>
+    </tbody>
+  </table></div>
+
+  <!-- 11. PLAN -->
+  <h2 id="plan"><span class="n">Section 11</span>Plan de livraison</h2>
+  <div class="tw"><table>
+    <thead><tr><th>Phase</th><th>Sem.</th><th>Livrables</th><th>B/R</th></tr></thead>
+    <tbody>
+      <tr><td><b>Foundation</b></td><td>S1-2</td><td>Prisma, auth Clerk, company CRUD, CI/CD, <b>fork + adapter squelette</b></td><td><span class="bg b">BUILD</span></td></tr>
+      <tr><td><b>Import CSV</b></td><td>S3-4</td><td>4 parsers, normalisation, BullMQ, SSE, <b>GenericParser + NEEDS_MAPPING</b></td><td><span class="bg b">BUILD</span></td></tr>
+      <tr><td><b>Import connecteurs</b></td><td>S4-5</td><td><b>Intégration qonto/fetch.js + stripe/fetch.js</b>, CRUD integrations, chiffrement</td><td><span class="bg r">REUSE</span> + adapter</td></tr>
+      <tr><td><b>Catégorisation IA</b></td><td>S5-7</td><td>Service IA, <b>skill MD = prompt</b>, batch, corrections, cost tracking</td><td><span class="bg r">REUSE</span> skill + <span class="bg b">BUILD</span></td></tr>
+      <tr><td><b>Dashboard + tx</b></td><td>S7-8</td><td>KPIs, transactions API, correction flow</td><td><span class="bg b">BUILD</span></td></tr>
+      <tr><td><b>Journal + docs</b></td><td>S8-9</td><td>Journal API, <b>adapter complet</b>, <b>appel scripts génération</b>, S3</td><td><span class="bg r">REUSE</span> scripts + <span class="bg b">BUILD</span> adapter</td></tr>
+      <tr><td><b>Clôture</b></td><td>S9-11</td><td>Workflow engine, <b>IA exécute via skill + workflow.md</b>, double-check, immobilisations, <b>scripts étapes 10-12</b></td><td><span class="bg h">HYBRID</span></td></tr>
+      <tr><td><b>Chat + billing</b></td><td>S11-12</td><td>Chat SSE (<b>skill complet = prompt</b>), Stripe Billing, subscription</td><td><span class="bg r">REUSE</span> + <span class="bg b">BUILD</span></td></tr>
+      <tr><td><b>Polish + beta</b></td><td>S12-14</td><td>Notifications, audit, errors, rate limit, monitoring, <b>cron update_data.py</b></td><td><span class="bg b">BUILD</span> + <span class="bg r">REUSE</span></td></tr>
+    </tbody>
+  </table></div>
+
+  <!-- 12. CHECKLIST -->
+  <h2 id="check"><span class="n">Section 12</span>Checklist architecte avant de démarrer</h2>
+  <div class="ck">
+    <label><input type="checkbox"> Forker le repo, auditer les 3 scripts Node.js (importables ou CLI-only ?)</label>
+    <label><input type="checkbox"> Vérifier la structure exacte de <code>company.example.json</code> — base de l'adapter</label>
+    <label><input type="checkbox"> Vérifier le format de sortie de <code>qonto/fetch.js</code> et <code>stripe/fetch.js</code></label>
+    <label><input type="checkbox"> Exécuter les 93 evals pour valider le skill comptable</label>
+    <label><input type="checkbox"> Tester le workflow complet manuellement avec Claude Code (fetch → catégorisation → clôture → FEC → PDF)</label>
+    <label><input type="checkbox"> Mesurer le coût réel IA sur 5 cas-types (fixtures MVP)</label>
+    <label><input type="checkbox"> Décider : submodule git ou copie pour le fork</label>
+    <label><input type="checkbox"> Décider : Remix full-stack ou Fastify API-only</label>
+  </div>
+
+  <div class="ft">Ce cadrage v3 intègre l'audit du repo Paperasse ET l'audit croisé des 28 écrans frontend. 44 routes API documentées, 28/28 écrans couverts. L'architecte backend doit produire : (1) audit technique des scripts et connecteurs, (2) spécifications de l'adapter, (3) diagrammes de séquence pour les 3 flux critiques, (4) plan d'implémentation en sprints.</div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,7 @@
+Contrat client
+Client: BIGCORP INTERNATIONAL SA
+Date contrat: 2025-01-15
+Reference: BIGCORP-MISSION-SI-2025
+Objet: Mission audit SI janvier 2025
+Montant facture: 2000.00 EUR
+Conditions: reglement par virement

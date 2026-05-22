@@ -1,0 +1,17 @@
+JournalCode	JournalLib	EcritureNum	EcritureDate	CompteNum	CompteLib	CompAuxNum	CompAuxLib	PieceRef	PieceDate	EcritureLib	Debit	Credit	EcritureLet	DateLet	ValidDate	Montantdevise	Idevise
+BQ	BANQUE	1	20250103	6135	Locations mobilières				20250103	OVH — hébergement cloud janvier 2025	29,99	0,00					
+BQ	BANQUE	1	20250103	5121	Banque — compte courant				20250103	OVH — hébergement cloud janvier 2025	0,00	29,99					
+BQ	BANQUE	2	20250103	6135	Locations mobilières				20250103	Google Workspace — abonnement mensuel	11,99	0,00					
+BQ	BANQUE	2	20250103	5121	Banque — compte courant				20250103	Google Workspace — abonnement mensuel	0,00	11,99					
+BQ	BANQUE	3	20250105	6135	Locations mobilières				20250105	Notion — abonnement team mensuel	49,00	0,00					
+BQ	BANQUE	3	20250105	5121	Banque — compte courant				20250105	Notion — abonnement team mensuel	0,00	49,00					
+BQ	BANQUE	4	20250106	6135	Locations mobilières				20250106	Figma — abonnement professionnel annuel	89,00	0,00					
+BQ	BANQUE	4	20250106	5121	Banque — compte courant				20250106	Figma — abonnement professionnel annuel	0,00	89,00					
+BQ	BANQUE	5	20250108	5121	Banque — compte courant				20250108	Startup Innov SAS — mission conseil janvier 2025	3500,00	0,00					
+BQ	BANQUE	5	20250108	706	Prestations de services				20250108	Startup Innov SAS — mission conseil janvier 2025	0,00	3500,00					
+BQ	BANQUE	6	20250110	6064	Fournitures administratives				20250110	Amazon — fournitures bureau et écran	156,80	0,00					
+BQ	BANQUE	6	20250110	5121	Banque — compte courant				20250110	Amazon — fournitures bureau et écran	0,00	156,80					
+BQ	BANQUE	7	20250112	6251	Voyages et déplacements				20250112	SNCF — déplacement client Paris-Lyon AR	45,50	0,00					
+BQ	BANQUE	7	20250112	5121	Banque — compte courant				20250112	SNCF — déplacement client Paris-Lyon AR	0,00	45,50					
+BQ	BANQUE	8	20250115	4551	Associés — comptes courants				20250115	Dupont Marie — remboursement CCA associé	800,00	0,00					
+BQ	BANQUE	8	20250115	5121	Banque — compte courant				20250115	Dupont Marie — remboursement CCA associé	0,00	800,00					

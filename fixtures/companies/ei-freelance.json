@@ -1,0 +1,58 @@
+{
+  "company": {
+    "name": "Julie Renaud — Design",
+    "legal_form": "EI",
+    "siren": "734567890",
+    "siret": "73456789000018",
+    "naf_code": "7410Z",
+    "naf_label": "Activités spécialisées de design",
+    "rcs": null,
+    "capital": null,
+    "address": {
+      "street": "7 allée des Peupliers",
+      "postal_code": "44000",
+      "city": "Nantes",
+      "country": "France"
+    },
+    "owner": {
+      "name": "Julie Renaud",
+      "role": "Entrepreneur individuel"
+    },
+    "creation_date": "2024-01-08",
+    "fiscal_year": {
+      "start": "2025-01-01",
+      "end": "2025-12-31"
+    },
+    "tax_regime": {
+      "corporate_tax": null,
+      "vat_regime": "franchise_en_base",
+      "vat_threshold": 36800,
+      "income_tax_regime": "BNC_reel_simplifie",
+      "simplified_regime": true
+    },
+    "bank_accounts": [
+      {
+        "id": "boursorama-pro",
+        "bank": "Boursorama",
+        "iban": "FR76XXXX",
+        "label": "Compte dédié activité pro",
+        "pcg_account": "5121"
+      }
+    ],
+    "accounting": {
+      "currency": "EUR",
+      "decimal_separator": ",",
+      "pcg_version": "2025"
+    }
+  },
+  "_fixture_meta": {
+    "description": "EI design, BNC réel simplifié, franchise TVA, IR (pas IS). Cas limite : pas de société, comptabilité de trésorerie.",
+    "covers": [
+      "Cas EI (pas de capital, pas de RCS)",
+      "IR au lieu de IS",
+      "BNC (bénéfices non commerciaux)",
+      "Comptabilité de trésorerie (pas d'engagement)",
+      "Faible volume de transactions (~10/mois)"
+    ]
+  }
+}

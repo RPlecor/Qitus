@@ -1,0 +1,81 @@
+{
+  "_fixture_meta": {
+    "description": "Corrections manuelles de l'utilisateur après catégorisation IA. Ces corrections sont réinjectées dans le prompt système lors des imports suivants pour améliorer la catégorisation contextuelle (apprentissage par prompt, pas par fine-tuning).",
+    "usage": "Lors du prochain batch de catégorisation, le backend injecte ces corrections dans le message : 'Corrections précédentes de l'utilisateur : [...]'"
+  },
+  "corrections": [
+    {
+      "id": "corr_001",
+      "transaction_id": "txn_006",
+      "date": "2025-01-10",
+      "counterparty": "AMAZON EU SARL",
+      "original_label": "FOURNITURES BUREAU + ECRAN",
+      "ai_proposed": {
+        "account_debit": "6064",
+        "label": "Fournitures administratives"
+      },
+      "user_corrected": {
+        "account_debit": "6064",
+        "label": "Fournitures administratives",
+        "split": true,
+        "split_note": "L'utilisateur a confirmé que l'écran coûtait 89 € (< 500 € HT unitaire) → pas d'immobilisation. Tout en 6064."
+      },
+      "correction_type": "confirmed_with_precision",
+      "timestamp": "2025-02-01T14:30:00Z"
+    },
+    {
+      "id": "corr_002",
+      "transaction_id": "txn_014",
+      "date": "2025-01-27",
+      "counterparty": "UBER BV",
+      "original_label": "UBER TRAJET CLIENT + REPAS",
+      "ai_proposed": {
+        "account_debit": "6256",
+        "label": "Missions"
+      },
+      "user_corrected": {
+        "account_debit": "6251",
+        "label": "Voyages et déplacements",
+        "note": "L'utilisateur préfère tout mettre en 6251 (déplacements). Pas de repas séparé."
+      },
+      "correction_type": "account_changed",
+      "timestamp": "2025-02-01T14:35:00Z"
+    },
+    {
+      "id": "corr_003",
+      "transaction_id": "txn_037",
+      "date": "2025-03-18",
+      "counterparty": "VIR SEPA 789456",
+      "original_label": "VIREMENT REF 789456123",
+      "ai_proposed": {
+        "account_debit": null,
+        "label": null,
+        "confidence": "low"
+      },
+      "user_corrected": {
+        "account_debit": "6063",
+        "label": "Fournitures d'entretien et de petit équipement",
+        "note": "C'était un virement pour du petit matériel acheté à un particulier (câbles, adaptateurs)."
+      },
+      "correction_type": "user_provided_missing",
+      "timestamp": "2025-04-02T10:15:00Z"
+    }
+  ],
+  "learning_rules_derived": [
+    {
+      "rule": "UBER BV → compte 6251 (déplacements), pas 6256 (missions)",
+      "counterparty": "UBER BV",
+      "preferred_account": "6251",
+      "source": "corr_002",
+      "active": true
+    },
+    {
+      "rule": "AMAZON EU SARL → compte 6064 sauf si montant unitaire > 500 € (alors 2183 immobilisation)",
+      "counterparty": "AMAZON EU SARL",
+      "preferred_account": "6064",
+      "condition": "amount < 500",
+      "source": "corr_001",
+      "active": true
+    }
+  ]
+}

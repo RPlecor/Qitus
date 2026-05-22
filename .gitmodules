@@ -1,0 +1,3 @@
+[submodule "vendor/paperasse"]
+	path = vendor/paperasse
+	url = https://github.com/romainsimon/paperasse.git
