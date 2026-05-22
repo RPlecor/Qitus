@@ -39,7 +39,7 @@ export default function TvaPage() {
         {ledgerReadiness.status !== "ok" ? <VatReadinessAlert readiness={ledgerReadiness} /> : null}
 
         <div className="kpi-grid">
-          <KpiCard label="Régime" value={position.regime} hint={position.exigibility} />
+          <KpiCard label="Régime" value={vatRegimeLabel(position.regime)} hint={vatExigibilityLabel(position.exigibility)} />
           <KpiCard label="TVA collectée" value={formatEuro(position.totals.collected)} hint="44571" />
           <KpiCard label="TVA déductible" value={formatEuro(position.totals.deductible)} hint="44566" />
           <KpiCard label="Net" value={formatEuro(position.totals.net)} hint={settlement.label ?? settlement.kind} />
@@ -155,6 +155,20 @@ function statusLabel(status: string) {
   if (status === "blocked") return "Bloquée";
   if (status === "ready_with_warnings") return "Générable avec alertes";
   return "Prête";
+}
+
+function vatRegimeLabel(regime: string) {
+  if (regime === "FRANCHISE") return "Franchise en base";
+  if (regime === "REEL_SIMPLIFIE") return "Régime réel simplifié";
+  if (regime === "REEL_NORMAL") return "Régime réel normal";
+  return regime;
+}
+
+function vatExigibilityLabel(exigibility: string) {
+  if (exigibility === "ENCAISSEMENTS") return "Sur encaissements";
+  if (exigibility === "DEBITS") return "Sur les débits";
+  if (exigibility === "MIXED") return "Mixte";
+  return exigibility;
 }
 
 function formatEuro(value: number) {
