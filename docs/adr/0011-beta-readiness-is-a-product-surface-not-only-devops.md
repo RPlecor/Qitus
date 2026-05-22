@@ -6,11 +6,11 @@ Accepted.
 
 ## Context
 
-Phase 16 added production-shaped runtime config, healthchecks, storage Adapters and Open Banking provider Seams. Before post-beta extensions, the team needs one readable place to know whether Paperasse can be exercised safely outside the pure local demo.
+Phase 16 added production-shaped runtime config, healthchecks, storage Adapters and Open Banking provider Seams. Before post-beta extensions, the team needs one readable place to know whether Qitus can be exercised safely outside the pure local demo.
 
 ## Decision
 
-Paperasse exposes beta readiness as a product-facing Module, `BetaReadinessCenter`, and surfaces it in `/connecteurs` and `GET /api/beta-readiness`.
+Qitus exposes beta readiness as a product-facing Module, `BetaReadinessCenter`, and surfaces it in `/connecteurs` and `GET /api/beta-readiness`.
 
 Readiness aggregates:
 

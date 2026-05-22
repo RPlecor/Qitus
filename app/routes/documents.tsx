@@ -23,7 +23,7 @@ export default function Documents() {
   const hasFec = documents.some((document) => document.type === "FEC");
   return (
     <AppShell active="documents">
-      <Main title="Documents" subtitle="Générés par Paperasse">
+      <Main title="Documents" subtitle="Générés par Qitus">
         {error ? <div className="alert red">{error}</div> : null}
         {review.blockingCount > 0 ? (
           <div className="alert red">

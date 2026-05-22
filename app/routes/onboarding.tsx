@@ -13,7 +13,7 @@ export default function Onboarding() {
     <div className="shell center">
       <Form method="post" action="/api/companies" className="ob-card">
         <h1>Configurons votre entreprise.</h1>
-        <p className="sub">Ces informations alimentent les écritures et le `company.json` utilisé par les scripts Paperasse.</p>
+        <p className="sub">Ces informations alimentent les écritures, les documents et les contrôles Qitus.</p>
         <div className="field">
           <label>Nom de l'entreprise</label>
           <input name="name" defaultValue="ACME Digital" required />

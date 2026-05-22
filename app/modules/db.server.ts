@@ -1,10 +1,10 @@
 import { PrismaClient } from "@prisma/client";
 
 declare global {
-  var __paperassePrisma: PrismaClient | undefined;
+  var __qitusPrisma: PrismaClient | undefined;
 }
 
-const cachedPrisma = global.__paperassePrisma;
+const cachedPrisma = global.__qitusPrisma;
 const cachedPrismaShape = cachedPrisma as (PrismaClient & {
   subscription?: unknown;
   chatConversation?: unknown;
@@ -17,11 +17,11 @@ const hasCurrentSchema = Boolean(cachedPrismaShape?.subscription && cachedPrisma
 
 if (cachedPrisma && !hasCurrentSchema) {
   cachedPrisma.$disconnect().catch(() => undefined);
-  global.__paperassePrisma = undefined;
+  global.__qitusPrisma = undefined;
 }
 
-export const prisma = global.__paperassePrisma ?? new PrismaClient();
+export const prisma = global.__qitusPrisma ?? new PrismaClient();
 
 if (process.env.NODE_ENV !== "production") {
-  global.__paperassePrisma = prisma;
+  global.__qitusPrisma = prisma;
 }

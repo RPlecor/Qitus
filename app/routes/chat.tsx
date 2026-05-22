@@ -28,7 +28,7 @@ export default function Chat() {
 
   return (
     <AppShell active="chat">
-      <Main title="Chat comptable" subtitle="Lecture seule · contexte Paperasse">
+      <Main title="Chat comptable" subtitle="Lecture seule · contexte Qitus">
         <div className="alert blue">
           <strong>Chat en lecture seule</strong>
           <span>{readiness.message} Provider : {readiness.provider} · modèle : {readiness.model}.</span>
@@ -64,7 +64,7 @@ export default function Chat() {
             <div className="chat-thread">
               {selected?.messages.map((message) => (
                 <div key={message.id} className={`chat-message ${message.role === "USER" ? "user" : "assistant"}`}>
-                  <strong>{message.role === "USER" ? "Vous" : "Paperasse"}</strong>
+                  <strong>{message.role === "USER" ? "Vous" : "Qitus"}</strong>
                   <p>{message.content}</p>
                 </div>
               ))}

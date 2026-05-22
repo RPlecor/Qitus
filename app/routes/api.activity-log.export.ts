@@ -18,7 +18,7 @@ export async function loader(args: LoaderFunctionArgs) {
   return new Response(csv, {
     headers: {
       "Content-Type": "text/csv; charset=utf-8",
-      "Content-Disposition": "attachment; filename=\"paperasse-activity-log.csv\"",
+      "Content-Disposition": "attachment; filename=\"qitus-activity-log.csv\"",
     },
   });
 }

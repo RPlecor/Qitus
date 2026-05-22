@@ -15,7 +15,7 @@ export type ChatGrounding = {
 export class ChatAnswerGrounding {
   buildGrounding(context: Pick<AccountingChatContext, "documentFreshness" | "annualClosing" | "accountingReview">): ChatGrounding {
     return {
-      contextVersion: "paperasse-chat-context-v1",
+      contextVersion: "qitus-chat-context-v1",
       references: [
         { code: "dashboard", label: "Dashboard", href: "/dashboard", reason: "Vue d'ensemble, KPIs et alertes." },
         { code: "transactions", label: "Transactions", href: "/transactions", reason: "Transactions importées, filtres et corrections." },

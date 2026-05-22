@@ -6,7 +6,7 @@ import { LocalEvidenceStorageAdapter } from "../app/modules/evidence/evidence-st
 
 describe("LocalEvidenceStorageAdapter", () => {
   it("puts, gets, checks and deletes evidence bytes", async () => {
-    const root = await mkdtemp(path.join(tmpdir(), "paperasse-evidence-"));
+    const root = await mkdtemp(path.join(tmpdir(), "qitus-evidence-"));
     const storage = new LocalEvidenceStorageAdapter(root);
     try {
       const stored = await storage.put(Buffer.from("facture"), "company/fy/facture.txt");

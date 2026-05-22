@@ -231,7 +231,7 @@ export class PaperasseConnectorRuntime {
       });
       return { stdout: result.stdout, stderr: result.stderr };
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Connecteur Paperasse en échec.";
+      const message = error instanceof Error ? error.message : "Connecteur Qitus en échec.";
       throw new ExpectedRouteError(message, 502);
     }
   }

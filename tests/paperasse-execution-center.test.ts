@@ -24,7 +24,7 @@ describe("PaperasseExecutionCenter", () => {
       args: ["--output", "/tmp/x/output"],
       exitCode: 0,
       stdout: "ok",
-      userMessage: "Le script Paperasse generate-fec.js s'est terminé correctement.",
+      userMessage: "Le script Qitus generate-fec.js s'est terminé correctement.",
     });
     expect(result.startedAt).toBeTruthy();
     expect(result.finishedAt).toBeTruthy();
@@ -33,7 +33,7 @@ describe("PaperasseExecutionCenter", () => {
   it("wraps script failures with the structured failed result", async () => {
     const runtime = {
       async runScript() {
-        throw new PaperasseScriptError("Le script Paperasse generate-fec.js a échoué : boom", {
+        throw new PaperasseScriptError("Le script Qitus generate-fec.js a échoué : boom", {
           script: "generate-fec.js",
           exitCode: 1,
           stdout: "",

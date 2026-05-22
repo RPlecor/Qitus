@@ -92,7 +92,7 @@ export class PaperasseRuntime {
   async prepareWorkDir(input: PaperasseWorkDirInput): Promise<PaperasseWorkDir> {
     await this.assertRepoPresent();
     const root = this.options.tmpRoot ?? path.join(process.cwd(), "tmp");
-    const workDir = path.join(root, `paperasse-${input.companyId}-${input.jobId}`);
+    const workDir = path.join(root, `qitus-${input.companyId}-${input.jobId}`);
     const outputPath = path.join(workDir, "output");
 
     await rm(workDir, { recursive: true, force: true });
@@ -198,7 +198,7 @@ export class PaperasseRuntime {
 
   private async artifactMatching(outputPath: string, type: GeneratedArtifact["type"], pattern: RegExp, format: string): Promise<GeneratedArtifact> {
     const filename = (await readdir(outputPath)).find((candidate) => pattern.test(candidate));
-    if (!filename) throw new Error(`Paperasse did not generate expected ${type} artifact in ${outputPath}`);
+    if (!filename) throw new Error(`Qitus did not generate expected ${type} artifact in ${outputPath}`);
     return this.artifact(outputPath, type, filename, format);
   }
 
@@ -218,7 +218,7 @@ export class PaperasseRuntime {
 
 function userScriptMessage(script: string, detail: string) {
   const firstLine = detail.split(/\r?\n/).find(Boolean) ?? "échec inconnu";
-  return `Le script Paperasse ${script} a échoué : ${firstLine}`;
+  return `Le script Qitus ${script} a échoué : ${firstLine}`;
 }
 
 function toPaperasseEntries(entries: PaperasseWorkDirInput["entries"]) {

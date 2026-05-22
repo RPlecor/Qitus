@@ -37,7 +37,7 @@ export class FakeChatAdapter implements AccountingChatProvider {
     const question = messages.filter((message) => message.role === "user").at(-1)?.content ?? "";
     return {
       content: [
-        "Réponse démo Paperasse.",
+        "Réponse démo Qitus.",
         `Votre question : ${question}`,
         `Contexte utilisé : ${context.company}, exercice ${context.fiscalYear}.`,
         `Références disponibles : ${context.references.map((reference) => `${reference.label} ${reference.href}`).join(", ")}.`,
@@ -83,10 +83,10 @@ export function createAccountingChatProvider(config: RuntimeConfig = getRuntimeC
 
 function buildPrompt(messages: AccountingChatMessage[], context: AccountingChatContext) {
   return [
-    "Tu es le chat comptable Paperasse pour une beta locale.",
+    "Tu es le chat comptable Qitus pour une beta locale.",
     "Tu es strictement en lecture seule : tu n'appelles aucun outil et tu ne demandes jamais de mutation comptable.",
     "Réponds en français, de manière concise et utile.",
-    "Tu dois fonder ta réponse sur le contexte JSON fourni et citer les écrans Paperasse pertinents depuis context.references.",
+    "Tu dois fonder ta réponse sur le contexte JSON fourni et citer les écrans Qitus pertinents depuis context.references.",
     "Si la demande ressemble à une action (corriger, générer, valider, clôturer, changer de plan), explique que le chat ne peut pas le faire et indique l'écran où l'utilisateur doit confirmer lui-même.",
     "Si une information manque dans le contexte, dis-le clairement au lieu d'inventer.",
     "",

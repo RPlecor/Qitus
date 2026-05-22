@@ -6,7 +6,7 @@ Accepted
 
 ## Context
 
-Phase 15 turns Paperasse's local accounting proof material into a complete expert-comptable dossier. The expert needs to review, request changes, comment and sign off, but Paperasse must not let an external shared link mutate accounting data.
+Phase 15 turns Qitus's local accounting proof material into a complete expert-comptable dossier. The expert needs to review, request changes, comment and sign off, but Qitus must not let an external shared link mutate accounting data.
 
 ## Decision
 
@@ -19,6 +19,6 @@ External access remains tokenized through `ShareLink`. The expert can create `Ex
 ## Consequences
 
 - Routes stay thin and call `ExpertDossierCenter`, `ExpertReviewWorkflow` or `ExpertDossierExportCenter`.
-- Accounting mutation authority remains with the authenticated Paperasse user.
+- Accounting mutation authority remains with the authenticated Qitus user.
 - The expert workflow is auditable without becoming a full multi-client cabinet portal.
 - The final dossier can be regenerated locally after changes instead of patched in place.

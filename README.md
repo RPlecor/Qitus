@@ -1,6 +1,6 @@
-# Paperasse SaaS MVP
+# Qitus SaaS MVP
 
-MVP Remix/Prisma qui transforme des imports bancaires CSV en transactions, catégorisations, écritures équilibrées, puis documents Paperasse.
+MVP Remix/Prisma qui transforme des imports bancaires CSV en transactions, catégorisations, écritures équilibrées, puis documents Qitus.
 
 ## Setup
 
@@ -33,7 +33,7 @@ Par défaut, l'app utilise un contexte de développement mono-utilisateur et mon
 - `OPENAI_API_KEY`: optionnel, uniquement pour le provider Platform API `openai`.
 - `OPENAI_MODEL`: modèle OpenAI Platform API, défaut `gpt-4o-mini`.
 - `LIVE_AI_TESTS=1`: autorise les tests live IA si `OPENAI_API_KEY` est présent.
-- `PAPERASSE_REPO_PATH`: chemin du repo Paperasse, défaut `./vendor/paperasse`.
+- `QITUS_RUNTIME_REPO_PATH`: chemin du runtime documentaire Qitus, défaut `./vendor/paperasse`.
 - `DOCUMENT_STORAGE_DIR`: stockage local des documents générés.
 - `BILLING_MODE`: `stub` par défaut, ou `stripe` pour activer Checkout/Portal/webhook Stripe test-mode.
 - `STRIPE_SECRET_KEY`: requis seulement avec `BILLING_MODE=stripe`.
@@ -63,7 +63,7 @@ Fichiers volontairement exclus :
 - `storage/`, `tmp/`, `test-results/`, `playwright-report/` ;
 - archives et artefacts de démo générés.
 
-Le runtime `vendor/paperasse/` est suivi comme submodule Git vers `https://github.com/romainsimon/paperasse.git`. Après un clone frais :
+Le runtime documentaire historique reste suivi comme submodule Git dans `vendor/paperasse/`. Après un clone frais :
 
 ```sh
 git submodule update --init --recursive

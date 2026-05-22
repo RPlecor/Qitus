@@ -4,7 +4,7 @@ import { AccountingIssueTracker } from "~/modules/accounting-issues/accounting-i
 import { AccountingReviewCenter, DocumentGenerationBlockedError } from "~/modules/accounting-review/accounting-review-center.server";
 import { assertFiscalYearMutable } from "~/modules/annual-closing/annual-closing-center.server";
 import { requireCompanyWorkspace } from "~/modules/company-workspace/company-workspace.server";
-import { paperasseErrorMessage, type DocumentGenerationType } from "~/modules/documents/document-center.server";
+import { qitusDocumentErrorMessage, type DocumentGenerationType } from "~/modules/documents/document-center.server";
 import { DocumentGenerationAuditCenter } from "~/modules/documents/document-generation-audit-center.server";
 import { DocumentGenerationCenter } from "~/modules/documents/document-generation-center.server";
 import { jsonOrRedirectError } from "~/modules/route-errors.server";
@@ -37,7 +37,7 @@ export async function action(args: ActionFunctionArgs) {
     if (request.headers.get("accept")?.includes("application/json")) return json({ documents });
     return redirect("/documents");
   } catch (error) {
-    const message = paperasseErrorMessage(error);
+    const message = qitusDocumentErrorMessage(error);
     await audit.recordGenerationFailure(workspace, { types: [type], startedAt, userMessage: message });
     if (error instanceof DocumentGenerationBlockedError) {
       await activity.recordActivity(workspace, {

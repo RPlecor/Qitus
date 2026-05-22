@@ -47,9 +47,9 @@ export class HealthCheckCenter {
         await prisma.$queryRaw`SELECT 1`;
         return "PostgreSQL répond.";
       }),
-      check("paperasse_repo", async () => {
+      check("qitus_runtime", async () => {
         await stat(this.config.paperasseRepoPath);
-        return "Scripts Paperasse disponibles.";
+        return "Runtime documentaire Qitus disponible.";
       }),
       this.config.importExecutionMode === "bullmq" || this.config.cronMode === "worker"
         ? this.checkRedis()

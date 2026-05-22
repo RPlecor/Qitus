@@ -8,7 +8,7 @@ Accepted
 
 ## Decision
 
-Closing adjustment proposals are deterministic drafts. Paperasse SaaS may calculate CCA, depreciation, and indicative corporate tax proposals, but it never creates an OD journal entry until the user explicitly approves the proposal.
+Closing adjustment proposals are deterministic drafts. Qitus SaaS may calculate CCA, depreciation, and indicative corporate tax proposals, but it never creates an OD journal entry until the user explicitly approves the proposal.
 
 Each draft stores editable assumptions, calculation output, draft journal lines, and an audit trail of assumption changes, recalculations, approvals, and rejections.
 

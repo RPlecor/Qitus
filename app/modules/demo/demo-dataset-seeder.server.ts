@@ -194,7 +194,7 @@ export function assertLocalDemoEnvironment(databaseUrl: string | undefined) {
     throw new Error("Le reset démo est interdit avec NODE_ENV=production.");
   }
   if (!databaseUrl || !isLocalDemoDatabase(databaseUrl)) {
-    throw new Error("Le reset démo exige une DATABASE_URL locale Paperasse.");
+    throw new Error("Le reset démo exige une DATABASE_URL locale Qitus.");
   }
 }
 
@@ -203,9 +203,10 @@ export function isLocalDemoDatabase(databaseUrl: string) {
     const parsed = new URL(databaseUrl);
     const host = parsed.hostname.toLowerCase();
     const databaseName = parsed.pathname.replace(/^\//, "").toLowerCase();
-    return ["localhost", "127.0.0.1", "::1"].includes(host) && databaseName.includes("paperasse");
+    return ["localhost", "127.0.0.1", "::1"].includes(host) && (databaseName.includes("qitus") || databaseName.includes("paperasse"));
   } catch {
-    return databaseUrl.toLowerCase().includes("localhost") && databaseUrl.toLowerCase().includes("paperasse");
+    const lower = databaseUrl.toLowerCase();
+    return lower.includes("localhost") && (lower.includes("qitus") || lower.includes("paperasse"));
   }
 }
 

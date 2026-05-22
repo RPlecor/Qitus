@@ -169,11 +169,11 @@ type BridgeAccount = { id: string | number; name?: string; clean_name?: string; 
 type BridgeTransaction = { id?: string | number; date?: string; booking_date?: string; clean_description?: string; provider_description?: string; description?: string; amount?: number; currency?: string; currency_code?: string; counterparty_name?: string; future?: boolean };
 
 function stableBridgeUserId(state: string) {
-  return createHmac("sha256", "paperasse-bridge-user").update(state.split(":").slice(0, 2).join(":") || state).digest("hex");
+  return createHmac("sha256", "qitus-bridge-user").update(state.split(":").slice(0, 2).join(":") || state).digest("hex");
 }
 
 function bridgeEmail(state: string) {
-  return `paperasse-${stableBridgeUserId(state).slice(0, 16)}@example.invalid`;
+  return `qitus-${stableBridgeUserId(state).slice(0, 16)}@example.invalid`;
 }
 
 function providerConnectionId(input: { requisitionId?: string | null; code?: string | null }) {

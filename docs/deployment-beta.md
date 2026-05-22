@@ -1,11 +1,11 @@
-# Déploiement Beta Paperasse
+# Déploiement Beta Qitus
 
-Paperasse Phase 16 reste local-first en développement, mais expose une configuration beta plus stricte.
+Qitus Phase 16 reste local-first en développement, mais expose une configuration beta plus stricte.
 
 ## Processus
 
-- `paperasse-web` : Remix/API (`npm run build`, puis `npm start`).
-- `paperasse-worker` : imports BullMQ et tâches planifiées (`npm run worker:all`).
+- `qitus-web` : Remix/API (`npm run build`, puis `npm start`).
+- `qitus-worker` : imports BullMQ et tâches planifiées (`npm run worker:all`).
 - PostgreSQL managé recommandé.
 - Redis requis si `IMPORT_EXECUTION_MODE=bullmq` ou `CRON_MODE=worker`.
 - Stockage local en dev, S3-compatible en beta si `OBJECT_STORAGE_MODE=s3`.
@@ -109,7 +109,7 @@ Rollback local : revenir à `OBJECT_STORAGE_MODE=local`, `OPEN_BANKING_PROVIDER=
 
 ## Open Banking
 
-Paperasse ne fait pas d'intégration DSP2 banque-par-banque. Le flux passe par un provider agréé :
+Qitus ne fait pas d'intégration DSP2 banque-par-banque. Le flux passe par un provider agréé :
 
 1. `/connecteurs` crée un consentement.
 2. Le provider renvoie un callback.
@@ -138,7 +138,7 @@ Les transactions `booked` sont importées dans le pipeline existant. Les transac
 - `OPEN_BANKING_WEBHOOK_SECRET` signe les webhooks Bridge.
 - `PROVIDER_SECRET_ENCRYPTION_KEY` chiffre les tokens provider hors Prisma en staging/production.
 
-Bridge gère le choix bancaire dans son parcours Connect. Paperasse stocke uniquement les ids provider non secrets, puis importe les comptes et transactions via `BankFeedNormalizer` et `ImportOrchestrator`.
+Bridge gère le choix bancaire dans son parcours Connect. Qitus stocke uniquement les ids provider non secrets, puis importe les comptes et transactions via `BankFeedNormalizer` et `ImportOrchestrator`.
 
 ### Powens
 
@@ -158,7 +158,7 @@ Powens gère le choix bancaire dans son Webview. Les comptes supprimés ou désa
 - Qonto direct : `QONTO_ID` et `QONTO_API_SECRET`, puis `POST /api/connectors/qonto/sync`.
 - Stripe rapprochement : `STRIPE_SECRET`, puis `POST /api/connectors/stripe/sync`.
 
-Qonto alimente les transactions via le pipeline d'import Paperasse. Stripe alimente uniquement les modèles de rapprochement (`StripeEvent`, `StripePayout`) pour matcher payouts, frais et refunds. Les secrets restent dans l'environnement et ne sont jamais stockés en base.
+Qonto alimente les transactions via le pipeline d'import Qitus. Stripe alimente uniquement les modèles de rapprochement (`StripeEvent`, `StripePayout`) pour matcher payouts, frais et refunds. Les secrets restent dans l'environnement et ne sont jamais stockés en base.
 
 ## Healthchecks
 

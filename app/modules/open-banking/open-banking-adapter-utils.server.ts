@@ -19,7 +19,7 @@ export function maskIban(iban?: string | null) {
 }
 
 export function fallbackTransactionId(provider: string, date: string | undefined, amount: number, label: string) {
-  return createHmac("sha256", `paperasse-${provider}`).update(`${date ?? ""}|${amount}|${label}`).digest("hex").slice(0, 24);
+  return createHmac("sha256", `qitus-${provider}`).update(`${date ?? ""}|${amount}|${label}`).digest("hex").slice(0, 24);
 }
 
 export function redactProviderSecrets(value: string) {

@@ -117,7 +117,7 @@ export class PrismaClerkUserSync implements ClerkUserSync {
       const updated = await prisma.user.update({
         where: { id: user.id },
         data: {
-          email: `deleted-${clerkId}@clerk.paperasse.local`,
+          email: `deleted-${clerkId}@qitus.local`,
           name: null,
           deletedAt: new Date(),
           anonymizedAt: new Date(),
@@ -127,7 +127,7 @@ export class PrismaClerkUserSync implements ClerkUserSync {
       return updated;
     }
 
-    const email = primaryEmail(event) ?? `${clerkId}@clerk.paperasse.local`;
+    const email = primaryEmail(event) ?? `${clerkId}@qitus.local`;
     const name = [event.data.first_name, event.data.last_name].filter(Boolean).join(" ") || null;
     const user = await prisma.user.upsert({
       where: { clerkId },

@@ -6,7 +6,7 @@ Accepté.
 
 ## Contexte
 
-Paperasse arrive à une beta locale comptablement large : imports, écritures, OD, liasse, preuve, clôture et revue expert-comptable. La Phase 9 ajoute un assistant conversationnel et une logique d'abonnement.
+Qitus arrive à une beta locale comptablement large : imports, écritures, OD, liasse, preuve, clôture et revue expert-comptable. La Phase 9 ajoute un assistant conversationnel et une logique d'abonnement.
 
 Le risque principal est de laisser le chat devenir une nouvelle surface de mutation comptable difficile à auditer. Le second risque est de disperser les règles d'abonnement dans les routes.
 

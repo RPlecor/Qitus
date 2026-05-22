@@ -94,7 +94,7 @@ export class CodexCliCategorizationAdapter implements AiCategorizationProvider {
   async categorize(transactions: CategorizationTransaction[], context: CategorizationContext): Promise<CategorizationSuggestion[]> {
     if (transactions.length === 0) return [];
 
-    const dir = await mkdtemp(path.join(tmpdir(), "paperasse-codex-"));
+    const dir = await mkdtemp(path.join(tmpdir(), "qitus-codex-"));
     const schemaPath = path.join(dir, "categorization.schema.json");
     const outputPath = path.join(dir, "categorization.output.json");
 
@@ -250,7 +250,7 @@ export function parseCodexJsonlOutput(output: string): string {
 
 function buildPrompt(transactions: CategorizationTransaction[], context: CategorizationContext) {
   return [
-    "Tu es le provider IA local Paperasse execute via Codex CLI connecte au compte ChatGPT de l'utilisateur.",
+    "Tu es le provider IA local Qitus execute via Codex CLI connecte au compte ChatGPT de l'utilisateur.",
     "Ta mission: categoriser des transactions bancaires pour une comptabilite francaise MVP.",
     "Respecte strictement le schema JSON fourni par --output-schema.",
     "Retourne une categorisation par transaction d'entree, dans le meme ordre.",

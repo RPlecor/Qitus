@@ -18,7 +18,7 @@ export function getDemoLocalAccess(
     return { allowed: false, reason: "La page Démo est désactivée avec NODE_ENV=production." };
   }
   if (!config.databaseUrl || !isLocalDemoDatabase(config.databaseUrl)) {
-    return { allowed: false, reason: "La page Démo exige une DATABASE_URL locale Paperasse." };
+    return { allowed: false, reason: "La page Démo exige une DATABASE_URL locale Qitus." };
   }
   return { allowed: true, reason: null };
 }

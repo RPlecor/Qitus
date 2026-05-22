@@ -1,6 +1,6 @@
 # Checklist Publication GitHub
 
-Cette checklist prépare Paperasse pour un premier dépôt GitHub propre, sans secrets ni artefacts locaux.
+Cette checklist prépare Qitus pour un premier dépôt GitHub propre, sans secrets ni artefacts locaux.
 
 ## 1. Vérifier les fichiers exclus
 
@@ -18,7 +18,7 @@ Doivent rester ignorés :
 - `test-results/`
 - `playwright-report/`
 
-`vendor/paperasse/` est suivi comme submodule Git. Il apparaît donc dans le dépôt comme un pointeur de commit, pas comme une copie complète du runtime.
+Le runtime documentaire est suivi comme submodule Git dans `vendor/paperasse/`. Il apparaît donc dans le dépôt comme un pointeur de commit, pas comme une copie complète du runtime.
 
 ## 2. Vérifier les secrets
 
@@ -36,7 +36,7 @@ Si le dossier n'est pas encore un dépôt git :
 git init
 git add .
 git status
-git commit -m "Initial Paperasse repository"
+git commit -m "Initial Qitus repository"
 ```
 
 Si le dépôt est cloné ailleurs, récupérer aussi le runtime :

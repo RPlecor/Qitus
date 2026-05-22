@@ -75,7 +75,7 @@ describe("Phase 15.5 expert dossier freeze", () => {
 
 function workspace() {
   return {
-    user: { id: "user_1", email: "demo@paperasse.local" },
+    user: { id: "user_1", email: "demo@qitus.local" },
     company: { id: "company_1", name: "ACME" },
     fiscalYear: { id: "fy_1", startDate: new Date("2025-01-01"), endDate: new Date("2025-12-31"), status: "OPEN" },
   } as never;

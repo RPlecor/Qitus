@@ -6,7 +6,7 @@ Accepted.
 
 ## Context
 
-Paperasse already had declarative reconciliation warnings and a bank statement balance check. Phase 13 needs expert-comptable coverage that proves which lines were matched, which lines remain open, and how Qonto/Stripe data entered the system.
+Qitus already had declarative reconciliation warnings and a bank statement balance check. Phase 13 needs expert-comptable coverage that proves which lines were matched, which lines remain open, and how Qonto/Stripe data entered the system.
 
 ## Decision
 

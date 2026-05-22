@@ -407,7 +407,7 @@ export class DocumentEvidenceBundle {
     const year = workspace.fiscalYear.endDate.getFullYear();
     return {
       body: Buffer.from(JSON.stringify(manifest, null, 2), "utf8"),
-      filename: `paperasse-evidence-${year}.json`,
+      filename: `qitus-evidence-${year}.json`,
       contentType: "application/json",
     };
   }

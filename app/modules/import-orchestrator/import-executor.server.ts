@@ -60,7 +60,7 @@ export class BullMqImportExecutor implements ImportExecutor {
 }
 
 export function createImportQueue(config: RuntimeConfig = getRuntimeConfig()) {
-  return new Queue("paperasse-imports", { connection: createRedisConnection(config) });
+  return new Queue("qitus-imports", { connection: createRedisConnection(config) });
 }
 
 export function createRedisConnection(config: RuntimeConfig = getRuntimeConfig()) {

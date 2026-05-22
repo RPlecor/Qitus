@@ -10,7 +10,7 @@ These areas require user assumptions and accounting judgement. They must be audi
 
 ## Decision
 
-Paperasse separates the closing flow into three layers:
+Qitus separates the closing flow into three layers:
 
 - `ClosingWorkpaper`: user assumptions, note, optional source entity and evidence expectation.
 - `ClosingAdjustmentProposal`: deterministic calculation and draft debit/credit lines.

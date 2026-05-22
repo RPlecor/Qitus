@@ -84,7 +84,7 @@ export function getRuntimeConfig(env: Record<string, string | undefined> = proce
     clerkPublishableKey: env.CLERK_PUBLISHABLE_KEY,
     clerkSecretKey: env.CLERK_SECRET_KEY,
     clerkWebhookSecret: env.CLERK_WEBHOOK_SECRET,
-    paperasseRepoPath: env.PAPERASSE_REPO_PATH ?? "./vendor/paperasse",
+    paperasseRepoPath: env.QITUS_RUNTIME_REPO_PATH ?? env.PAPERASSE_REPO_PATH ?? "./vendor/paperasse",
     documentStorageDir: env.DOCUMENT_STORAGE_DIR ?? "storage/documents",
     evidenceStorageDir: env.EVIDENCE_STORAGE_DIR ?? "storage/evidence",
     objectStorageMode: parseObjectStorageMode(env.OBJECT_STORAGE_MODE),

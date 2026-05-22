@@ -24,7 +24,7 @@ export class ChatReadOnlyPolicy {
     if (!match) return { allowed: true, reason: null, matchedIntent: null, suggestedReferences: [] };
     return {
       allowed: false,
-      reason: "Le chat Paperasse est en lecture seule : il peut expliquer et orienter, mais ne déclenche aucune action comptable.",
+      reason: "Le chat Qitus est en lecture seule : il peut expliquer et orienter, mais ne déclenche aucune action comptable.",
       matchedIntent: match.intent,
       suggestedReferences: references.filter((reference) => match.references.includes(reference.code)),
     };

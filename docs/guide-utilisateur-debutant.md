@@ -1,10 +1,10 @@
-# Guide utilisateur debutant de Paperasse
+# Guide utilisateur debutant de Qitus
 
-Ce guide explique Paperasse comme si vous n'aviez jamais utilise de logiciel SaaS ni de logiciel comptable.
+Ce guide explique Qitus comme si vous n'aviez jamais utilise de logiciel SaaS ni de logiciel comptable.
 
-Objectif : vous permettre d'utiliser Paperasse de maniere autonome, page par page, sans connaitre le vocabulaire comptable au depart.
+Objectif : vous permettre d'utiliser Qitus de maniere autonome, page par page, sans connaitre le vocabulaire comptable au depart.
 
-Paperasse sert a :
+Qitus sert a :
 
 - importer vos transactions bancaires ;
 - transformer ces transactions en ecritures comptables ;
@@ -13,7 +13,7 @@ Paperasse sert a :
 - suivre la TVA, les rapprochements, la cloture et les documents ;
 - preparer un dossier lisible pour votre expert-comptable.
 
-Paperasse ne remplace pas votre expert-comptable pour les arbitrages complexes. Il vous aide a preparer un dossier propre, trace et verifiable.
+Qitus ne remplace pas votre expert-comptable pour les arbitrages complexes. Il vous aide a preparer un dossier propre, trace et verifiable.
 
 ---
 
@@ -25,13 +25,13 @@ Un SaaS est simplement une application accessible dans votre navigateur. Vous cl
 
 ### Tableau de bord
 
-C'est la page d'accueil de Paperasse. Elle resume ce qui va bien, ce qui manque et ce qu'il faut faire ensuite.
+C'est la page d'accueil de Qitus. Elle resume ce qui va bien, ce qui manque et ce qu'il faut faire ensuite.
 
 ### Exercice
 
 Un exercice est une periode comptable, souvent une annee. Exemple : du 1er janvier 2025 au 31 decembre 2025.
 
-Toutes les donnees que vous voyez dans Paperasse dependent de l'exercice actif.
+Toutes les donnees que vous voyez dans Qitus dependent de l'exercice actif.
 
 ### Transaction
 
@@ -48,7 +48,7 @@ Exemples :
 
 Une ecriture comptable est la traduction comptable d'une transaction.
 
-Elle contient des lignes avec des comptes, des debits et des credits. Paperasse cherche toujours a produire des ecritures equilibrees.
+Elle contient des lignes avec des comptes, des debits et des credits. Qitus cherche toujours a produire des ecritures equilibrees.
 
 ### Debit et credit
 
@@ -58,7 +58,7 @@ Pour debuter, retenez seulement ceci :
 
 - une ecriture equilibree est normale ;
 - une ecriture desequilibree doit etre corrigee ;
-- Paperasse affiche les anomalies quand il en detecte.
+- Qitus affiche les anomalies quand il en detecte.
 
 ### Compte comptable
 
@@ -67,7 +67,7 @@ Un compte est un code qui classe une operation.
 Exemples courants :
 
 - `5121` : banque ;
-- `471` : compte d'attente, utilise quand Paperasse ne sait pas encore classer ;
+- `471` : compte d'attente, utilise quand Qitus ne sait pas encore classer ;
 - `44566` : TVA deductible sur achats ;
 - `44571` : TVA collectee sur ventes ;
 - `486` : charges constatees d'avance ;
@@ -78,7 +78,7 @@ Exemples courants :
 
 C'est le classement d'une transaction dans les bons comptes.
 
-Si Paperasse n'est pas certain, la transaction passe en statut "A verifier".
+Si Qitus n'est pas certain, la transaction passe en statut "A verifier".
 
 ### Regle de correction
 
@@ -109,7 +109,7 @@ Ce sont des ecritures comptables de cloture ou d'ajustement, par exemple :
 - regularisation TVA ;
 - ecart de rapprochement.
 
-Dans Paperasse, une OD n'est jamais creee automatiquement sans validation utilisateur.
+Dans Qitus, une OD n'est jamais creee automatiquement sans validation utilisateur.
 
 ### FEC
 
@@ -119,7 +119,7 @@ Le FEC est le Fichier des Ecritures Comptables. C'est un fichier officiel que vo
 
 La TVA est la taxe sur la valeur ajoutee.
 
-Paperasse peut distinguer :
+Qitus peut distinguer :
 
 - TVA deductible : TVA sur vos achats ;
 - TVA collectee : TVA sur vos ventes ;
@@ -132,25 +132,25 @@ Ce sont des declarations TVA.
 - CA3 : declaration mensuelle ou periodique, souvent pour le regime reel normal.
 - CA12 : declaration annuelle, souvent pour le regime reel simplifie.
 
-Dans Paperasse, ces declarations sont des brouillons locaux, pas une teletransmission fiscale.
+Dans Qitus, ces declarations sont des brouillons locaux, pas une teletransmission fiscale.
 
 ### Liasse fiscale
 
 C'est un ensemble de documents fiscaux de fin d'exercice.
 
-Dans Paperasse, la liasse est une source structuree locale, utile pour preparer le dossier, mais pas une teletransmission officielle.
+Dans Qitus, la liasse est une source structuree locale, utile pour preparer le dossier, mais pas une teletransmission officielle.
 
 ### Expert-comptable ou EC
 
 L'expert-comptable est la personne ou le cabinet qui relit, controle et valide votre dossier.
 
-Paperasse peut preparer un dossier EC partageable en lecture seule.
+Qitus peut preparer un dossier EC partageable en lecture seule.
 
 ---
 
-## 2. Comment lire les statuts dans Paperasse
+## 2. Comment lire les statuts dans Qitus
 
-Paperasse utilise souvent des badges de statut.
+Qitus utilise souvent des badges de statut.
 
 ### Statuts courants
 
@@ -167,7 +167,7 @@ Paperasse utilise souvent des badges de statut.
 
 ### Regle simple
 
-Quand vous voyez un bouton d'action, Paperasse attend souvent une decision :
+Quand vous voyez un bouton d'action, Qitus attend souvent une decision :
 
 - corriger ;
 - valider ;
@@ -271,7 +271,7 @@ Si vous venez de charger un dataset demo, un message peut indiquer que le datase
 
 ### Signal de coherence
 
-Paperasse peut afficher :
+Qitus peut afficher :
 
 - `Exploitation coherente` : les compteurs principaux sont alignes ;
 - `Donnees a revoir` : certains compteurs ne sont pas coherents ou des controles demandent attention.
@@ -509,9 +509,9 @@ Formats supportes selon configuration :
 
 #### Lancer l'import
 
-Envoie le fichier a Paperasse.
+Envoie le fichier a Qitus.
 
-Paperasse va ensuite :
+Qitus va ensuite :
 
 1. detecter le format ;
 2. lire les colonnes ;
@@ -538,7 +538,7 @@ Colonnes :
 ### Etapes possibles
 
 - `En attente` : l'import attend de demarrer.
-- `Detection CSV` : Paperasse essaie de comprendre le format.
+- `Detection CSV` : Qitus essaie de comprendre le format.
 - `Mapping requis` : vous devez indiquer quelles colonnes correspondent a la date, au libelle, au montant, etc.
 - `Transactions` : creation des transactions.
 - `Categorisation` : classement comptable.
@@ -553,7 +553,7 @@ Colonnes :
 
 ### Page de mapping
 
-Si Paperasse ne reconnait pas le fichier, il demande de choisir les colonnes.
+Si Qitus ne reconnait pas le fichier, il demande de choisir les colonnes.
 
 Champs typiques :
 
@@ -564,7 +564,7 @@ Champs typiques :
 - reference bancaire ;
 - categorie source.
 
-Une fois le mapping valide, Paperasse peut reprendre l'import.
+Une fois le mapping valide, Qitus peut reprendre l'import.
 
 ---
 
@@ -732,7 +732,7 @@ Revient a la liste complete.
 
 ### Badges de filtres actifs
 
-Paperasse affiche les filtres actuellement actifs.
+Qitus affiche les filtres actuellement actifs.
 
 Cela vous aide a comprendre pourquoi certaines transactions n'apparaissent pas.
 
@@ -773,7 +773,7 @@ Cette page sert a comprendre et corriger une transaction precise.
 - `Precedente` : transaction precedente dans la file.
 - `Suivante` : transaction suivante dans la file.
 
-Si vous etes dans la file `A verifier`, Paperasse peut afficher votre position, par exemple `1 / 2 a corriger`.
+Si vous etes dans la file `A verifier`, Qitus peut afficher votre position, par exemple `1 / 2 a corriger`.
 
 ### Cartes principales
 
@@ -806,7 +806,7 @@ Vous pouvez voir :
 
 ### Suggestions
 
-Paperasse propose des categorisations.
+Qitus propose des categorisations.
 
 Colonnes :
 
@@ -832,7 +832,7 @@ Colonnes :
 
 ### Ecriture liee
 
-Si une ecriture existe deja, Paperasse affiche :
+Si une ecriture existe deja, Qitus affiche :
 
 - numero ;
 - journal ;
@@ -891,13 +891,13 @@ Exemples :
 
 #### Apprendre cette correction
 
-Si vous cochez cette case, Paperasse cree une regle pour les prochaines transactions similaires.
+Si vous cochez cette case, Qitus cree une regle pour les prochaines transactions similaires.
 
 #### Valider la categorisation
 
 Applique la correction.
 
-Apres validation, Paperasse peut :
+Apres validation, Qitus peut :
 
 - regenerer l'ecriture ;
 - creer une regle ;
@@ -1038,7 +1038,7 @@ Taille maximale par fichier : 10 Mo.
 
 Ajoute la piece.
 
-Paperasse tente une extraction locale si possible. Si l'extraction echoue, la piece reste utilisable.
+Qitus tente une extraction locale si possible. Si l'extraction echoue, la piece reste utilisable.
 
 ### Filtres
 
@@ -1110,7 +1110,7 @@ Colonnes :
 
 ### Fournir une piece
 
-Quand vous uploadez depuis une exigence precise, Paperasse peut rattacher automatiquement la piece au bon element.
+Quand vous uploadez depuis une exigence precise, Qitus peut rattacher automatiquement la piece au bon element.
 
 C'est la methode recommandee pour les debutants.
 
@@ -1182,7 +1182,7 @@ Action possible : detacher.
 
 ### Suggestions de rattachement
 
-Paperasse propose des liens possibles avec un score.
+Qitus propose des liens possibles avec un score.
 
 Le score peut tenir compte :
 
@@ -1225,7 +1225,7 @@ Indique si des ecritures manquent de pieces.
 
 #### Anomalies
 
-Paperasse peut signaler :
+Qitus peut signaler :
 
 - ecriture sans ligne ;
 - ligne avec debit et credit en meme temps ;
@@ -1310,7 +1310,7 @@ Cette page sert a generer et telecharger les documents comptables.
 
 ### Alertes
 
-Paperasse peut afficher :
+Qitus peut afficher :
 
 - controles bloquants ;
 - documents a regenerer ;
@@ -1341,7 +1341,7 @@ Genere une liasse structuree.
 
 Le PDF peut etre optionnel selon l'environnement.
 
-Si le PDF echoue mais que la source structuree existe, le document source reste valable dans Paperasse.
+Si le PDF echoue mais que la source structuree existe, le document source reste valable dans Qitus.
 
 ### Audit generation
 
@@ -1435,7 +1435,7 @@ Pieces requises ou recommandees manquantes.
 
 ### OD proposees
 
-Operations diverses proposees par Paperasse.
+Operations diverses proposees par Qitus.
 
 Colonnes :
 
@@ -1754,7 +1754,7 @@ Colonnes :
 
 ### Resolution d'un taux ou d'une nature
 
-Si le point concerne une transaction, Paperasse vous demande :
+Si le point concerne une transaction, Qitus vous demande :
 
 - taux TVA ;
 - nature TVA.
@@ -2097,7 +2097,7 @@ Selon l'etat :
 
 ### Alertes
 
-Paperasse affiche les blocages et warnings.
+Qitus affiche les blocages et warnings.
 
 ### Cartes KPI
 
@@ -2566,7 +2566,7 @@ Envoie le message.
 
 ### Contexte utilise
 
-Paperasse peut afficher les modules ou donnees ayant servi a la reponse.
+Qitus peut afficher les modules ou donnees ayant servi a la reponse.
 
 ---
 
@@ -2647,7 +2647,7 @@ Date de fin.
 
 Cree un nouvel exercice.
 
-Paperasse refuse les dates qui se chevauchent avec un autre exercice.
+Qitus refuse les dates qui se chevauchent avec un autre exercice.
 
 ### Tableau des exercices
 
@@ -2813,7 +2813,7 @@ Reinitialise le workspace demo et redirige vers le tableau de bord.
 
 ---
 
-## 42. Que faire quand Paperasse affiche "A regenerer"
+## 42. Que faire quand Qitus affiche "A regenerer"
 
 Un document devient `A regenerer` quand les donnees qui ont servi a le produire ont change.
 
@@ -2912,7 +2912,7 @@ Demandez conseil si vous n'etes pas certain.
 
 ### Ne supprimez pas les fichiers locaux manuellement
 
-Si un document ou une piece disparait du stockage, Paperasse peut signaler un artefact manquant.
+Si un document ou une piece disparait du stockage, Qitus peut signaler un artefact manquant.
 
 Utilisez les actions d'archivage ou RGPD prevues.
 
@@ -2963,7 +2963,7 @@ Si vous voulez juste faire un premier tour :
 13. Ouvrez `Couverture EC`.
 14. Regardez ce qui manque encore.
 
-Avec ce parcours, vous aurez compris la logique centrale de Paperasse.
+Avec ce parcours, vous aurez compris la logique centrale de Qitus.
 
 ---
 
@@ -2972,11 +2972,11 @@ Avec ce parcours, vous aurez compris la logique centrale de Paperasse.
 Si vous ne comprenez pas un point :
 
 1. Ne validez pas une ecriture ou une OD au hasard.
-2. Lisez la raison affichee par Paperasse.
+2. Lisez la raison affichee par Qitus.
 3. Regardez l'historique dans `Activite`.
 4. Consultez la piece justificative.
 5. Utilisez le `Chat` pour une explication en lecture seule.
 6. Demandez a votre expert-comptable si le point a un impact fiscal ou juridique.
 
-Paperasse est concu pour rendre les decisions visibles et auditables. Le bon reflexe est de documenter vos choix avec des notes et des pieces.
+Qitus est concu pour rendre les decisions visibles et auditables. Le bon reflexe est de documenter vos choix avec des notes et des pieces.
 

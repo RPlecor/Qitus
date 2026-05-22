@@ -150,7 +150,7 @@ function patternSuggestion(transaction: TransactionShape): TransactionSuggestion
     vatOperationNature: null,
     confidence: "MEDIUM",
     source: "PATTERN",
-    rationale: "Pattern déterministe Paperasse.",
+    rationale: "Pattern déterministe Qitus.",
     badge: "suggérée",
   };
 }

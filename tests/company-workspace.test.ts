@@ -5,8 +5,8 @@ describe("CompanyWorkspace adapters", () => {
   it("keeps the deterministic dev identity for local demo mode", async () => {
     await expect(new DevIdentityAdapter().resolveIdentity()).resolves.toEqual({
       clerkId: "dev-user",
-      email: "demo@paperasse.local",
-      name: "Demo Paperasse",
+      email: "demo@qitus.local",
+      name: "Démo Qitus",
     });
   });
 

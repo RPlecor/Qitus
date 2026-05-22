@@ -76,7 +76,7 @@ export class DocumentCenter {
 
 export { documentTypesForGeneration };
 
-export function paperasseErrorMessage(error: unknown) {
+export function qitusDocumentErrorMessage(error: unknown) {
   if (error instanceof Error) return error.message.split("\n")[0] || "La génération du document a échoué.";
   return "La génération du document a échoué.";
 }

@@ -53,7 +53,7 @@ export class OpenAIResponsesCategorizationAdapter implements AiCategorizationPro
     const response = await this.client.responses.parse({
       model: this.model,
       instructions: [
-        "Tu es le module de catégorisation comptable française de Paperasse.",
+        "Tu es le module de catégorisation comptable française de Qitus.",
         "Retourne uniquement des écritures bancaires BQ au format JSON demandé.",
         "Utilise le Plan Comptable Général français.",
         "Si le libellé est opaque ou insuffisant, confidence=LOW et accountDebit=471.",
@@ -73,7 +73,7 @@ export class OpenAIResponsesCategorizationAdapter implements AiCategorizationPro
       ],
       store: false,
       text: {
-        format: zodTextFormat(categorizationSchema, "paperasse_categorizations"),
+        format: zodTextFormat(categorizationSchema, "qitus_categorizations"),
       },
     });
 

@@ -53,7 +53,7 @@ export class PrivacyCenter {
       prisma.user.update({
         where: { id: workspace.user.id },
         data: {
-          email: `anon-${workspace.user.id}@paperasse.local`,
+          email: `anon-${workspace.user.id}@qitus.local`,
           name: "Utilisateur anonymisé",
           anonymizedAt: now,
         },

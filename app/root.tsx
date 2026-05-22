@@ -4,7 +4,7 @@ import { ClerkProvider } from "@clerk/remix";
 import { rootAuthLoader } from "@clerk/remix/ssr.server";
 import { getOptionalWorkspaceShell, type WorkspaceShellContext } from "~/modules/company-workspace/company-workspace.server";
 import { assertRuntimeConfig, getRuntimeConfig } from "~/modules/runtime-config.server";
-import stylesheet from "~/styles/paperasse.css?url";
+import stylesheet from "~/styles/qitus.css?url";
 
 export const links: LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },

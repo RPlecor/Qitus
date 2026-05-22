@@ -38,7 +38,7 @@ Alternatives validées :
 | Segment expert-comptable | Du CSV au FEC, sans détour. |
 | Segment TPE/PME | Votre expert-comptable va vous remercier. |
 | Acquisition large | La compta qui ne vous réveille pas la nuit. |
-| Clin d'œil historique | Moins de paperasse. Plus de quitus. |
+| Clin d'œil historique | Moins de qitus. Plus de quitus. |
 
 ---
 

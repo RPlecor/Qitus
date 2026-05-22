@@ -75,7 +75,7 @@ export default function SharedReview() {
 
       <section className="card">
         <h2>Commentaires et demandes</h2>
-        {activeReview ? <p className="sub">Revue {activeReview.status} · {activeReview.summary.open} demande(s) ouverte(s).</p> : <p className="sub">Aucune revue collaborative active. Demande au client de partager le dossier depuis Paperasse.</p>}
+        {activeReview ? <p className="sub">Revue {activeReview.status} · {activeReview.summary.open} demande(s) ouverte(s).</p> : <p className="sub">Aucune revue collaborative active. Demande au client de partager le dossier depuis Qitus.</p>}
         {activeReview ? (
           <>
             <Form method="post" action={`/api/expert-review/shared/${token}/items`} className="form-grid">

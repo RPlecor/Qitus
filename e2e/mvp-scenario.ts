@@ -96,7 +96,7 @@ export async function generateAndDownloadDocuments(page: Page) {
   await expect(page.getByText("Dernière génération réussie")).toBeVisible();
 
   const bundleDownload = await downloadEvidenceBundle(page);
-  expect(bundleDownload.suggestedFilename()).toBe("paperasse-evidence-2025.json");
+  expect(bundleDownload.suggestedFilename()).toBe("qitus-evidence-2025.json");
   const bundlePath = await bundleDownload.path();
   expect(bundlePath).toBeTruthy();
   const manifest = JSON.parse(await readFile(bundlePath!, "utf8")) as {
@@ -189,7 +189,7 @@ export async function runAnnualClosing(page: Page) {
 
   await page.goto("/cloture/archive");
   await expect(page.getByText("Archive prête")).toBeVisible();
-  await expect(page.getByText("paperasse-evidence-2025.json")).toBeVisible();
+  await expect(page.getByText("qitus-evidence-2025.json")).toBeVisible();
 
   await page.goto("/cloture");
   await page.getByRole("button", { name: "Clôturer l'exercice" }).click();

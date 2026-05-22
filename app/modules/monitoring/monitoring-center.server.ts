@@ -50,7 +50,7 @@ export class ErrorReporter {
   captureException(error: unknown, context: Record<string, unknown> = {}) {
     const message = error instanceof Error ? error.message : String(error);
     if (this.config.observabilityMode === "local") {
-      console.error("[paperasse:error]", JSON.stringify({ message, context: redact(context) }));
+      console.error("[qitus:error]", JSON.stringify({ message, context: redact(context) }));
     }
     return { message, context: redact(context), reported: this.config.observabilityMode !== "disabled" };
   }

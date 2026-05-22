@@ -57,7 +57,7 @@ export class PaperasseExecutionCenter {
         scriptVersion: execution.scriptVersion,
         startedAt: startedAt.toISOString(),
         finishedAt: new Date().toISOString(),
-        userMessage: error instanceof Error ? error.message : "Le script Paperasse a échoué.",
+        userMessage: error instanceof Error ? error.message : "Le script Qitus a échoué.",
       };
       execution.results.push(fallback);
       throw new PaperasseExecutionError(fallback.userMessage, fallback);
@@ -105,7 +105,7 @@ function toExecutionResult(
 }
 
 function userMessage(result: PaperasseScriptResult) {
-  return result.exitCode === 0 ? `Le script Paperasse ${result.script} s'est terminé correctement.` : `Le script Paperasse ${result.script} a échoué.`;
+  return result.exitCode === 0 ? `Le script Qitus ${result.script} s'est terminé correctement.` : `Le script Qitus ${result.script} a échoué.`;
 }
 
 async function artifact(outputPath: string, type: GeneratedArtifact["type"], filename: string, format: string): Promise<GeneratedArtifact> {
@@ -116,6 +116,6 @@ async function artifact(outputPath: string, type: GeneratedArtifact["type"], fil
 
 async function artifactMatching(outputPath: string, type: GeneratedArtifact["type"], pattern: RegExp, format: string): Promise<GeneratedArtifact> {
   const filename = (await readdir(outputPath)).find((candidate) => pattern.test(candidate));
-  if (!filename) throw new Error(`Paperasse did not generate expected ${type} artifact in ${outputPath}`);
+  if (!filename) throw new Error(`Qitus did not generate expected ${type} artifact in ${outputPath}`);
   return artifact(outputPath, type, filename, format);
 }

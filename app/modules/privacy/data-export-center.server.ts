@@ -29,7 +29,7 @@ export class DataExportCenter {
       prisma.privacyRequest.findMany({ where: { companyId: workspace.company.id }, orderBy: { requestedAt: "asc" } }),
     ]);
     return {
-      exportVersion: "paperasse-user-export-v1",
+      exportVersion: "qitus-user-export-v1",
       generatedAt: new Date().toISOString(),
       user: workspace.user,
       company: workspace.company,
@@ -63,7 +63,7 @@ export class DataExportCenter {
   async downloadUserExport(workspace: CompanyWorkspace) {
     const payload = await this.buildUserExport(workspace);
     return {
-      filename: `paperasse-export-${workspace.company.id}.json`,
+      filename: `qitus-export-${workspace.company.id}.json`,
       content: JSON.stringify(payload, null, 2),
     };
   }

@@ -106,6 +106,10 @@ export function AppShell({ children, active = "dashboard" }: { children: ReactNo
   return (
     <div className="shell">
       <aside className="sidebar">
+        <div className="s-brand" aria-label="Qitus">
+          <span className="s-brand-mark">Q</span>
+          <span className="s-brand-name">Qitus</span>
+        </div>
         <div className="s-id">
           <strong>{shell?.companyName ?? "ACME DIGITAL"}</strong>
           <span>
@@ -137,7 +141,7 @@ export function AppShell({ children, active = "dashboard" }: { children: ReactNo
             </span>
             Profil
           </NavLink>
-          {rootData?.authMode === "clerk" ? <ClerkSignOutButton /> : null}
+          {rootData?.authMode === "clerk" ? <SignOutButton /> : null}
         </div>
       </aside>
       {children}
@@ -145,7 +149,7 @@ export function AppShell({ children, active = "dashboard" }: { children: ReactNo
   );
 }
 
-function ClerkSignOutButton() {
+function SignOutButton() {
   return (
     <button
       type="button"

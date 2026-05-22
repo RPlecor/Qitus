@@ -35,7 +35,7 @@ export class ExpertReviewWorkflow {
         submittedAt: new Date(),
         reviewerName: clean(input.reviewerName) ?? shareLink?.reviewerName ?? null,
         reviewerEmail: clean(input.reviewerEmail),
-        summaryJson: { startedFrom: "paperasse" },
+        summaryJson: { startedFrom: "qitus" },
       },
     });
     await this.activity.recordActivity(workspace, {

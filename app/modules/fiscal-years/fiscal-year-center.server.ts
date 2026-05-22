@@ -5,7 +5,7 @@ import type { CompanyWorkspace } from "../company-workspace/company-workspace.se
 import { prisma } from "../db.server";
 import { ExpectedRouteError } from "../route-errors.server";
 
-export const activeFiscalYearCookie = createCookie("paperasse_fiscal_year_id", {
+export const activeFiscalYearCookie = createCookie("qitus_fiscal_year_id", {
   path: "/",
   sameSite: "lax",
   httpOnly: true,

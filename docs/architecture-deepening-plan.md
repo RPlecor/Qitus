@@ -1,4 +1,4 @@
-# Architecture Deepening Plan — Paperasse3
+# Architecture Deepening Plan — Qitus
 
 Audit du 2026-05-21. Validé par tech lead review.
 
@@ -42,7 +42,7 @@ Audit du 2026-05-21. Validé par tech lead review.
 | 2.2 | Qui possède les providers | Domaine source (ex: `vat/vat-evidence-section.server.ts`) |
 | 2.3 | Promise.all 23 appels | Garder parallélisme, chaque provider autonome, try/catch per-section |
 | 2.4 | DocumentGenerationCenter aussi ? | Non — seul EvidenceBundle est god module, GenerationCenter est ok |
-| 2.5 | DocumentGeneratorRegistry maintenant ? | Non — 1 seul générateur (Paperasse CLI), registry prématuré |
+| 2.5 | DocumentGeneratorRegistry maintenant ? | Non — 1 seul générateur (Qitus CLI), registry prématuré |
 
 ---
 

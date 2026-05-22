@@ -28,7 +28,7 @@ export interface IdentityAdapter {
 
 export class DevIdentityAdapter implements IdentityAdapter {
   async resolveIdentity(_args?: LoaderFunctionArgs) {
-    return { clerkId: "dev-user", email: "demo@paperasse.local", name: "Demo Paperasse" };
+    return { clerkId: "dev-user", email: "demo@qitus.local", name: "Démo Qitus" };
   }
 }
 
@@ -122,7 +122,7 @@ async function getOrCreateWorkspaceForIdentity(
     user = await prisma.user.create({
       data: {
         clerkId: identity.clerkId,
-        email: identity.email ?? `${identity.clerkId}@clerk.paperasse.local`,
+        email: identity.email ?? `${identity.clerkId}@qitus.local`,
         name: identity.name ?? undefined,
       },
     });

@@ -8,7 +8,7 @@ Accepted.
 
 Bridge and Powens are implemented as concrete `OpenBankingProviderAdapter` Adapters behind the existing Open Banking Seam.
 
-- Paperasse stores provider connection ids, consent status and masked account metadata in Prisma.
+- Qitus stores provider connection ids, consent status and masked account metadata in Prisma.
 - Provider user tokens are stored in `ProviderCredentialVault`, encrypted outside Prisma.
 - Bridge and Powens use provider-hosted consent/Webview flows.
 - Bank feeds continue through `BankFeedNormalizer` and `ImportOrchestrator`; no parallel import pipeline is created.

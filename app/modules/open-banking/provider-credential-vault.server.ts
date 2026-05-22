@@ -57,7 +57,7 @@ export class LocalEncryptedProviderCredentialVault implements ProviderCredential
     if (!configured && (this.config.appEnv === "staging" || this.config.appEnv === "production")) {
       throw new ExpectedRouteError("PROVIDER_SECRET_ENCRYPTION_KEY est requis pour stocker les tokens provider.", 500);
     }
-    return createHash("sha256").update(configured ?? "paperasse-local-provider-secret-key").digest();
+    return createHash("sha256").update(configured ?? "qitus-local-provider-secret-key").digest();
   }
 
   private filePath(key: string) {

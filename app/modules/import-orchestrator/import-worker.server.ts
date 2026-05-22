@@ -6,7 +6,7 @@ import { ImportOrchestrator } from "./import-orchestrator.server";
 export function createImportWorker(config: RuntimeConfig = getRuntimeConfig()) {
   const orchestrator = new ImportOrchestrator({ config });
   return new Worker<ImportExecutionRequest>(
-    "paperasse-imports",
+    "qitus-imports",
     async (job) => {
       await orchestrator.runImportJob(job.data);
     },

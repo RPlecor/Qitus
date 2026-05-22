@@ -190,7 +190,7 @@ type PowensTransaction = {
 };
 
 function stablePowensUserId(state: string) {
-  return createHmac("sha256", "paperasse-powens-user").update(state.split(":").slice(0, 2).join(":") || state).digest("hex");
+  return createHmac("sha256", "qitus-powens-user").update(state.split(":").slice(0, 2).join(":") || state).digest("hex");
 }
 
 function secretKey(key: string) {

@@ -113,7 +113,7 @@ export class VatDeclarationCenter {
       dateTo: period.end.toISOString().slice(0, 10),
     });
     const source = renderVatDeclarationSource(workspace, type, position, review.controls);
-    const filename = `${workspace.company.siren ?? "paperasse"}-${type}-${position.periodStart}-${position.periodEnd}.md`;
+    const filename = `${workspace.company.siren ?? "qitus"}-${type}-${position.periodStart}-${position.periodEnd}.md`;
     const storageKey = `${workspace.company.id}/${workspace.fiscalYear.id}/vat/${randomUUID()}-${filename}`;
     const sourcePath = path.join(process.cwd(), "tmp", "vat-declarations", storageKey.replace(/\//g, "_"));
     await mkdir(path.dirname(sourcePath), { recursive: true });
