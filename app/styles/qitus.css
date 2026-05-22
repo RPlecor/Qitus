@@ -911,8 +911,17 @@ p { margin: 0; }
   gap: 6px;
 }
 
+.row-actions-nowrap {
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
 .row-actions form {
   margin: 0;
+}
+
+.actions-cell {
+  white-space: nowrap;
 }
 
 .stack-sm {

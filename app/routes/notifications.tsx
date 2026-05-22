@@ -53,8 +53,8 @@ export default function Notifications() {
                     <strong>{notification.title}</strong>
                     <div className="sub">{notification.body}</div>
                   </td>
-                  <td>
-                    <div className="row-actions">
+                  <td className="actions-cell">
+                    <div className="row-actions row-actions-nowrap">
                       {notification.href ? <Link className="btn btn-sm" to={notification.href}>Ouvrir</Link> : null}
                       {!notification.read ? (
                         <Form method="post" action={`/api/notifications/${notification.id}/read`}>
