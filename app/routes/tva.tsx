@@ -28,6 +28,8 @@ export default function TvaPage() {
   const { position, review, declarations, settlement, queue, ledgerReadiness, query } = useLoaderData<typeof loader>();
   const declarationType = position.regime === "REEL_NORMAL" ? "CA3" : "CA12";
   const hasActiveDeclaration = declarations.some((declaration) => declaration.active);
+  const visibleDeclarations = declarations.filter((declaration) => declaration.status !== "SUPERSEDED");
+  const hiddenSupersededCount = declarations.length - visibleDeclarations.length;
 
   return (
     <AppShell active="tva">
@@ -94,12 +96,15 @@ export default function TvaPage() {
         </section>
 
         <section className="panel">
-          <h2>Déclarations brouillon</h2>
+          <div className="row between">
+            <h2>Déclarations brouillon</h2>
+            {hiddenSupersededCount > 0 ? <span className="sub">{hiddenSupersededCount} ancienne{hiddenSupersededCount > 1 ? "s" : ""} version{hiddenSupersededCount > 1 ? "s" : ""} masquée{hiddenSupersededCount > 1 ? "s" : ""}</span> : null}
+          </div>
           <TableShell>
           <table className="tbl">
             <thead><tr><th>Type</th><th>Période</th><th>Statut</th><th>Fraîcheur</th><th>Net</th><th></th></tr></thead>
             <tbody>
-              {declarations.map((declaration) => (
+              {visibleDeclarations.map((declaration) => (
                 <tr key={declaration.id}>
                   <td>{declaration.type}</td>
                   <td>{declaration.periodStart} → {declaration.periodEnd}</td>
@@ -109,7 +114,7 @@ export default function TvaPage() {
                   <td><Link className="btn btn-sm" to={`/tva/${declaration.id}`}>Ouvrir</Link></td>
                 </tr>
               ))}
-              {declarations.length === 0 ? <tr><td colSpan={6} className="sub">Aucune déclaration TVA générée.</td></tr> : null}
+              {visibleDeclarations.length === 0 ? <tr><td colSpan={6} className="sub">Aucune déclaration TVA active.</td></tr> : null}
             </tbody>
           </table>
           </TableShell>
