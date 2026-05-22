@@ -86,6 +86,5 @@ Commandes habituelles :
 
 ```sh
 git submodule update --init --recursive && npm ci && npx prisma generate && npm run build
-npx prisma migrate deploy
-npm start
+npx prisma migrate deploy && npm start
 ```

@@ -44,13 +44,13 @@ Le build exécute :
 git submodule update --init --recursive && npm ci && npx prisma generate && npm run build
 ```
 
-Le pre-deploy exécute :
+Sur le plan free Render, `preDeployCommand` n'est pas disponible. La commande de démarrage exécute donc d'abord les migrations puis démarre l'app :
 
 ```sh
-npx prisma migrate deploy
+npx prisma migrate deploy && npm start
 ```
 
-Le démarrage exécute :
+Sur un plan payant, il est possible de déplacer `npx prisma migrate deploy` dans un pre-deploy command et de revenir à un start command plus strict :
 
 ```sh
 npm start
