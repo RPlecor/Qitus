@@ -71,6 +71,15 @@ git submodule update --init --recursive
 
 La CI GitHub se trouve dans `.github/workflows/ci.yml` et exécute typecheck, tests et build avec PostgreSQL en service.
 
+## Déploiement Render
+
+Le dépôt contient un Blueprint [render.yaml](render.yaml) pour créer :
+
+- un service web `qitus-web`;
+- une base PostgreSQL `qitus-db`.
+
+La configuration Render par défaut est une staging démo sans secrets live : auth dev, billing stub, chat fake, Open Banking désactivé et stockage local éphémère. Pour une beta réelle, voir `docs/deployment-beta.md`.
+
 Datasets démo disponibles :
 
 ```sh

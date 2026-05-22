@@ -70,11 +70,22 @@ Elle utilise PostgreSQL en service GitHub Actions et des providers stub/mock.
 
 ## 6. Notes Render
 
-Pour Render, créez d'abord un service web Node et une base PostgreSQL, puis configurez les variables de `.env.example` dans le dashboard Render. Ne copiez jamais votre `.env` local dans GitHub.
+Pour Render, utilisez le Blueprint `render.yaml` à la racine du repo. Il crée un service web Node et une base PostgreSQL avec une configuration staging sans secrets live.
+
+Le premier déploiement est volontairement en mode :
+
+- `AUTH_MODE=dev`
+- `BILLING_MODE=stub`
+- `CHAT_PROVIDER=fake`
+- `OPEN_BANKING_PROVIDER=disabled`
+- `OBJECT_STORAGE_MODE=local`
+
+Ne copiez jamais votre `.env` local dans GitHub ou Render.
 
 Commandes habituelles :
 
 ```sh
-npm ci && npx prisma generate && npm run build
-npx prisma migrate deploy && npm start
+git submodule update --init --recursive && npm ci && npx prisma generate && npm run build
+npx prisma migrate deploy
+npm start
 ```

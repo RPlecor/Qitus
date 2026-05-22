@@ -10,6 +10,62 @@ Paperasse Phase 16 reste local-first en développement, mais expose une configur
 - Redis requis si `IMPORT_EXECUTION_MODE=bullmq` ou `CRON_MODE=worker`.
 - Stockage local en dev, S3-compatible en beta si `OBJECT_STORAGE_MODE=s3`.
 
+## Déploiement Render depuis GitHub
+
+Le dépôt contient un Blueprint Render à la racine : `render.yaml`.
+
+Il crée :
+
+- `qitus-web` : service web Node/Remix.
+- `qitus-db` : PostgreSQL managé.
+
+Configuration livrée par défaut :
+
+- `APP_ENV=staging`
+- `AUTH_MODE=dev`
+- `BILLING_MODE=stub`
+- `CHAT_PROVIDER=fake`
+- `OPEN_BANKING_PROVIDER=disabled`
+- `OBJECT_STORAGE_MODE=local`
+
+Cette configuration sert à obtenir une URL Render rapidement, sans exposer de secrets Clerk, Stripe, Open Banking ou S3. Elle n'est pas une configuration production multi-utilisateur.
+
+Depuis Render :
+
+1. Aller dans **Blueprints**.
+2. Sélectionner le repo GitHub `RPlecor/Qitus`.
+3. Laisser Render lire `render.yaml`.
+4. Créer le Blueprint.
+5. Après le premier deploy, ouvrir `/readyz`.
+
+Le build exécute :
+
+```sh
+git submodule update --init --recursive && npm ci && npx prisma generate && npm run build
+```
+
+Le pre-deploy exécute :
+
+```sh
+npx prisma migrate deploy
+```
+
+Le démarrage exécute :
+
+```sh
+npm start
+```
+
+Important : en Blueprint staging, les documents et pièces utilisent `/tmp/qitus/...`, donc un stockage local éphémère Render. Pour une beta avec preuves persistantes, basculer vers `OBJECT_STORAGE_MODE=s3`.
+
+Pour exposer à de vrais utilisateurs :
+
+- passer `AUTH_MODE=clerk` et renseigner Clerk ;
+- passer `BILLING_MODE=stripe` si abonnement réel ;
+- passer `OBJECT_STORAGE_MODE=s3` ;
+- configurer `PUBLIC_APP_URL` avec le domaine réel ;
+- configurer Open Banking uniquement quand le provider est prêt.
+
 ## Variables critiques
 
 - `APP_ENV=production`
