@@ -32,6 +32,8 @@
     "validate:accounting-rules-auto-update": "tsx scripts/validate-accounting-rules-auto-update.ts",
     "validate:e-invoices": "tsx scripts/validate-e-invoices.ts",
     "validate:e-invoice-provider-mock": "tsx scripts/validate-e-invoice-provider-mock.ts",
+    "validate:e-invoice-pa-readiness": "tsx scripts/validate-e-invoice-pa-readiness.ts",
+    "validate:e-invoice-pa-end-user": "tsx scripts/validate-e-invoice-pa-end-user.ts",
     "validate:chat-billing": "tsx scripts/validate-chat-billing.ts",
     "validate:end-user": "playwright test -c playwright.config.ts",
     "prisma:generate": "prisma generate",

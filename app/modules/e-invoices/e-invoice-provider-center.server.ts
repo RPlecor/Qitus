@@ -1,12 +1,17 @@
 import { ActivityLogCenter } from "../activity-log/activity-log-center.server";
 import type { CompanyWorkspace } from "../company-workspace/company-workspace.server";
 import { prisma } from "../db.server";
-import { createEInvoiceProviderAdapter, type EInvoiceProviderAdapter } from "./e-invoice-provider-adapter.server";
+import { ExpectedRouteError } from "../route-errors.server";
+import { createEInvoiceProviderAdapter, type EInvoiceProviderAdapter, type EInvoiceProviderLifecycleStatus } from "./e-invoice-provider-adapter.server";
+import { EInvoiceProviderConnectionCenter } from "./e-invoice-provider-connection-center.server";
+import { EInvoiceLifecycleCenter } from "./e-invoice-lifecycle-center.server";
 
 export class EInvoiceProviderCenter {
   constructor(
     private readonly adapter: EInvoiceProviderAdapter = createEInvoiceProviderAdapter(),
-    private readonly activity = new ActivityLogCenter()
+    private readonly activity = new ActivityLogCenter(),
+    private readonly connections = new EInvoiceProviderConnectionCenter(adapter, activity),
+    private readonly lifecycle = new EInvoiceLifecycleCenter()
   ) {}
 
   async getStatus(workspace: CompanyWorkspace) {
@@ -17,13 +22,20 @@ export class EInvoiceProviderCenter {
     ]);
     return {
       ...provider,
+      readiness: await this.connections.getReadiness(workspace),
       connections: connections.map((connection) => ({
         id: connection.id,
         provider: connection.provider,
+        providerCompanyId: connection.providerCompanyId,
         status: connection.status,
+        mandateStatus: connection.mandateStatus,
+        connectionStatus: connection.connectionStatus,
         safeLabel: connection.safeLabel,
         lastSyncedAt: connection.lastSyncedAt?.toISOString() ?? null,
+        lastStatusSyncedAt: connection.lastStatusSyncedAt?.toISOString() ?? null,
         errorMessage: connection.errorMessage,
+        capabilities: Array.isArray(connection.capabilitiesJson) ? connection.capabilitiesJson : [],
+        safeMetadata: connection.safeMetadataJson,
       })),
       syncEvents: syncEvents.map((event) => ({
         id: event.id,
@@ -39,31 +51,36 @@ export class EInvoiceProviderCenter {
   }
 
   async createConnection(workspace: CompanyWorkspace) {
-    const status = await this.adapter.getStatus();
-    const consent = await this.adapter.createConnection();
-    const connection = await prisma.eInvoiceProviderConnection.upsert({
-      where: {
-        companyId_provider_providerConnectionId: {
-          companyId: workspace.company.id,
-          provider: status.provider,
-          providerConnectionId: consent.providerConnectionId,
-        },
+    return this.connections.createConnection(workspace);
+  }
+
+  async disconnect(workspace: CompanyWorkspace, connectionId?: string | null) {
+    return this.connections.disconnect(workspace, connectionId);
+  }
+
+  async acknowledgeInvoiceStatus(workspace: CompanyWorkspace, eInvoiceId: string, status: EInvoiceProviderLifecycleStatus) {
+    const invoice = await prisma.eInvoice.findFirst({
+      where: { id: eInvoiceId, companyId: workspace.company.id, fiscalYearId: workspace.fiscalYear.id },
+    });
+    if (!invoice) throw new ExpectedRouteError("Facture électronique introuvable.", 404);
+    if (invoice.source !== "PROVIDER" || !invoice.sourceId) {
+      throw new ExpectedRouteError("Seules les factures reçues via PA peuvent être acquittées auprès du provider.", 409);
+    }
+    await this.adapter.acknowledgeInvoiceStatus?.(invoice.sourceId, status);
+    const updated = await prisma.eInvoice.update({
+      where: { id: invoice.id },
+      data: {
+        providerStatus: status,
+        status: this.lifecycle.toQitusStatus(status, invoice.status),
+        providerStatusSyncedAt: new Date(),
       },
-      create: {
-        companyId: workspace.company.id,
-        provider: status.provider,
-        providerConnectionId: consent.providerConnectionId,
-        status: "ACTIVE",
-        safeLabel: consent.safeLabel,
-      },
-      update: { status: "ACTIVE", safeLabel: consent.safeLabel, errorMessage: null },
     });
     await this.activity.recordActivity(workspace, {
-      action: "e_invoice_provider.connected",
-      entityType: "e_invoice_provider",
-      entityId: connection.id,
-      metadata: { provider: connection.provider },
+      action: "e_invoice_provider.status_acknowledged",
+      entityType: "e_invoice",
+      entityId: invoice.id,
+      metadata: { providerStatus: status },
     });
-    return { connectionId: connection.id, redirectUrl: consent.redirectUrl, status: connection.status };
+    return { id: updated.id, providerStatus: updated.providerStatus, status: updated.status };
   }
 }

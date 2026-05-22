@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { StructuredInvoiceParserCenter, extractEmbeddedInvoiceXml } from "../app/modules/e-invoices/structured-invoice-parser-center.server";
+import { GenericAccreditedPlatformAdapter, MockEInvoiceProviderAdapter } from "../app/modules/e-invoices/e-invoice-provider-adapter.server";
+import { EInvoiceLifecycleCenter } from "../app/modules/e-invoices/e-invoice-lifecycle-center.server";
 
 const ubl = `<?xml version="1.0" encoding="UTF-8"?>
 <Invoice xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2" xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2">
@@ -43,5 +45,39 @@ describe("StructuredInvoiceParserCenter", () => {
   it("returns non-structured for ordinary files", () => {
     const result = new StructuredInvoiceParserCenter().parse({ filename: "note.txt", mimeType: "text/plain", bytes: Buffer.from("justificatif simple") });
     expect(result).toEqual({ structured: false, reason: "Aucun XML Factur-X, UBL ou CII détecté." });
+  });
+});
+
+describe("EInvoiceProviderAdapter", () => {
+  it("exposes a mock PA-like provider without claiming legal compliance", async () => {
+    const status = await new MockEInvoiceProviderAdapter().getStatus();
+    expect(status.configured).toBe(true);
+    expect(status.receptionCompliant).toBe(false);
+    expect(status.capabilities).toContain("incoming_invoices");
+    const invoice = await new MockEInvoiceProviderAdapter().downloadInvoicePayload("mock-ubl-ovh-2025-001");
+    expect(invoice.providerStatus).toBe("AVAILABLE");
+    expect(invoice.providerProof?.provider).toBe("mock");
+  });
+
+  it("keeps the generic PA adapter safe until a concrete PA is implemented", async () => {
+    const adapter = new GenericAccreditedPlatformAdapter({
+      appEnv: "local",
+      eInvoiceProvider: "generic_pa",
+      eInvoiceProviderBaseUrl: "https://pa.example.test",
+      eInvoiceProviderClientId: "client",
+      eInvoiceProviderClientSecret: "secret",
+      eInvoiceProviderWebhookSecret: "webhook",
+    } as never);
+    const status = await adapter.getStatus();
+    expect(status.configured).toBe(true);
+    expect(status.receptionCompliant).toBe(false);
+    await expect(adapter.listIncomingInvoices()).rejects.toThrow(/Adapter PA concret/);
+  });
+
+  it("translates provider statuses into Qitus lifecycle states", () => {
+    const lifecycle = new EInvoiceLifecycleCenter();
+    expect(lifecycle.toQitusStatus("MATCHED", "PARSED")).toBe("MATCHED");
+    expect(lifecycle.toQitusStatus("REJECTED", "PARSED")).toBe("NEEDS_REVIEW");
+    expect(lifecycle.toQitusStatus("AVAILABLE", "ACCOUNTED")).toBe("ACCOUNTED");
   });
 });

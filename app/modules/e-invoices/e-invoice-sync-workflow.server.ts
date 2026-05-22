@@ -24,10 +24,17 @@ export class EInvoiceSyncWorkflow {
       },
     });
     try {
-      const payloads = await this.adapter.listIncomingInvoices();
+      const connection = await prisma.eInvoiceProviderConnection.findFirst({
+        where: { companyId: workspace.company.id, provider: provider.provider, status: "ACTIVE" },
+        orderBy: { updatedAt: "desc" },
+      });
+      const payloads = await this.adapter.listIncomingInvoices({ providerConnectionId: connection?.providerConnectionId ?? null });
       let importedCount = 0;
       for (const payload of payloads) {
-        const invoice = await this.invoices.ingestProviderInvoice(workspace, payload);
+        const invoice = await this.invoices.ingestProviderInvoice(workspace, {
+          ...payload,
+          providerConnectionId: connection?.id ?? null,
+        });
         if (invoice) importedCount += 1;
       }
       const updated = await prisma.eInvoiceProviderSyncEvent.update({
@@ -41,7 +48,18 @@ export class EInvoiceSyncWorkflow {
       });
       await prisma.eInvoiceProviderConnection.updateMany({
         where: { companyId: workspace.company.id, provider: provider.provider },
-        data: { lastSyncedAt: new Date(), errorMessage: null },
+        data: {
+          lastSyncedAt: new Date(),
+          lastStatusSyncedAt: new Date(),
+          errorMessage: null,
+          safeMetadataJson: {
+            lastSync: {
+              fetchedCount: payloads.length,
+              importedCount,
+              finishedAt: new Date().toISOString(),
+            },
+          },
+        },
       });
       await this.activity.recordActivity(workspace, {
         action: "e_invoice_provider.synced",

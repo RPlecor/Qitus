@@ -14,6 +14,7 @@ export type ObservabilityMode = "disabled" | "local" | "sentry" | "otel";
 export type CronMode = "disabled" | "local" | "worker";
 export type OpenBankingProviderMode = "disabled" | "mock" | "bridge" | "powens" | "gocardless" | "tink" | "yapily";
 export type ChangeImpactsMode = "off" | "shadow" | "active";
+export type EInvoiceProviderMode = "disabled" | "mock" | "generic_pa" | string;
 
 export type RuntimeConfig = {
   appEnv: AppEnvironment;
@@ -68,6 +69,11 @@ export type RuntimeConfig = {
   openBankingBaseUrl?: string;
   providerSecretEncryptionKey?: string;
   changeImpactsMode: ChangeImpactsMode;
+  eInvoiceProvider: EInvoiceProviderMode;
+  eInvoiceProviderBaseUrl?: string;
+  eInvoiceProviderClientId?: string;
+  eInvoiceProviderClientSecret?: string;
+  eInvoiceProviderWebhookSecret?: string;
 };
 
 export function getRuntimeConfig(env: Record<string, string | undefined> = process.env): RuntimeConfig {
@@ -124,6 +130,11 @@ export function getRuntimeConfig(env: Record<string, string | undefined> = proce
     openBankingBaseUrl: env.OPEN_BANKING_BASE_URL,
     providerSecretEncryptionKey: env.PROVIDER_SECRET_ENCRYPTION_KEY,
     changeImpactsMode: parseChangeImpactsMode(env.CHANGE_IMPACTS_MODE),
+    eInvoiceProvider: parseEInvoiceProvider(env.E_INVOICE_PROVIDER),
+    eInvoiceProviderBaseUrl: env.E_INVOICE_PROVIDER_BASE_URL,
+    eInvoiceProviderClientId: env.E_INVOICE_PROVIDER_CLIENT_ID,
+    eInvoiceProviderClientSecret: env.E_INVOICE_PROVIDER_CLIENT_SECRET,
+    eInvoiceProviderWebhookSecret: env.E_INVOICE_PROVIDER_WEBHOOK_SECRET,
   };
 }
 
@@ -175,6 +186,15 @@ export function assertRuntimeConfig(config = getRuntimeConfig()) {
       errors.push(`OPEN_BANKING_PROVIDER=${config.openBankingProvider} requires PROVIDER_SECRET_ENCRYPTION_KEY in ${config.appEnv}.`);
     }
   }
+  if (config.eInvoiceProvider !== "disabled" && config.eInvoiceProvider !== "mock") {
+    if (!config.eInvoiceProviderBaseUrl) errors.push(`E_INVOICE_PROVIDER=${config.eInvoiceProvider} requires E_INVOICE_PROVIDER_BASE_URL.`);
+    if (!config.eInvoiceProviderClientId) errors.push(`E_INVOICE_PROVIDER=${config.eInvoiceProvider} requires E_INVOICE_PROVIDER_CLIENT_ID.`);
+    if (!config.eInvoiceProviderClientSecret) errors.push(`E_INVOICE_PROVIDER=${config.eInvoiceProvider} requires E_INVOICE_PROVIDER_CLIENT_SECRET.`);
+    if (!config.eInvoiceProviderWebhookSecret) errors.push(`E_INVOICE_PROVIDER=${config.eInvoiceProvider} requires E_INVOICE_PROVIDER_WEBHOOK_SECRET.`);
+    if ((config.appEnv === "staging" || config.appEnv === "production") && !config.providerSecretEncryptionKey) {
+      errors.push(`E_INVOICE_PROVIDER=${config.eInvoiceProvider} requires PROVIDER_SECRET_ENCRYPTION_KEY in ${config.appEnv}.`);
+    }
+  }
   if (errors.length > 0) throw new Error(errors.join(" "));
   return config;
 }
@@ -195,6 +215,7 @@ export function sanitizedRuntimeConfig(config = getRuntimeConfig()) {
     cronMode: config.cronMode,
     openBankingProvider: config.openBankingProvider,
     changeImpactsMode: config.changeImpactsMode,
+    eInvoiceProvider: config.eInvoiceProvider,
     enablePdfGeneration: config.enablePdfGeneration,
     hasDatabaseUrl: Boolean(config.databaseUrl),
     hasSessionSecret: Boolean(config.sessionSecret),
@@ -206,6 +227,7 @@ export function sanitizedRuntimeConfig(config = getRuntimeConfig()) {
       : config.openBankingProvider === "powens"
         ? Boolean(config.openBankingBaseUrl && config.openBankingClientId && config.openBankingClientSecret && config.openBankingWebhookSecret && (config.appEnv === "local" || config.providerSecretEncryptionKey))
         : Boolean(config.openBankingClientId && config.openBankingClientSecret && config.openBankingWebhookSecret && (config.appEnv === "local" || config.providerSecretEncryptionKey))),
+    hasEInvoiceProviderConfig: config.eInvoiceProvider === "mock" || (config.eInvoiceProvider !== "disabled" && Boolean(config.eInvoiceProviderBaseUrl && config.eInvoiceProviderClientId && config.eInvoiceProviderClientSecret && config.eInvoiceProviderWebhookSecret && (config.appEnv === "local" || config.providerSecretEncryptionKey))),
     hasProviderSecretVaultKey: Boolean(config.providerSecretEncryptionKey) || config.appEnv === "local",
   };
 }
@@ -280,6 +302,12 @@ export function parseChangeImpactsMode(value: string | undefined): ChangeImpacts
   const mode = value?.toLowerCase() ?? "shadow";
   if (mode === "off" || mode === "shadow" || mode === "active") return mode;
   throw new Error(`Unsupported CHANGE_IMPACTS_MODE value: ${value}`);
+}
+
+export function parseEInvoiceProvider(value: string | undefined): EInvoiceProviderMode {
+  const mode = value?.toLowerCase() ?? "mock";
+  if (/^[a-z0-9_-]+$/.test(mode)) return mode;
+  throw new Error(`Unsupported E_INVOICE_PROVIDER value: ${value}`);
 }
 
 function parsePositiveInt(value: string | undefined, fallback: number) {

@@ -1039,6 +1039,11 @@ model EInvoice {
   sourceId          String?
   format            EInvoiceFormat
   status            EInvoiceStatus           @default(RECEIVED)
+  providerStatus    String?
+  providerReceivedAt DateTime?
+  providerStatusSyncedAt DateTime?
+  providerProofJson Json?
+  providerMetadataJson Json?
   checksum          String
   rawXmlStorageKey  String?
   supplierName      String?
@@ -1097,10 +1102,17 @@ model EInvoiceProviderConnection {
   company              Company                   @relation(fields: [companyId], references: [id], onDelete: Cascade)
   provider             String
   providerConnectionId String?
+  providerCompanyId    String?
   status               EInvoiceProviderStatus    @default(PENDING)
+  mandateStatus        String                    @default("UNKNOWN")
   safeLabel            String?
+  connectionStatus     String?
   lastSyncedAt         DateTime?
+  lastStatusSyncedAt   DateTime?
+  revokedAt            DateTime?
   errorMessage         String?
+  capabilitiesJson     Json?
+  safeMetadataJson     Json?
   metadataJson         Json?
   eInvoices            EInvoice[]
   createdAt            DateTime                  @default(now())

@@ -15,6 +15,7 @@ import { getRuntimeConfig, type ChangeImpactsMode } from "../runtime-config.serv
 import { StorageAuditCenter } from "../storage/storage-audit-center.server";
 import { VatDeclarationCenter } from "../vat/vat-declaration-center.server";
 import { VatLedgerReadinessCenter } from "../vat/vat-ledger-readiness-center.server";
+import { EInvoiceProviderConnectionCenter } from "../e-invoices/e-invoice-provider-connection-center.server";
 
 export type ChangeImpactStatus = "ok" | "warning" | "action_required" | "blocked";
 export type ChangeImpactSeverity = "info" | "warning" | "blocking";
@@ -293,10 +294,12 @@ export class ImportLedgerImpactSource implements ChangeImpactSource {
 
 export class EInvoiceImpactSource implements ChangeImpactSource {
   readonly sourceKey = "e-invoices";
-  readonly surfaces: ChangeImpactSurface[] = ["dashboard", "documents", "tva", "couverture", "dossier_ec"];
+  readonly surfaces: ChangeImpactSurface[] = ["dashboard", "documents", "tva", "couverture", "dossier_ec", "connecteurs"];
+  constructor(private readonly providerConnections = new EInvoiceProviderConnectionCenter()) {}
 
   async listImpacts(workspace: CompanyWorkspace): Promise<ChangeImpact[]> {
-    const [pendingInvoices, readyDrafts, accountedSinceDocs] = await Promise.all([
+    const [readiness, pendingInvoices, readyDrafts, providerPendingInvoices, accountedSinceDocs] = await Promise.all([
+      this.providerConnections.getReadiness(workspace),
       prisma.eInvoice.count({
         where: {
           companyId: workspace.company.id,
@@ -308,6 +311,15 @@ export class EInvoiceImpactSource implements ChangeImpactSource {
       prisma.eInvoiceAccountingDraft.count({
         where: { companyId: workspace.company.id, fiscalYearId: workspace.fiscalYear.id, status: "READY" },
       }),
+      prisma.eInvoice.count({
+        where: {
+          companyId: workspace.company.id,
+          fiscalYearId: workspace.fiscalYear.id,
+          source: "PROVIDER",
+          status: { notIn: ["ACCOUNTED", "ARCHIVED"] },
+          archivedAt: null,
+        },
+      }),
       prisma.eInvoiceAccountingDraft.count({
         where: {
           companyId: workspace.company.id,
@@ -318,6 +330,22 @@ export class EInvoiceImpactSource implements ChangeImpactSource {
       }),
     ]);
     const impacts: ChangeImpact[] = [];
+    if (!readiness.receptionCompliant) {
+      impacts.push(impact({
+        code: "e_invoices.pa_not_compliant",
+        source: this.sourceKey,
+        status: "warning",
+        severity: "warning",
+        title: "Réception PA non conforme ou non connectée",
+        message: readiness.message,
+        why: ["Qitus exploite les factures, mais la réception réglementaire doit passer par une Plateforme Agréée réelle."],
+        surfaces: ["connecteurs", "dossier_ec", "couverture"],
+        blockingCapabilities: [],
+        affectedArtifacts: ["Factures entrantes", "Dossier EC"],
+        primaryAction: { label: "Ouvrir les connecteurs", href: "/connecteurs" },
+        metadata: { readiness },
+      }));
+    }
     if (pendingInvoices > 0) {
       impacts.push(impact({
         code: "e_invoices.pending",
@@ -332,6 +360,22 @@ export class EInvoiceImpactSource implements ChangeImpactSource {
         affectedArtifacts: ["Pièces", "TVA", "Dossier de preuve"],
         primaryAction: { label: "Ouvrir les factures entrantes", href: "/factures-entrantes" },
         metadata: { pendingInvoices },
+      }));
+    }
+    if (providerPendingInvoices > 0) {
+      impacts.push(impact({
+        code: "e_invoices.provider_received_not_accounted",
+        source: this.sourceKey,
+        status: "action_required",
+        severity: "warning",
+        title: `${providerPendingInvoices} facture${providerPendingInvoices > 1 ? "s" : ""} reçue${providerPendingInvoices > 1 ? "s" : ""} via PA à traiter`,
+        message: "Des factures reçues par provider PA ne sont pas encore comptabilisées.",
+        why: ["La réception PA ne suffit pas : Qitus attend une revue et une validation utilisateur avant écriture."],
+        surfaces: this.surfaces,
+        blockingCapabilities: [],
+        affectedArtifacts: ["Journal", "TVA", "Dossier EC"],
+        primaryAction: { label: "Ouvrir les factures entrantes", href: "/factures-entrantes" },
+        metadata: { providerPendingInvoices },
       }));
     }
     if (readyDrafts > 0) {

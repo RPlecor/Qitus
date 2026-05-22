@@ -1099,6 +1099,7 @@ Décision verrouillée :
 - Qitus traite d'abord la **réception/exploitation comptable** des factures fournisseurs.
 - P0 : upload local et parsing structuré Factur-X / UBL / CII.
 - P1 : réception automatisée via un **Seam PA-neutral** branchable plus tard sur une Plateforme Agréée.
+- P1.5 : connexion PA conforme via Adapter concret ; Qitus ne devient pas PA, il conserve les preuves PA et exploite les factures reçues.
 - Aucune émission de facture, numérotation client, paiement, e-reporting ou télétransmission dans cette phase.
 - Les écritures existantes ne sont jamais modifiées automatiquement.
 
@@ -1229,12 +1230,14 @@ Interface cible :
 Adapters :
 
 - `MockEInvoiceProviderAdapter` pour validation automatisée.
+- `GenericAccreditedPlatformAdapter` pour figer le contrat PA et refuser proprement tant qu'aucune PA réelle n'est branchée.
 - PA concrète à brancher ensuite sans changer le pipeline.
 
 Sécurité :
 
 - secrets provider dans `ProviderCredentialVault`, jamais dans Prisma.
 - webhooks idempotents via `WebhookEvent`.
+- statut de mandat, statut provider facture, preuve PA et audit de réception conservés.
 - sync interdite sur exercice fermé.
 - aucune facture fournisseur ne crée d'écriture sans validation utilisateur.
 

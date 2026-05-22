@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
-import type { EInvoiceFormat, EInvoiceSource } from "@prisma/client";
+import { Prisma, type EInvoiceFormat, type EInvoiceSource } from "@prisma/client";
 import type { CompanyWorkspace } from "../company-workspace/company-workspace.server";
 import { prisma } from "../db.server";
 import { ActivityLogCenter } from "../activity-log/activity-log-center.server";
@@ -7,25 +7,22 @@ import { LocalEvidenceStorageAdapter, type EvidenceStorageAdapter } from "../evi
 import { ExpectedRouteError } from "../route-errors.server";
 import { StructuredInvoiceParserCenter } from "./structured-invoice-parser-center.server";
 import type { StructuredInvoicePayload } from "./structured-invoice-types.server";
+import type { EInvoiceProviderInvoice } from "./e-invoice-provider-adapter.server";
+import { EInvoiceLifecycleCenter } from "./e-invoice-lifecycle-center.server";
 
 export type EInvoiceListFilters = {
   status?: string | null;
   limit?: number;
 };
 
-export type EInvoiceProviderPayload = {
-  providerConnectionId?: string | null;
-  sourceId: string;
-  filename: string;
-  mimeType: string;
-  bytes: Buffer;
-};
+export type EInvoiceProviderPayload = EInvoiceProviderInvoice & { providerConnectionId?: string | null };
 
 export class EInvoiceCenter {
   constructor(
     private readonly parser = new StructuredInvoiceParserCenter(),
     private readonly storage: EvidenceStorageAdapter = new LocalEvidenceStorageAdapter(),
-    private readonly activity = new ActivityLogCenter()
+    private readonly activity = new ActivityLogCenter(),
+    private readonly lifecycle = new EInvoiceLifecycleCenter()
   ) {}
 
   async ingestAttachment(workspace: CompanyWorkspace, input: { attachmentId: string; filename: string; mimeType: string; bytes: Buffer }) {
@@ -70,7 +67,7 @@ export class EInvoiceCenter {
         status: parseEInvoiceStatus(filters.status),
         archivedAt: null,
       },
-      include: { attachment: true, accountingDrafts: { orderBy: { createdAt: "desc" }, take: 1 } },
+      include: { attachment: true, providerConnection: true, accountingDrafts: { orderBy: { createdAt: "desc" }, take: 1 } },
       orderBy: { createdAt: "desc" },
       take: Math.min(Math.max(filters.limit ?? 100, 1), 500),
     });
@@ -82,6 +79,7 @@ export class EInvoiceCenter {
       where: { id, companyId: workspace.company.id, fiscalYearId: workspace.fiscalYear.id },
       include: {
         attachment: true,
+        providerConnection: true,
         accountingDrafts: { orderBy: { createdAt: "desc" }, include: { journalEntry: true } },
       },
     });
@@ -92,6 +90,19 @@ export class EInvoiceCenter {
       buyerName: invoice.buyerName,
       buyerSiret: invoice.buyerSiret,
       supplierSiret: invoice.supplierSiret,
+      providerConnection: invoice.providerConnection ? {
+        id: invoice.providerConnection.id,
+        provider: invoice.providerConnection.provider,
+        safeLabel: invoice.providerConnection.safeLabel,
+        status: invoice.providerConnection.status,
+        mandateStatus: invoice.providerConnection.mandateStatus,
+      } : null,
+      providerStatus: invoice.providerStatus,
+      providerStatusLabel: this.lifecycle.providerStatusLabel(invoice.providerStatus),
+      providerReceivedAt: invoice.providerReceivedAt?.toISOString() ?? null,
+      providerStatusSyncedAt: invoice.providerStatusSyncedAt?.toISOString() ?? null,
+      providerProof: invoice.providerProofJson,
+      providerMetadata: invoice.providerMetadataJson,
       dueDate: invoice.dueDate?.toISOString().slice(0, 10) ?? null,
       vatBreakdown: invoice.vatBreakdownJson,
       lines: invoice.linesJson,
@@ -151,6 +162,10 @@ export class EInvoiceCenter {
     attachmentId: string | null;
     providerConnectionId?: string | null;
     rawAttachmentStorageKey: string | null;
+    providerStatus?: EInvoiceProviderPayload["providerStatus"];
+    providerReceivedAt?: Date;
+    providerProof?: Record<string, unknown>;
+    providerMetadata?: Record<string, unknown>;
   }) {
     const bytesChecksum = createHash("sha256").update(input.bytes).digest("hex");
     try {
@@ -168,6 +183,10 @@ export class EInvoiceCenter {
         sourceId: input.sourceId,
         attachmentId: input.attachmentId,
         providerConnectionId: input.providerConnectionId ?? null,
+        providerStatus: input.providerStatus,
+        providerReceivedAt: input.providerReceivedAt,
+        providerProof: input.providerProof,
+        providerMetadata: input.providerMetadata,
       });
       await this.activity.recordActivity(workspace, {
         action: invoice.createdAt.getTime() === invoice.updatedAt.getTime() ? "e_invoice.received" : "e_invoice.parsed",
@@ -190,10 +209,25 @@ export class EInvoiceCenter {
           sourceId: input.sourceId,
           format: "UNKNOWN",
           status: "ERROR",
+          providerStatus: input.providerStatus ?? "ERROR",
+          providerReceivedAt: input.providerReceivedAt,
+          providerStatusSyncedAt: input.providerStatus ? new Date() : null,
+          providerProofJson: (input.providerProof ?? {}) as Prisma.InputJsonObject,
+          providerMetadataJson: (input.providerMetadata ?? {}) as Prisma.InputJsonObject,
           checksum: bytesChecksum,
           errorMessage: message,
         },
-        update: { attachmentId: input.attachmentId, status: "ERROR", errorMessage: message },
+        update: {
+          attachmentId: input.attachmentId,
+          providerConnectionId: input.providerConnectionId ?? null,
+          status: "ERROR",
+          providerStatus: input.providerStatus ?? "ERROR",
+          providerReceivedAt: input.providerReceivedAt,
+          providerStatusSyncedAt: input.providerStatus ? new Date() : null,
+          providerProofJson: (input.providerProof ?? {}) as Prisma.InputJsonObject,
+          providerMetadataJson: (input.providerMetadata ?? {}) as Prisma.InputJsonObject,
+          errorMessage: message,
+        },
       });
       await this.activity.recordActivity(workspace, {
         action: "e_invoice.parse_failed",
@@ -213,6 +247,10 @@ export class EInvoiceCenter {
     sourceId: string | null;
     attachmentId: string | null;
     providerConnectionId: string | null;
+    providerStatus?: EInvoiceProviderPayload["providerStatus"];
+    providerReceivedAt?: Date;
+    providerProof?: Record<string, unknown>;
+    providerMetadata?: Record<string, unknown>;
   }) {
     const data = payloadToPrisma(input.payload, {
       companyId: workspace.company.id,
@@ -223,6 +261,10 @@ export class EInvoiceCenter {
       rawXmlStorageKey: input.rawXmlStorageKey,
       attachmentId: input.attachmentId,
       providerConnectionId: input.providerConnectionId,
+      providerStatus: input.providerStatus,
+      providerReceivedAt: input.providerReceivedAt,
+      providerProof: input.providerProof,
+      providerMetadata: input.providerMetadata,
     });
     const existing = await prisma.eInvoice.findUnique({
       where: { companyId_fiscalYearId_checksum: { companyId: workspace.company.id, fiscalYearId: workspace.fiscalYear.id, checksum: input.checksum } },
@@ -247,6 +289,10 @@ function payloadToPrisma(payload: StructuredInvoicePayload, base: {
   rawXmlStorageKey: string;
   attachmentId: string | null;
   providerConnectionId: string | null;
+  providerStatus?: EInvoiceProviderPayload["providerStatus"];
+  providerReceivedAt?: Date;
+  providerProof?: Record<string, unknown>;
+  providerMetadata?: Record<string, unknown>;
 }) {
   return {
     companyId: base.companyId,
@@ -257,6 +303,11 @@ function payloadToPrisma(payload: StructuredInvoicePayload, base: {
     sourceId: base.sourceId,
     format: payload.format,
     status: "PARSED" as const,
+    providerStatus: base.providerStatus ?? (base.source === "PROVIDER" ? "AVAILABLE" : null),
+    providerReceivedAt: base.providerReceivedAt ?? null,
+    providerStatusSyncedAt: base.providerStatus ? new Date() : null,
+    providerProofJson: (base.providerProof ?? {}) as Prisma.InputJsonObject,
+    providerMetadataJson: (base.providerMetadata ?? {}) as Prisma.InputJsonObject,
     checksum: base.checksum,
     rawXmlStorageKey: base.rawXmlStorageKey,
     supplierName: payload.supplierName,
@@ -290,6 +341,9 @@ export function summarizeEInvoice(invoice: {
   amountVat: { toString(): string } | null;
   amountTtc: { toString(): string } | null;
   attachment?: { id: string; originalFilename: string } | null;
+  providerConnection?: { id: string; provider: string; safeLabel: string | null } | null;
+  providerStatus?: string | null;
+  providerReceivedAt?: Date | null;
   accountingDrafts?: Array<{ id: string; status: string; journalEntryId?: string | null }>;
   createdAt: Date;
   updatedAt: Date;
@@ -309,6 +363,10 @@ export function summarizeEInvoice(invoice: {
     amountTtc: invoice.amountTtc?.toString() ?? null,
     attachmentId: invoice.attachment?.id ?? null,
     attachmentFilename: invoice.attachment?.originalFilename ?? null,
+    providerConnectionId: invoice.providerConnection?.id ?? null,
+    providerLabel: invoice.providerConnection?.safeLabel ?? invoice.providerConnection?.provider ?? null,
+    providerStatus: invoice.providerStatus ?? null,
+    providerReceivedAt: invoice.providerReceivedAt?.toISOString() ?? null,
     latestDraftStatus: latestDraft?.status ?? null,
     journalEntryId: latestDraft?.journalEntryId ?? null,
     createdAt: invoice.createdAt.toISOString(),

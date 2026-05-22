@@ -170,6 +170,10 @@
 - **StructuredInvoiceParser**: the deterministic parser Seam for Factur-X, UBL and CII; it extracts a canonical invoice payload and never creates accounting entries.
 - **EInvoiceAccountingDraft**: the user-reviewable accounting proposal derived from an EInvoice; only approval creates a `JournalEntry` with source `E_INVOICE`.
 - **EInvoiceProviderAdapter**: the PA-neutral reception Seam for future Plateforme Agréée integrations; the mock Adapter validates sync without selecting a concrete PA.
+- **GenericAccreditedPlatformAdapter**: the live-shaped but non-network Adapter documenting the PA contract until a concrete Plateforme Agréée is selected and implemented.
+- **EInvoiceProviderConnection**: the company-level PA connection state, including non-secret provider ids, mandate status, last sync, last status refresh and safe capabilities.
+- **EInvoiceLifecycle**: the Module that translates provider invoice statuses into Qitus invoice states without creating accounting entries.
+- **EInvoiceAuditTrail**: the reviewable trace of PA webhooks, syncs, stored XML, provider status changes, drafts and accounting approval.
 - **EInvoiceMatching**: the calculated matching between an EInvoice and existing transactions or journal entries, based on amount, date, supplier and invoice reference.
 - **BankConsent**: the provider-backed user consent state, including expiration, revocation and reconnect needs without storing raw bank credentials.
 - **BankFeedNormalizer**: the Module that converts provider account and transaction payloads into canonical bank movements ingested through `ImportOrchestrator`.

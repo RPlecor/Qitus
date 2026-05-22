@@ -4,19 +4,21 @@ import { AppShell, Main, StatusPill, TableShell } from "~/components/ui";
 import { requireCompanyWorkspace } from "~/modules/company-workspace/company-workspace.server";
 import { EInvoiceCenter } from "~/modules/e-invoices/e-invoice-center.server";
 import { EInvoiceMatchingCenter } from "~/modules/e-invoices/e-invoice-matching-center.server";
+import { EInvoiceAuditTrailCenter } from "~/modules/e-invoices/e-invoice-audit-trail-center.server";
 
 export async function loader(args: LoaderFunctionArgs) {
   const workspace = await requireCompanyWorkspace(args);
   const id = String(args.params.id);
-  const [invoice, matches] = await Promise.all([
+  const [invoice, matches, audit] = await Promise.all([
     new EInvoiceCenter().getEInvoiceDetail(workspace, id),
     new EInvoiceMatchingCenter().suggestMatches(workspace, id),
+    new EInvoiceAuditTrailCenter().getInvoiceAudit(workspace, id),
   ]);
-  return json({ invoice, matches, query: Object.fromEntries(new URL(args.request.url).searchParams) });
+  return json({ invoice, matches, audit, query: Object.fromEntries(new URL(args.request.url).searchParams) });
 }
 
 export default function FactureEntranteDetail() {
-  const { invoice, matches, query } = useLoaderData<typeof loader>();
+  const { invoice, matches, audit, query } = useLoaderData<typeof loader>();
   const latestDraft = invoice.accountingDrafts[0] ?? null;
   return (
     <AppShell active="factures-entrantes">
@@ -47,6 +49,46 @@ export default function FactureEntranteDetail() {
             <div className="kv"><span>TTC</span><strong>{invoice.amountTtc ? formatEuro(invoice.amountTtc) : "—"}</strong></div>
             <div className="kv"><span>Format</span><strong>{invoice.format}</strong></div>
           </div>
+        </section>
+
+        <section className="panel">
+          <div className="sec-head">
+            <div>
+              <h2>Réception PA et preuve</h2>
+              <p className="sub">Upload manuel exploitable, mais seule une source PA réelle prouve la réception conforme.</p>
+            </div>
+            <StatusPill label={invoice.source === "PROVIDER" ? invoice.providerStatusLabel ?? "Provider" : "Upload manuel"} tone={invoice.source === "PROVIDER" ? "ok" : "warn"} />
+          </div>
+          <div className="grid two">
+            <div className="kv"><span>Source</span><strong>{invoice.source === "PROVIDER" ? invoice.providerConnection?.safeLabel ?? "Provider PA" : "Upload manuel"}</strong></div>
+            <div className="kv"><span>Statut PA</span><strong>{invoice.providerStatusLabel ?? "—"}</strong></div>
+            <div className="kv"><span>Reçue le</span><strong>{invoice.providerReceivedAt ? shortDate(invoice.providerReceivedAt) : "—"}</strong></div>
+            <div className="kv"><span>Synchronisé le</span><strong>{invoice.providerStatusSyncedAt ? shortDate(invoice.providerStatusSyncedAt) : "—"}</strong></div>
+            <div className="kv"><span>XML source</span><strong>{invoice.rawXmlStorageKey ? "Conservé" : "Absent"}</strong></div>
+            <div className="kv"><span>Mandat PA</span><strong>{invoice.providerConnection?.mandateStatus ?? "—"}</strong></div>
+          </div>
+          {invoice.source === "PROVIDER" ? (
+            <div className="row-actions">
+              <Form method="post" action={`/api/e-invoices/${invoice.id}/acknowledge-status`}>
+                <input type="hidden" name="status" value="READ" />
+                <button className="btn" type="submit">Marquer lu côté PA</button>
+              </Form>
+            </div>
+          ) : null}
+          <TableShell>
+            <table className="tbl">
+              <thead><tr><th>Étape</th><th>Valeur</th><th>Détail</th></tr></thead>
+              <tbody>
+                {audit.map((item) => (
+                  <tr key={`${item.label}:${item.value}`}>
+                    <td>{item.label}</td>
+                    <td className="mono">{item.value}</td>
+                    <td>{item.detail}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </TableShell>
         </section>
 
         <section className="panel">
@@ -140,4 +182,8 @@ function draftLines(value: unknown): Array<{ account: string; accountLabel: stri
 
 function formatEuro(value: string) {
   return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(Number(value));
+}
+
+function shortDate(value: string) {
+  return new Intl.DateTimeFormat("fr-FR", { dateStyle: "short", timeStyle: "short" }).format(new Date(value));
 }

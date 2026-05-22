@@ -34,16 +34,20 @@ export default function FacturesEntrantes() {
           <div className="sec-head">
             <div>
               <h2>Réception automatique</h2>
-              <p className="sub">{provider.safeMessage}</p>
+              <p className="sub">{provider.readiness.message} · {provider.safeMessage}</p>
             </div>
             <div className="row-actions">
               <Form method="post" action="/api/e-invoice-providers/connect">
-                <button className="btn" type="submit">Connecter provider mock</button>
+                <button className="btn" type="submit" disabled={provider.mode === "disabled"}>Connecter / rattacher PA</button>
               </Form>
               <Form method="post" action="/api/e-invoice-providers/sync">
-                <button className="btn btn-p" type="submit">Synchroniser</button>
+                <button className="btn btn-p" type="submit" disabled={provider.mode === "disabled"}>Synchroniser</button>
               </Form>
             </div>
+          </div>
+          <div className="grid two">
+            <div className="kv"><span>Provider</span><strong>{provider.providerLabel ?? provider.provider}</strong></div>
+            <div className="kv"><span>Réception conforme PA</span><strong>{provider.readiness.receptionCompliant ? "Oui" : "Non"}</strong></div>
           </div>
         </section>
 
@@ -65,11 +69,12 @@ export default function FacturesEntrantes() {
 
         <TableShell>
           <table className="tbl">
-            <thead><tr><th>Fournisseur</th><th>N°</th><th>Date</th><th>Format</th><th>Statut</th><th className="r">HT</th><th className="r">TVA</th><th className="r">TTC</th><th></th></tr></thead>
+            <thead><tr><th>Fournisseur</th><th>Provenance</th><th>N°</th><th>Date</th><th>Format</th><th>Statut</th><th className="r">HT</th><th className="r">TVA</th><th className="r">TTC</th><th></th></tr></thead>
             <tbody>
               {invoices.map((invoice) => (
                 <tr key={invoice.id}>
                   <td>{invoice.supplierName ?? "—"}<div className="sub">{invoice.attachmentFilename ?? invoice.source}</div></td>
+                  <td>{sourceLabel(invoice)}<div className="sub">{invoice.providerStatus ? `Statut PA ${invoice.providerStatus}` : "—"}</div></td>
                   <td className="mono">{invoice.invoiceNumber ?? "—"}</td>
                   <td className="mono">{invoice.issueDate ?? "—"}</td>
                   <td>{formatLabel(invoice.format)}</td>
@@ -80,7 +85,7 @@ export default function FacturesEntrantes() {
                   <td><Link className="btn btn-sm" to={`/factures-entrantes/${invoice.id}`}>Ouvrir</Link></td>
                 </tr>
               ))}
-              {invoices.length === 0 ? <tr><td colSpan={9} className="sub">Aucune facture électronique entrante. Déposez un XML/Factur-X dans Pièces ou synchronisez le provider mock.</td></tr> : null}
+              {invoices.length === 0 ? <tr><td colSpan={10} className="sub">Aucune facture électronique entrante. Déposez un XML/Factur-X dans Pièces ou synchronisez le provider mock.</td></tr> : null}
             </tbody>
           </table>
         </TableShell>
@@ -113,6 +118,11 @@ function statusTone(status: string): "ok" | "done" | "warn" | "error" | "neutral
 function formatLabel(value: string) {
   if (value === "FACTUR_X") return "Factur-X";
   return value;
+}
+
+function sourceLabel(invoice: { source: string; providerLabel?: string | null }) {
+  if (invoice.source === "UPLOAD") return "Upload manuel";
+  return invoice.providerLabel ? `PA ${invoice.providerLabel}` : "Provider PA";
 }
 
 function formatEuro(value: string) {

@@ -33,6 +33,7 @@ export default function Connecteurs() {
   const { openBanking, openBankingFreshness, syncHistory, betaReadiness, connectors, readiness, storage, storageAudit, institutions, eInvoiceProvider } = useLoaderData<typeof loader>();
   const [params] = useSearchParams();
   const notice = params.get("openBanking");
+  const eInvoiceNotice = params.get("eInvoiceProvider");
   const error = params.get("error");
   const activeConnections = openBanking.connections.filter((connection) => connection.status === "ACTIVE").length;
 
@@ -40,6 +41,7 @@ export default function Connecteurs() {
     <AppShell active="connecteurs">
       <Main title="Connecteurs" subtitle="Open Banking, Qonto, Stripe et runtime beta">
         {notice ? <div className="alert blue">Open Banking : {noticeLabel(notice)}</div> : null}
+        {eInvoiceNotice ? <div className="alert blue">Facturation électronique : {noticeLabel(eInvoiceNotice)}</div> : null}
         {error ? <div className="alert orange">{error}</div> : null}
         <div className="kpi-grid">
           <KpiCard label="Open Banking" value={openBanking.enabled ? openBanking.provider : "Désactivé"} hint={openBanking.message} />
@@ -134,32 +136,43 @@ export default function Connecteurs() {
           <div className="sec-head">
             <div>
               <h2>Facture électronique entrante</h2>
-              <p className="sub">{eInvoiceProvider.safeMessage}</p>
+              <p className="sub">{eInvoiceProvider.readiness.message} · {eInvoiceProvider.safeMessage}</p>
             </div>
-            <StatusPill label={eInvoiceProvider.configured ? "Prêt" : "Désactivé"} tone={eInvoiceProvider.configured ? "ok" : "warn"} />
+            <StatusPill label={eInvoiceProvider.readiness.receptionCompliant ? "Réception PA conforme" : eInvoiceProvider.configured ? "PA à finaliser" : "Non configurée"} tone={eInvoiceProvider.readiness.receptionCompliant ? "ok" : eInvoiceProvider.configured ? "warn" : "error"} />
+          </div>
+          <div className="grid two">
+            <div className="kv"><span>Provider</span><strong>{eInvoiceProvider.providerLabel ?? eInvoiceProvider.provider}</strong></div>
+            <div className="kv"><span>Mode</span><strong>{eInvoiceProvider.mode}</strong></div>
+            <div className="kv"><span>Conformité réception</span><strong>{eInvoiceProvider.readiness.receptionCompliant ? "Oui" : "Non"}</strong></div>
+            <div className="kv"><span>Action recommandée</span><strong>{eInvoiceProvider.readiness.recommendedAction ?? "—"}</strong></div>
           </div>
           <div className="row-actions">
             <Form method="post" action="/api/e-invoice-providers/connect">
-              <button className="btn" type="submit">Connecter provider mock</button>
+              <button className="btn" type="submit" disabled={eInvoiceProvider.mode === "disabled"}>Connecter / rattacher PA</button>
             </Form>
             <Form method="post" action="/api/e-invoice-providers/sync">
-              <button className="btn btn-p" type="submit">Synchroniser les factures</button>
+              <button className="btn btn-p" type="submit" disabled={eInvoiceProvider.mode === "disabled"}>Synchroniser les factures</button>
+            </Form>
+            <Form method="post" action="/api/e-invoice-providers/disconnect">
+              <button className="btn" type="submit" disabled={eInvoiceProvider.connections.length === 0}>Révoquer</button>
             </Form>
             <Link className="btn" to="/factures-entrantes">Ouvrir les factures entrantes</Link>
           </div>
           <TableShell>
             <table className="tbl">
-              <thead><tr><th>Connexion</th><th>Statut</th><th>Dernière sync</th><th>Erreur</th></tr></thead>
+              <thead><tr><th>Connexion</th><th>Statut</th><th>Mandat</th><th>Dernière sync</th><th>Dernier statut</th><th>Erreur</th></tr></thead>
               <tbody>
                 {eInvoiceProvider.connections.map((connection) => (
                   <tr key={connection.id}>
                     <td>{connection.safeLabel ?? connection.provider}</td>
                     <td><StatusPill label={connection.status} tone={connection.status === "ACTIVE" ? "ok" : "warn"} /></td>
+                    <td>{connection.mandateStatus}</td>
                     <td>{connection.lastSyncedAt ? shortDate(connection.lastSyncedAt) : "Jamais"}</td>
+                    <td>{connection.lastStatusSyncedAt ? shortDate(connection.lastStatusSyncedAt) : "—"}</td>
                     <td>{connection.errorMessage ?? "—"}</td>
                   </tr>
                 ))}
-                {eInvoiceProvider.connections.length === 0 ? <tr><td colSpan={4} className="sub">Aucun provider facture électronique connecté.</td></tr> : null}
+                {eInvoiceProvider.connections.length === 0 ? <tr><td colSpan={6} className="sub">Aucune PA connectée. Le mock sert uniquement à valider le parcours, il ne vaut pas réception légale conforme.</td></tr> : null}
               </tbody>
             </table>
           </TableShell>
