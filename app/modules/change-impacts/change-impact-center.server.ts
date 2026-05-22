@@ -83,7 +83,7 @@ export type ChangeImpactSource = {
   listImpacts(workspace: CompanyWorkspace, options?: ChangeImpactSourceOptions): Promise<ChangeImpact[]>;
 };
 
-const DASHBOARD_SOURCE_KEYS = new Set(["accounting-rules", "imports-ledger", "documents", "fec", "vat", "reconciliations", "closing"]);
+const DASHBOARD_SOURCE_KEYS = new Set(["accounting-rules", "imports-ledger", "documents", "fec", "vat", "e-invoices", "reconciliations", "closing"]);
 const HEAVY_SOURCE_KEYS = new Set(["evidence", "expert-dossier", "connectors"]);
 
 export class ChangeImpactCenter {
@@ -288,6 +288,85 @@ export class ImportLedgerImpactSource implements ChangeImpactSource {
       secondaryAction: { label: "Voir les transactions à vérifier", href: "/transactions?status=review" },
       metadata: { count: staleRows.length },
     })];
+  }
+}
+
+export class EInvoiceImpactSource implements ChangeImpactSource {
+  readonly sourceKey = "e-invoices";
+  readonly surfaces: ChangeImpactSurface[] = ["dashboard", "documents", "tva", "couverture", "dossier_ec"];
+
+  async listImpacts(workspace: CompanyWorkspace): Promise<ChangeImpact[]> {
+    const [pendingInvoices, readyDrafts, accountedSinceDocs] = await Promise.all([
+      prisma.eInvoice.count({
+        where: {
+          companyId: workspace.company.id,
+          fiscalYearId: workspace.fiscalYear.id,
+          status: { in: ["PARSED", "MATCHED"] },
+          archivedAt: null,
+        },
+      }),
+      prisma.eInvoiceAccountingDraft.count({
+        where: { companyId: workspace.company.id, fiscalYearId: workspace.fiscalYear.id, status: "READY" },
+      }),
+      prisma.eInvoiceAccountingDraft.count({
+        where: {
+          companyId: workspace.company.id,
+          fiscalYearId: workspace.fiscalYear.id,
+          status: "APPROVED",
+          journalEntryId: { not: null },
+        },
+      }),
+    ]);
+    const impacts: ChangeImpact[] = [];
+    if (pendingInvoices > 0) {
+      impacts.push(impact({
+        code: "e_invoices.pending",
+        source: this.sourceKey,
+        status: "action_required",
+        severity: "warning",
+        title: `${pendingInvoices} facture${pendingInvoices > 1 ? "s" : ""} entrante${pendingInvoices > 1 ? "s" : ""} à traiter`,
+        message: "Des factures électroniques sont parsées mais pas encore comptabilisées.",
+        why: ["Une facture structurée reçue doit être rapprochée ou transformée en brouillon comptable."],
+        surfaces: this.surfaces,
+        blockingCapabilities: [],
+        affectedArtifacts: ["Pièces", "TVA", "Dossier de preuve"],
+        primaryAction: { label: "Ouvrir les factures entrantes", href: "/factures-entrantes" },
+        metadata: { pendingInvoices },
+      }));
+    }
+    if (readyDrafts > 0) {
+      impacts.push(impact({
+        code: "e_invoices.ready_drafts",
+        source: this.sourceKey,
+        status: "action_required",
+        severity: "warning",
+        title: `${readyDrafts} brouillon${readyDrafts > 1 ? "s" : ""} facture à approuver`,
+        message: "Les lignes comptables sont proposées mais aucune écriture n'est créée tant que l'utilisateur n'approuve pas.",
+        why: ["Qitus ne crée pas d'écriture facture fournisseur automatiquement."],
+        surfaces: this.surfaces,
+        blockingCapabilities: [],
+        affectedArtifacts: ["Journal", "FEC", "TVA"],
+        primaryAction: { label: "Relire les brouillons", href: "/factures-entrantes?status=ACCOUNTING_DRAFT" },
+        metadata: { readyDrafts },
+      }));
+    }
+    if (accountedSinceDocs > 0) {
+      impacts.push(impact({
+        code: "e_invoices.accounted_documents",
+        source: this.sourceKey,
+        status: "warning",
+        severity: "info",
+        title: "Factures électroniques comptabilisées",
+        message: "Si des documents existaient déjà, ils peuvent devoir être régénérés pour inclure ces écritures.",
+        why: ["Une écriture E_INVOICE modifie le journal comptable."],
+        surfaces: this.surfaces,
+        blockingCapabilities: [],
+        affectedArtifacts: ["FEC", "Paquet de preuve"],
+        primaryAction: { label: "Ouvrir les documents", href: "/documents" },
+        metadata: { accountedSinceDocs },
+      }));
+    }
+    return impacts;
   }
 }
 
@@ -549,6 +628,7 @@ export function defaultChangeImpactSources(): ChangeImpactSource[] {
     new DocumentImpactSource(),
     new FecImpactSource(),
     new VatImpactSource(),
+    new EInvoiceImpactSource(),
     new ReconciliationImpactSource(),
     new ClosingImpactSource(),
     new EvidenceImpactSource(),

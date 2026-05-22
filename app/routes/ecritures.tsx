@@ -158,6 +158,7 @@ function exportParams(query: JournalExplorerQuery) {
 function sourceLabel(source: string) {
   if (source === "CLOSING_ADJUSTMENT") return "Clôture";
   if (source === "MANUAL") return "Manuel";
+  if (source === "E_INVOICE") return "Facture électronique";
   return "Import";
 }
 

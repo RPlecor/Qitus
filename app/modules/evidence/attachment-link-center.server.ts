@@ -125,6 +125,10 @@ export class AttachmentLinkCenter {
     if (input.entityType === "FISCAL_YEAR" && input.entityId !== workspace.fiscalYear.id) {
       throw new ExpectedRouteError("Exercice cible introuvable.", 404);
     }
+    if (input.entityType === "E_INVOICE") {
+      const count = await prisma.eInvoice.count({ where: { id: input.entityId, fiscalYearId: workspace.fiscalYear.id } });
+      if (count === 0) throw new ExpectedRouteError("Facture électronique cible introuvable.", 404);
+    }
   }
 }
 

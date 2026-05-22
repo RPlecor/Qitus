@@ -17,6 +17,7 @@ model User {
   privacyRequests PrivacyRequest[]
   uploadedAttachments Attachment[]
   generatedVatDeclarations VatDeclaration[]
+  eInvoiceAccountingDrafts EInvoiceAccountingDraft[]
   deletedAt       DateTime?
   anonymizedAt    DateTime?
   createdAt       DateTime         @default(now())
@@ -64,6 +65,9 @@ model Company {
   privacyRequests    PrivacyRequest[]
   attachments         Attachment[]
   vatDeclarations     VatDeclaration[]
+  eInvoices           EInvoice[]
+  eInvoiceProviderConnections EInvoiceProviderConnection[]
+  eInvoiceProviderSyncEvents  EInvoiceProviderSyncEvent[]
   dossierSnapshots    DossierSnapshot[]
   expertReviewRuns    ExpertReviewRun[]
   deletedAt          DateTime?
@@ -101,6 +105,8 @@ model FiscalYear {
   notifications  Notification[]
   attachments    Attachment[]
   vatDeclarations VatDeclaration[]
+  eInvoices       EInvoice[]
+  eInvoiceProviderSyncEvents EInvoiceProviderSyncEvent[]
   dossierSnapshots DossierSnapshot[]
   expertReviewRuns ExpertReviewRun[]
   createdAt      DateTime       @default(now())
@@ -348,6 +354,7 @@ model JournalEntry {
   lines        JournalLine[]
   transactions Transaction[]
   closingAdjustmentProposal ClosingAdjustmentProposal?
+  eInvoiceAccountingDraft EInvoiceAccountingDraft?
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
 
@@ -1008,12 +1015,118 @@ model Attachment {
   currency          String?
   archivedAt        DateTime?
   links             AttachmentLink[]
+  eInvoices         EInvoice[]
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
 
   @@unique([companyId, fiscalYearId, sha256])
   @@index([companyId, fiscalYearId, status])
   @@index([archivedAt])
+}
+
+model EInvoice {
+  id                String                  @id @default(cuid())
+  companyId         String
+  company           Company                 @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  fiscalYearId      String
+  fiscalYear        FiscalYear              @relation(fields: [fiscalYearId], references: [id], onDelete: Cascade)
+  attachmentId      String?
+  attachment        Attachment?             @relation(fields: [attachmentId], references: [id], onDelete: SetNull)
+  providerConnectionId String?
+  providerConnection EInvoiceProviderConnection? @relation(fields: [providerConnectionId], references: [id], onDelete: SetNull)
+  direction         EInvoiceDirection        @default(INCOMING)
+  source            EInvoiceSource
+  sourceId          String?
+  format            EInvoiceFormat
+  status            EInvoiceStatus           @default(RECEIVED)
+  checksum          String
+  rawXmlStorageKey  String?
+  supplierName      String?
+  supplierSiret     String?
+  buyerName         String?
+  buyerSiret        String?
+  invoiceNumber     String?
+  issueDate         DateTime?
+  dueDate           DateTime?
+  currency          String?                  @default("EUR")
+  amountHt          Decimal?                 @db.Decimal(12, 2)
+  amountVat         Decimal?                 @db.Decimal(12, 2)
+  amountTtc         Decimal?                 @db.Decimal(12, 2)
+  vatBreakdownJson  Json?
+  linesJson         Json?
+  errorMessage      String?
+  archivedAt        DateTime?
+  accountingDrafts  EInvoiceAccountingDraft[]
+  createdAt         DateTime                 @default(now())
+  updatedAt         DateTime                 @updatedAt
+
+  @@unique([companyId, fiscalYearId, checksum])
+  @@unique([companyId, fiscalYearId, source, sourceId])
+  @@index([companyId, fiscalYearId, status])
+  @@index([attachmentId])
+  @@index([providerConnectionId])
+}
+
+model EInvoiceAccountingDraft {
+  id             String                        @id @default(cuid())
+  companyId      String
+  fiscalYearId   String
+  eInvoiceId     String
+  eInvoice       EInvoice                      @relation(fields: [eInvoiceId], references: [id], onDelete: Cascade)
+  status         EInvoiceAccountingDraftStatus @default(DRAFT)
+  proposedJournalEntryJson Json
+  proposedLinksJson        Json?
+  requiredActionJson       Json?
+  note           String?
+  approvedByUserId String?
+  approvedByUser   User?                       @relation(fields: [approvedByUserId], references: [id], onDelete: SetNull)
+  approvedAt     DateTime?
+  rejectedAt     DateTime?
+  journalEntryId String?                       @unique
+  journalEntry   JournalEntry?                 @relation(fields: [journalEntryId], references: [id], onDelete: SetNull)
+  createdAt      DateTime                      @default(now())
+  updatedAt      DateTime                      @updatedAt
+
+  @@index([companyId, fiscalYearId, status])
+  @@index([eInvoiceId])
+}
+
+model EInvoiceProviderConnection {
+  id                   String                    @id @default(cuid())
+  companyId            String
+  company              Company                   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  provider             String
+  providerConnectionId String?
+  status               EInvoiceProviderStatus    @default(PENDING)
+  safeLabel            String?
+  lastSyncedAt         DateTime?
+  errorMessage         String?
+  metadataJson         Json?
+  eInvoices            EInvoice[]
+  createdAt            DateTime                  @default(now())
+  updatedAt            DateTime                  @updatedAt
+
+  @@unique([companyId, provider, providerConnectionId])
+  @@index([companyId, status])
+}
+
+model EInvoiceProviderSyncEvent {
+  id            String                    @id @default(cuid())
+  companyId     String
+  company       Company                   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  fiscalYearId  String?
+  fiscalYear    FiscalYear?               @relation(fields: [fiscalYearId], references: [id], onDelete: SetNull)
+  provider      String
+  status        EInvoiceProviderSyncStatus
+  startedAt     DateTime                  @default(now())
+  finishedAt    DateTime?
+  fetchedCount  Int                       @default(0)
+  importedCount Int                       @default(0)
+  errorMessage  String?
+  metadataJson  Json?
+
+  @@index([companyId, fiscalYearId, startedAt])
+  @@index([provider, status])
 }
 
 model AttachmentLink {
@@ -1081,6 +1194,7 @@ enum NotificationType {
   TRANSACTION_REVIEW
   IMPORT_STATUS
   DOCUMENT_STALE
+  E_INVOICE_ACTION
   VAT_ALERT
   FISCAL_DEADLINE
   REGULATORY_FRESHNESS
@@ -1187,6 +1301,7 @@ enum EntrySource {
   IMPORT
   MANUAL
   CLOSING_ADJUSTMENT
+  E_INVOICE
 }
 
 enum DocumentType {
@@ -1434,6 +1549,7 @@ enum AttachmentEntityType {
   JOURNAL_ENTRY
   CLOSING_ADJUSTMENT
   FISCAL_YEAR
+  E_INVOICE
 }
 
 enum AttachmentRelationType {
@@ -1444,4 +1560,53 @@ enum AttachmentRelationType {
   USER_DECISION
   EXPERT_VALIDATION
   OTHER
+}
+
+enum EInvoiceDirection {
+  INCOMING
+}
+
+enum EInvoiceSource {
+  UPLOAD
+  PROVIDER
+}
+
+enum EInvoiceFormat {
+  FACTUR_X
+  UBL
+  CII
+  UNKNOWN
+}
+
+enum EInvoiceStatus {
+  RECEIVED
+  PARSED
+  MATCHED
+  ACCOUNTING_DRAFT
+  ACCOUNTED
+  NEEDS_REVIEW
+  ARCHIVED
+  ERROR
+}
+
+enum EInvoiceAccountingDraftStatus {
+  DRAFT
+  READY
+  APPROVED
+  REJECTED
+  SUPERSEDED
+}
+
+enum EInvoiceProviderStatus {
+  PENDING
+  ACTIVE
+  EXPIRED
+  ERROR
+  REVOKED
+}
+
+enum EInvoiceProviderSyncStatus {
+  STARTED
+  COMPLETED
+  FAILED
 }

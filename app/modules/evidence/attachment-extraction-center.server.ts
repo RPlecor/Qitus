@@ -129,6 +129,9 @@ export class AttachmentExtractionCenter {
     const sourcePath = path.join(dir, `${randomUUID()}-${attachment.originalFilename.replace(/[^a-zA-Z0-9._-]+/g, "-")}`);
     await writeFile(sourcePath, stored.body);
     try {
+      if (attachment.mimeType === "application/xml" || attachment.mimeType === "text/xml") {
+        return stored.body.toString("utf8");
+      }
       if (attachment.mimeType === "application/pdf") {
         const result = await execFileAsync("pdftotext", [sourcePath, "-"], { timeout: 15_000, maxBuffer: 2_000_000 });
         return result.stdout.trim();

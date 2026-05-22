@@ -10,10 +10,11 @@ import { OpenBankingFreshnessCenter } from "~/modules/open-banking/open-banking-
 import { OpenBankingSyncWorkflow } from "~/modules/open-banking/open-banking-sync-workflow.server";
 import { ConnectorSyncCenter } from "~/modules/reconciliations/connector-sync-center.server";
 import { StorageAuditCenter } from "~/modules/storage/storage-audit-center.server";
+import { EInvoiceProviderCenter } from "~/modules/e-invoices/e-invoice-provider-center.server";
 
 export async function loader(args: LoaderFunctionArgs) {
   const workspace = await requireCompanyWorkspace(args);
-  const [openBanking, openBankingFreshness, syncHistory, betaReadiness, connectors, readiness, storage, storageAudit, institutions] = await Promise.all([
+  const [openBanking, openBankingFreshness, syncHistory, betaReadiness, connectors, readiness, storage, storageAudit, institutions, eInvoiceProvider] = await Promise.all([
     new OpenBankingCenter().getStatus(workspace),
     new OpenBankingFreshnessCenter().getFreshness(workspace),
     new OpenBankingSyncWorkflow().getSyncHistory(workspace),
@@ -23,12 +24,13 @@ export async function loader(args: LoaderFunctionArgs) {
     Promise.resolve(new StorageConfigurationCenter().getStatus()),
     new StorageAuditCenter().getStorageAudit(workspace),
     new OpenBankingCenter().listInstitutions({ country: "FR" }).catch(() => []),
+    new EInvoiceProviderCenter().getStatus(workspace),
   ]);
-  return json({ openBanking, openBankingFreshness, syncHistory, betaReadiness, connectors, readiness, storage, storageAudit, institutions });
+  return json({ openBanking, openBankingFreshness, syncHistory, betaReadiness, connectors, readiness, storage, storageAudit, institutions, eInvoiceProvider });
 }
 
 export default function Connecteurs() {
-  const { openBanking, openBankingFreshness, syncHistory, betaReadiness, connectors, readiness, storage, storageAudit, institutions } = useLoaderData<typeof loader>();
+  const { openBanking, openBankingFreshness, syncHistory, betaReadiness, connectors, readiness, storage, storageAudit, institutions, eInvoiceProvider } = useLoaderData<typeof loader>();
   const [params] = useSearchParams();
   const notice = params.get("openBanking");
   const error = params.get("error");
@@ -123,6 +125,41 @@ export default function Connecteurs() {
                   </tr>
                 ))}
                 {openBanking.connections.length === 0 ? <tr><td colSpan={7} className="sub">Aucune connexion bancaire.</td></tr> : null}
+              </tbody>
+            </table>
+          </TableShell>
+        </section>
+
+        <section className="card">
+          <div className="sec-head">
+            <div>
+              <h2>Facture électronique entrante</h2>
+              <p className="sub">{eInvoiceProvider.safeMessage}</p>
+            </div>
+            <StatusPill label={eInvoiceProvider.configured ? "Prêt" : "Désactivé"} tone={eInvoiceProvider.configured ? "ok" : "warn"} />
+          </div>
+          <div className="row-actions">
+            <Form method="post" action="/api/e-invoice-providers/connect">
+              <button className="btn" type="submit">Connecter provider mock</button>
+            </Form>
+            <Form method="post" action="/api/e-invoice-providers/sync">
+              <button className="btn btn-p" type="submit">Synchroniser les factures</button>
+            </Form>
+            <Link className="btn" to="/factures-entrantes">Ouvrir les factures entrantes</Link>
+          </div>
+          <TableShell>
+            <table className="tbl">
+              <thead><tr><th>Connexion</th><th>Statut</th><th>Dernière sync</th><th>Erreur</th></tr></thead>
+              <tbody>
+                {eInvoiceProvider.connections.map((connection) => (
+                  <tr key={connection.id}>
+                    <td>{connection.safeLabel ?? connection.provider}</td>
+                    <td><StatusPill label={connection.status} tone={connection.status === "ACTIVE" ? "ok" : "warn"} /></td>
+                    <td>{connection.lastSyncedAt ? shortDate(connection.lastSyncedAt) : "Jamais"}</td>
+                    <td>{connection.errorMessage ?? "—"}</td>
+                  </tr>
+                ))}
+                {eInvoiceProvider.connections.length === 0 ? <tr><td colSpan={4} className="sub">Aucun provider facture électronique connecté.</td></tr> : null}
               </tbody>
             </table>
           </TableShell>

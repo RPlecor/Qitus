@@ -9,6 +9,7 @@ import { ClosingWorkpaperCenter } from "../closing-workpapers/closing-workpaper-
 import type { CompanyWorkspace } from "../company-workspace/company-workspace.server";
 import { DocumentFreshnessCenter } from "../documents/document-freshness-center.server";
 import { EvidenceControlCenter } from "../evidence/evidence-control-center.server";
+import { prisma } from "../db.server";
 import { ImportHistory } from "../import-orchestrator/import-history.server";
 import { RegulatoryFreshnessCenter } from "../regulatory/regulatory-freshness-center.server";
 import { ReconciliationFreshnessCenter } from "../reconciliations/reconciliation-freshness-center.server";
@@ -28,11 +29,59 @@ export function defaultNotificationSources(): NotificationSource[] {
     new ReconciliationNotificationSource(),
     new ClosingNotificationSource(),
     new EvidenceNotificationSource(),
+    new EInvoiceNotificationSource(),
     new ChangeImpactNotificationSource(),
     new CoverageNotificationSource(),
     new BillingNotificationSource(),
     new RegulatoryNotificationSource(),
   ];
+}
+
+class EInvoiceNotificationSource implements NotificationSource {
+  readonly sourceKey = "e-invoices";
+
+  async listNotificationSpecs(workspace: CompanyWorkspace): Promise<NotificationSpec[]> {
+    const [errors, readyDrafts, parsed] = await Promise.all([
+      prisma.eInvoice.count({ where: { companyId: workspace.company.id, fiscalYearId: workspace.fiscalYear.id, status: "ERROR", archivedAt: null } }),
+      prisma.eInvoiceAccountingDraft.count({ where: { companyId: workspace.company.id, fiscalYearId: workspace.fiscalYear.id, status: "READY" } }),
+      prisma.eInvoice.count({ where: { companyId: workspace.company.id, fiscalYearId: workspace.fiscalYear.id, status: { in: ["PARSED", "MATCHED"] }, archivedAt: null } }),
+    ]);
+    const specs: NotificationSpec[] = [];
+    if (errors > 0) {
+      specs.push({
+        type: "E_INVOICE_ACTION",
+        severity: "WARNING",
+        title: `${errors} facture${errors > 1 ? "s" : ""} électronique${errors > 1 ? "s" : ""} illisible${errors > 1 ? "s" : ""}`,
+        body: "Une facture structurée n'a pas pu être parsée. La pièce reste conservée comme justificatif.",
+        href: "/factures-entrantes?status=ERROR",
+        dedupeKey: "e-invoices:parse-errors",
+        metadata: { errors },
+      });
+    }
+    if (readyDrafts > 0) {
+      specs.push({
+        type: "E_INVOICE_ACTION",
+        severity: "INFO",
+        title: `${readyDrafts} brouillon${readyDrafts > 1 ? "s" : ""} facture à approuver`,
+        body: "Relisez les lignes comptables proposées avant création d'écriture.",
+        href: "/factures-entrantes?status=ACCOUNTING_DRAFT",
+        dedupeKey: "e-invoices:ready-drafts",
+        metadata: { readyDrafts },
+      });
+    }
+    if (parsed > 0) {
+      specs.push({
+        type: "E_INVOICE_ACTION",
+        severity: "INFO",
+        title: `${parsed} facture${parsed > 1 ? "s" : ""} entrante${parsed > 1 ? "s" : ""} à traiter`,
+        body: "Rapprochez la facture avec une transaction ou créez un brouillon comptable.",
+        href: "/factures-entrantes",
+        dedupeKey: "e-invoices:pending",
+        metadata: { parsed },
+      });
+    }
+    return specs;
+  }
 }
 
 class TransactionNotificationSource implements NotificationSource {

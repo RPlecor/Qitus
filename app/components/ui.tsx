@@ -25,6 +25,7 @@ import {
   Plug,
   LogOut,
   LibraryBig,
+  ReceiptText,
 } from "lucide-react";
 
 const ICON_SIZE = 16;
@@ -63,6 +64,7 @@ function buildNav(showDemo: boolean): NavSection[] {
           ? [{ id: "regles-comptables", icon: <LibraryBig size={ICON_SIZE} strokeWidth={ICON_STROKE} />, label: "Règles comptables", href: "/regles-comptables" }]
           : []),
         { id: "pieces", icon: <Paperclip size={ICON_SIZE} strokeWidth={ICON_STROKE} />, label: "Pièces", href: "/pieces" },
+        { id: "factures-entrantes", icon: <ReceiptText size={ICON_SIZE} strokeWidth={ICON_STROKE} />, label: "Factures entrantes", href: "/factures-entrantes" },
       ],
     },
     {

@@ -86,12 +86,13 @@ export default function Pieces() {
         <div className="sec-head"><h2>Pièces déposées</h2></div>
         <TableShell>
           <table className="tbl">
-            <thead><tr><th>Fichier</th><th>Statut</th><th>Fournisseur</th><th>Date</th><th>TTC</th><th>Liens</th><th></th></tr></thead>
+            <thead><tr><th>Fichier</th><th>Statut</th><th>Facture électronique</th><th>Fournisseur</th><th>Date</th><th>TTC</th><th>Liens</th><th></th></tr></thead>
             <tbody>
               {attachments.map((attachment) => (
                 <tr key={attachment.id}>
                   <td>{attachment.originalFilename}<div className="sub">{formatBytes(attachment.sizeBytes)}</div></td>
                   <td><StatusPill label={statusLabel(attachment.status)} tone={statusTone(attachment.status)} /></td>
+                <td>{attachment.eInvoiceStatus ? <StatusPill label={attachment.eInvoiceStatus} tone={attachment.eInvoiceStatus === "ERROR" ? "error" : "info"} /> : "—"}</td>
                 <td>{attachment.supplierName ?? "—"}</td>
                 <td>{attachment.invoiceDate ?? "—"}</td>
                 <td>{attachment.amountTtc ? formatEuro(attachment.amountTtc) : "—"}</td>
@@ -99,7 +100,7 @@ export default function Pieces() {
                 <td><Link className="btn btn-sm" to={`/pieces/${attachment.id}`}>Ouvrir</Link></td>
               </tr>
             ))}
-            {attachments.length === 0 ? <tr><td colSpan={7} className="sub">Aucune pièce déposée.</td></tr> : null}
+            {attachments.length === 0 ? <tr><td colSpan={8} className="sub">Aucune pièce déposée.</td></tr> : null}
           </tbody>
         </table>
         </TableShell>
@@ -128,12 +129,12 @@ function UploadZone() {
           <line x1="12" y1="3" x2="12" y2="15" />
         </svg>
         <div className="upload-label">Glissez un fichier ici ou <span>parcourir</span></div>
-        <div className="upload-hint">PDF, PNG, JPG ou TXT · 10 Mo max · OCR local non bloquant</div>
+        <div className="upload-hint">PDF, PNG, JPG, TXT ou XML · 10 Mo max · factures électroniques détectées automatiquement</div>
         {fileName ? <div className="upload-selected">📎 {fileName}</div> : null}
         <input
           type="file"
           name="file"
-          accept=".pdf,.png,.jpg,.jpeg,.txt,application/pdf,image/png,image/jpeg,text/plain"
+          accept=".pdf,.png,.jpg,.jpeg,.txt,.xml,application/pdf,image/png,image/jpeg,text/plain,application/xml,text/xml"
           onChange={(event) => setFileName(event.target.files?.[0]?.name ?? null)}
         />
       </div>

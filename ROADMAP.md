@@ -1090,7 +1090,296 @@ Décisions :
 - Les changements BOFiP ou impots.gouv textuels ambigus restent en revue interne Qitus (`NEEDS_REVIEW`), invisibles comme tâche utilisateur.
 - Les futurs imports utilisent automatiquement le pack actif.
 
-## Phase 18 — Extensions métier après beta
+## Phase 18 — Facture Électronique Entrante Et Exploitation Comptable
+
+Objectif : préparer Qitus à la facture électronique sans devenir un outil de facturation complet.
+
+Décision verrouillée :
+
+- Qitus traite d'abord la **réception/exploitation comptable** des factures fournisseurs.
+- P0 : upload local et parsing structuré Factur-X / UBL / CII.
+- P1 : réception automatisée via un **Seam PA-neutral** branchable plus tard sur une Plateforme Agréée.
+- Aucune émission de facture, numérotation client, paiement, e-reporting ou télétransmission dans cette phase.
+- Les écritures existantes ne sont jamais modifiées automatiquement.
+
+### 1. Socle Facture Électronique
+
+Créer un domaine profond `e-invoices`.
+
+Modules principaux :
+
+- `EInvoiceCenter`
+- `StructuredInvoiceParserCenter`
+- `EInvoiceMatchingCenter`
+- `EInvoiceAccountingDraftCenter`
+- `EInvoiceProviderCenter`
+- `EInvoiceSyncWorkflow`
+
+Formats supportés en P0 :
+
+- Factur-X PDF avec XML embarqué.
+- UBL XML.
+- CII XML.
+- PDF/image classique : reste traité comme pièce OCR légère, sans statut facture électronique structurée.
+
+Ajouter un modèle `EInvoice` :
+
+- company, fiscal year, attachment liée, source upload/provider.
+- format, statut, checksum, sourceId.
+- fournisseur, SIRET si présent, numéro facture, dates, devise.
+- montants HT, TVA, TTC, ventilation TVA JSON, lignes JSON.
+- raw XML storage key si disponible.
+- erreur lisible si parsing impossible.
+
+Ajouter `EInvoiceAccountingDraft` :
+
+- facture liée.
+- statut `DRAFT`, `READY`, `APPROVED`, `REJECTED`, `SUPERSEDED`.
+- lignes comptables proposées.
+- justification, matching, note utilisateur.
+- approbation seule crée l'écriture.
+
+Ajouter `JournalEntry.source = E_INVOICE`.
+
+### 2. Parsing Et Stockage
+
+Étendre `AttachmentCenter` :
+
+- accepter XML en plus de PDF, PNG, JPG, TXT.
+- détecter automatiquement si la pièce est une facture électronique structurée.
+- stocker l'original comme pièce probante.
+- créer ou mettre à jour `EInvoice` via `EInvoiceCenter`.
+
+`StructuredInvoiceParserCenter` :
+
+- détecte le format.
+- extrait un payload canonique.
+- calcule checksum et dédoublonne.
+- retourne une erreur métier lisible si le format est invalide.
+- ne fait aucune écriture comptable.
+
+Adapters :
+
+- `FacturXParserAdapter`
+- `UblInvoiceParserAdapter`
+- `CiiInvoiceParserAdapter`
+
+### 3. Matching Comptable
+
+`EInvoiceMatchingCenter` propose des rapprochements vers :
+
+- transactions bancaires existantes ;
+- écritures existantes ;
+- exigences de preuve ;
+- fournisseur ou mapping existant.
+
+Critères :
+
+- montant TTC exact ou proche ;
+- date facture / date transaction ;
+- fournisseur, libellé, SIRET, numéro facture ;
+- devise ;
+- taux et ventilation TVA.
+
+Aucun rattachement automatique sauf si l'utilisateur valide explicitement depuis la revue.
+
+### 4. Brouillons Comptables
+
+`EInvoiceAccountingDraftCenter` produit des propositions déterministes.
+
+Cas principal facture fournisseur non payée :
+
+- débit charge ou immobilisation HT ;
+- débit TVA déductible si applicable ;
+- crédit fournisseur `401` TTC.
+
+Cas facture déjà payée par banque :
+
+- propose le lien facture ↔ transaction ;
+- signale si l'écriture bancaire existante doit être revue ;
+- ne réécrit pas automatiquement l'écriture `IMPORT`.
+
+Cas TVA :
+
+- réutiliser les politiques TVA existantes.
+- accepter ventilation multi-taux.
+- signaler les incohérences plutôt que forcer un compte.
+
+Validation :
+
+- l'utilisateur relit puis approuve.
+- seule l'approbation crée une écriture `E_INVOICE`.
+- rejet avec note auditable.
+
+### 5. Provider PA-Neutral
+
+Créer `EInvoiceProviderAdapter`.
+
+Interface cible :
+
+- `getStatus()`
+- `createConnection(workspace, input)`
+- `completeCallback(request)`
+- `listIncomingInvoices(workspace)`
+- `downloadInvoicePayload(workspace, providerInvoiceId)`
+- `syncIncomingInvoices(workspace)`
+- `disconnect(workspace)`
+- `verifyWebhook(request)`
+
+Adapters :
+
+- `MockEInvoiceProviderAdapter` pour validation automatisée.
+- PA concrète à brancher ensuite sans changer le pipeline.
+
+Sécurité :
+
+- secrets provider dans `ProviderCredentialVault`, jamais dans Prisma.
+- webhooks idempotents via `WebhookEvent`.
+- sync interdite sur exercice fermé.
+- aucune facture fournisseur ne crée d'écriture sans validation utilisateur.
+
+### 6. UI Et APIs
+
+Ajouter `/factures-entrantes`.
+
+Vue liste :
+
+- statut parsing ;
+- fournisseur ;
+- numéro facture ;
+- date ;
+- HT / TVA / TTC ;
+- matching ;
+- brouillon comptable ;
+- action recommandée.
+
+Vue détail `/factures-entrantes/:id` :
+
+- pièce source ;
+- données extraites ;
+- ventilation TVA ;
+- suggestions de rapprochement ;
+- brouillon comptable ;
+- actions : rattacher, créer brouillon, approuver, rejeter, archiver.
+
+Intégrations UI :
+
+- `/pieces` affiche si une pièce est une facture électronique reconnue.
+- `/transactions/:id` affiche les factures liées.
+- `/ecritures` indique les écritures issues de facture électronique.
+- `/couverture/evidence` considère une facture électronique liée comme preuve forte.
+- `/tva` consomme les données TVA structurées approuvées.
+- `/documents` et bundle incluent les manifestes facture électronique.
+
+APIs :
+
+- `GET /api/e-invoices`
+- `POST /api/e-invoices`
+- `GET /api/e-invoices/:id`
+- `POST /api/e-invoices/:id/reparse`
+- `POST /api/e-invoices/:id/match`
+- `POST /api/e-invoices/:id/accounting-draft`
+- `POST /api/e-invoices/:id/approve-accounting`
+- `POST /api/e-invoices/:id/reject-accounting`
+- `GET /api/e-invoice-providers/status`
+- `POST /api/e-invoice-providers/connect`
+- `POST /api/e-invoice-providers/sync`
+- `POST /webhooks/e-invoice-provider`
+
+### 7. Impacts, Notifications Et Bundle
+
+`ChangeImpactCenter` signale :
+
+- facture structurée reçue mais non comptabilisée ;
+- facture matchée à une transaction déjà écrite qui mérite revue ;
+- TVA potentiellement à recalculer ;
+- FEC, documents ou dossier EC obsolètes après approbation.
+
+`NotificationCenter` ajoute :
+
+- facture électronique à traiter ;
+- parsing échoué ;
+- brouillon comptable prêt ;
+- facture non rapprochée ;
+- sync provider échouée.
+
+`DocumentEvidenceBundle` inclut :
+
+- `e-invoices-manifest.json`
+- XML source si disponible ;
+- pièce originale ;
+- matching ;
+- statut du brouillon comptable ;
+- écriture créée après approbation.
+
+Activity log :
+
+- `e_invoice.received`
+- `e_invoice.parsed`
+- `e_invoice.parse_failed`
+- `e_invoice.matched`
+- `e_invoice.accounting_draft_created`
+- `e_invoice.accounting_approved`
+- `e_invoice.accounting_rejected`
+- `e_invoice_provider.synced`
+
+### Test Plan
+
+Unit :
+
+- parser UBL, CII et Factur-X minimal.
+- refuser XML invalide avec erreur lisible.
+- dédoublonner par checksum et source provider.
+- matcher facture ↔ transaction par montant/date/fournisseur.
+- produire un brouillon équilibré HT/TVA/TTC.
+- bloquer l'approbation si exercice fermé.
+- vérifier qu'aucune écriture existante n'est modifiée automatiquement.
+- sync provider mock idempotente.
+
+Integration :
+
+- upload XML → `EInvoice PARSED`.
+- upload Factur-X PDF → XML extrait et stocké.
+- facture fournisseur → brouillon `401 / charge / TVA`.
+- approbation → écriture `E_INVOICE` visible dans `/ecritures`.
+- facture liée à transaction bancaire existante → impact de revue, pas de réécriture silencieuse.
+- provider mock sync → factures créées, deuxième sync sans doublon.
+- bundle preuve contient manifeste + XML + pièce originale.
+
+End-user :
+
+- ouvrir `/pieces`.
+- uploader une facture électronique.
+- ouvrir `/factures-entrantes`.
+- vérifier les données extraites.
+- rapprocher avec une transaction.
+- générer le brouillon comptable.
+- approuver.
+- vérifier `/ecritures`, `/tva`, `/couverture/evidence`, `/documents`.
+
+Validation :
+
+- `npm run typecheck`
+- `npm test`
+- `npm run build`
+- `npm run demo:reset`
+- `npm run validate:mvp`
+- `npm run validate:end-user`
+- `npm run validate:vat`
+- ajouter `npm run validate:e-invoices`
+- ajouter `npm run validate:e-invoice-provider-mock`
+
+### Assumptions
+
+- P0 local n'est pas une conformité complète de réception légale via PA.
+- P1 prépare le branchement PA, mais ne choisit pas encore un provider final.
+- Les factures entrantes sont prioritaires ; factures sortantes hors scope.
+- Qitus ne devient pas outil de facturation.
+- Toute mutation comptable reste validée par l'utilisateur.
+- Les sources structurées sont conservées comme preuve.
+- Les pièces non structurées restent utilisables via le parcours justificatifs existant.
+
+## Phase 19 — Extensions métier après beta
 
 Objectif : exploiter les autres capacités du repo Qitus.
 
@@ -1098,8 +1387,6 @@ Objectif : exploiter les autres capacités du repo Qitus.
 
 - Audit commissaire aux comptes.
 - Simulation de contrôle fiscal.
-- Factur-X.
-- Facturation électronique.
 - Upload de justificatifs Qonto.
 - Import avancé des factures Stripe.
 - Multi-company réel par utilisateur.
@@ -1226,6 +1513,18 @@ Cette section garde la trace des routes prévues dans le cadrage v3, y compris c
 6. Décider quand activer le multi-company réel.
 
 ## Décisions tranchées
+
+### Facture électronique
+
+Décision : Qitus traite la **réception/exploitation comptable** des factures électroniques entrantes, sans devenir outil de facturation.
+
+Conséquences :
+
+- Upload local Factur-X / UBL / CII pour parser les factures fournisseurs.
+- Réception automatisée derrière un `EInvoiceProviderAdapter` PA-neutral.
+- Les factures créent des brouillons comptables relisibles, jamais des écritures silencieuses.
+- L’approbation utilisateur seule crée une écriture `E_INVOICE`.
+- Émission, numérotation, paiement, e-reporting et télétransmission restent hors scope.
 
 ### Scripts Qitus
 

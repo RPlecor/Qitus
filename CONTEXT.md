@@ -166,6 +166,11 @@
 - **PowensOpenBankingAdapter**: the OpenBankingProvider Adapter for Powens API, using Powens Webview consent, a vaulted user token, and bank feed import through BankFeedNormalizer.
 - **ProviderWebviewConsent**: a provider-hosted consent flow where Qitus redirects the user to Bridge or Powens instead of listing institutions locally.
 - **ProviderCredentialVault**: the encrypted local Seam that stores provider user tokens outside Prisma; business Modules only read provider connection ids and never expose raw tokens.
+- **EInvoice**: one incoming structured supplier invoice detected from upload or provider sync, preserving source XML, extracted amounts, supplier identity, VAT breakdown and parsing status.
+- **StructuredInvoiceParser**: the deterministic parser Seam for Factur-X, UBL and CII; it extracts a canonical invoice payload and never creates accounting entries.
+- **EInvoiceAccountingDraft**: the user-reviewable accounting proposal derived from an EInvoice; only approval creates a `JournalEntry` with source `E_INVOICE`.
+- **EInvoiceProviderAdapter**: the PA-neutral reception Seam for future Plateforme Agréée integrations; the mock Adapter validates sync without selecting a concrete PA.
+- **EInvoiceMatching**: the calculated matching between an EInvoice and existing transactions or journal entries, based on amount, date, supplier and invoice reference.
 - **BankConsent**: the provider-backed user consent state, including expiration, revocation and reconnect needs without storing raw bank credentials.
 - **BankFeedNormalizer**: the Module that converts provider account and transaction payloads into canonical bank movements ingested through `ImportOrchestrator`.
 - **BankFeedSync**: one Open Banking synchronization attempt, with fetched/imported counts, user-readable errors and activity audit.

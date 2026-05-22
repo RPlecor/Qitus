@@ -6,9 +6,10 @@ import { ExpectedRouteError } from "../route-errors.server";
 import { ActivityLogCenter } from "../activity-log/activity-log-center.server";
 import { AttachmentExtractionCenter } from "./attachment-extraction-center.server";
 import { LocalEvidenceStorageAdapter, type EvidenceStorageAdapter } from "./evidence-storage-adapter.server";
+import { EInvoiceCenter } from "../e-invoices/e-invoice-center.server";
 
 const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
-const ACCEPTED_MIME_TYPES = new Set(["application/pdf", "image/png", "image/jpeg", "text/plain"]);
+const ACCEPTED_MIME_TYPES = new Set(["application/pdf", "image/png", "image/jpeg", "text/plain", "application/xml", "text/xml"]);
 
 export type AttachmentUploadInput = {
   filename: string;
@@ -34,6 +35,7 @@ export type AttachmentListItem = {
   invoiceNumber: string | null;
   amountTtc: string | null;
   linksCount: number;
+  eInvoiceStatus: string | null;
   createdAt: string;
 };
 
@@ -48,14 +50,14 @@ export class AttachmentCenter {
     const sha256 = createHash("sha256").update(input.bytes).digest("hex");
     const existing = await prisma.attachment.findUnique({
       where: { companyId_fiscalYearId_sha256: { companyId: workspace.company.id, fiscalYearId: workspace.fiscalYear.id, sha256 } },
-      include: { links: true },
+      include: { links: true, eInvoices: { orderBy: { createdAt: "desc" }, take: 1 } },
     });
     if (existing && !existing.archivedAt) return summarizeAttachment(existing);
     if (existing?.archivedAt) {
       const restored = await prisma.attachment.update({
         where: { id: existing.id },
         data: { status: "UPLOADED", archivedAt: null },
-        include: { links: true },
+        include: { links: true, eInvoices: { orderBy: { createdAt: "desc" }, take: 1 } },
       });
       await this.activity.recordActivity(workspace, {
         action: "attachment.uploaded",
@@ -80,7 +82,7 @@ export class AttachmentCenter {
         sha256,
         currency: "EUR",
       },
-      include: { links: true },
+      include: { links: true, eInvoices: { orderBy: { createdAt: "desc" }, take: 1 } },
     });
     await this.activity.recordActivity(workspace, {
       action: "attachment.uploaded",
@@ -88,7 +90,13 @@ export class AttachmentCenter {
       entityId: attachment.id,
       metadata: { filename: attachment.originalFilename, sizeBytes: attachment.sizeBytes },
     });
-    await new AttachmentExtractionCenter(this.storage).extractAttachment(workspace, attachment.id).catch(() => undefined);
+    const eInvoice = await new EInvoiceCenter(undefined, this.storage).ingestAttachment(workspace, {
+      attachmentId: attachment.id,
+      filename: attachment.originalFilename,
+      mimeType: attachment.mimeType,
+      bytes: input.bytes,
+    }).catch(() => undefined);
+    if (!eInvoice) await new AttachmentExtractionCenter(this.storage).extractAttachment(workspace, attachment.id).catch(() => undefined);
     return this.getAttachmentDetail(workspace, attachment.id);
   }
 
@@ -102,7 +110,7 @@ export class AttachmentCenter {
         links: filters.orphanOnly ? { none: {} } : undefined,
         ...(filters.extractionErrorOnly ? { status: "EXTRACTION_FAILED" } : {}),
       },
-      include: { links: true },
+      include: { links: true, eInvoices: { orderBy: { createdAt: "desc" }, take: 1 } },
       orderBy: { createdAt: "desc" },
       take: Math.min(Math.max(filters.limit ?? 100, 1), 500),
     });
@@ -112,7 +120,7 @@ export class AttachmentCenter {
   async getAttachmentDetail(workspace: CompanyWorkspace, attachmentId: string) {
     const attachment = await prisma.attachment.findFirst({
       where: { id: attachmentId, companyId: workspace.company.id, fiscalYearId: workspace.fiscalYear.id },
-      include: { links: { orderBy: { createdAt: "desc" } } },
+      include: { links: { orderBy: { createdAt: "desc" } }, eInvoices: { orderBy: { createdAt: "desc" }, take: 1 } },
     });
     if (!attachment) throw new ExpectedRouteError("Pièce introuvable.", 404);
     return {
@@ -149,13 +157,13 @@ export class AttachmentCenter {
   async archiveAttachment(workspace: CompanyWorkspace, attachmentId: string) {
     const attachment = await prisma.attachment.findFirst({
       where: { id: attachmentId, companyId: workspace.company.id, fiscalYearId: workspace.fiscalYear.id },
-      include: { links: true },
+      include: { links: true, eInvoices: { orderBy: { createdAt: "desc" }, take: 1 } },
     });
     if (!attachment) throw new ExpectedRouteError("Pièce introuvable.", 404);
     const updated = await prisma.attachment.update({
       where: { id: attachment.id },
       data: { status: "ARCHIVED", archivedAt: new Date() },
-      include: { links: true },
+      include: { links: true, eInvoices: { orderBy: { createdAt: "desc" }, take: 1 } },
     });
     await this.activity.recordActivity(workspace, {
       action: "attachment.archived",
@@ -178,6 +186,7 @@ export function summarizeAttachment(attachment: {
   invoiceNumber: string | null;
   amountTtc: { toString(): string } | null;
   links: unknown[];
+  eInvoices?: Array<{ status: string }>;
   createdAt: Date;
 }): AttachmentListItem {
   return {
@@ -191,13 +200,14 @@ export function summarizeAttachment(attachment: {
     invoiceNumber: attachment.invoiceNumber,
     amountTtc: attachment.amountTtc?.toString() ?? null,
     linksCount: attachment.links.length,
+    eInvoiceStatus: attachment.eInvoices?.[0]?.status ?? null,
     createdAt: attachment.createdAt.toISOString(),
   };
 }
 
 function validateAttachment(input: AttachmentUploadInput) {
   const mimeType = normalizeMimeType(input.mimeType, input.filename);
-  if (!ACCEPTED_MIME_TYPES.has(mimeType)) throw new ExpectedRouteError("Format de pièce non supporté. Formats acceptés : PDF, PNG, JPG, TXT.", 415);
+  if (!ACCEPTED_MIME_TYPES.has(mimeType)) throw new ExpectedRouteError("Format de pièce non supporté. Formats acceptés : PDF, PNG, JPG, TXT, XML.", 415);
   if (input.bytes.byteLength === 0) throw new ExpectedRouteError("La pièce est vide.", 400);
   if (input.bytes.byteLength > MAX_ATTACHMENT_BYTES) throw new ExpectedRouteError("La pièce dépasse la limite de 10 Mo.", 413);
 }
@@ -214,6 +224,7 @@ export function normalizeMimeType(mimeType: string, filename: string) {
   if (lower.endsWith(".png")) return "image/png";
   if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) return "image/jpeg";
   if (lower.endsWith(".txt")) return "text/plain";
+  if (lower.endsWith(".xml")) return "application/xml";
   return mimeType || "application/octet-stream";
 }
 

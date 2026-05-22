@@ -89,6 +89,26 @@ export type EvidenceManifest = {
       links: Array<{ entityType: string; entityId: string; relationType: string }>;
     }>;
   };
+  eInvoices: {
+    manifest: Array<{
+      id: string;
+      source: string;
+      format: string;
+      status: string;
+      supplierName: string | null;
+      supplierSiret: string | null;
+      invoiceNumber: string | null;
+      issueDate: string | null;
+      amountHt: string | null;
+      amountVat: string | null;
+      amountTtc: string | null;
+      attachmentId: string | null;
+      rawXmlAvailable: boolean;
+      rawXmlBase64: string | null;
+      latestDraftStatus: string | null;
+      journalEntryId: string | null;
+    }>;
+  };
   reconciliations: {
     readiness: unknown;
     bank: unknown;
@@ -158,7 +178,7 @@ export class DocumentEvidenceBundle {
   ) {}
 
   async getBundleManifest(workspace: CompanyWorkspace): Promise<EvidenceManifest> {
-    const [documents, audit, csv, vat, vatPosition, vatDeclarations, vatDeclarationFreshness, reconciliationReadiness, reconciliationReport, bankReconciliation, stripeReconciliation, thirdPartyMatching, suspenseAccounts, closingWorkpapers, closingSummary, closingAdjustments, closingFreshness, closingReview, expertValidation, coverage, evidenceSummary, evidenceRequirements, attachments] = await Promise.all([
+    const [documents, audit, csv, vat, vatPosition, vatDeclarations, vatDeclarationFreshness, reconciliationReadiness, reconciliationReport, bankReconciliation, stripeReconciliation, thirdPartyMatching, suspenseAccounts, closingWorkpapers, closingSummary, closingAdjustments, closingFreshness, closingReview, expertValidation, coverage, evidenceSummary, evidenceRequirements, attachments, eInvoices] = await Promise.all([
       this.catalog.listDocuments(workspace),
       this.journalAudit.getAuditSummary(workspace),
       this.journalExport.exportCsv(workspace),
@@ -185,6 +205,7 @@ export class DocumentEvidenceBundle {
       this.evidence.summarizeEvidenceGaps(workspace),
       this.evidence.listEvidenceRequirements(workspace),
       this.attachmentReader.listAttachments(workspace),
+      this.listEInvoicesForManifest(workspace),
     ]);
     if (!documents.some((document) => document.type === DocumentType.FEC)) {
       throw new ExpectedRouteError("Aucun FEC généré : le paquet de preuve n'est pas encore disponible.", 409);
@@ -249,6 +270,9 @@ export class DocumentEvidenceBundle {
           labels: evidenceRequirements.filter((requirement) => requirement.missing).slice(0, 50).map((requirement) => requirement.label),
         },
         files: await Promise.all(attachments.map((attachment) => this.attachmentManifestFile(attachment))),
+      },
+      eInvoices: {
+        manifest: await Promise.all(eInvoices.map((invoice) => this.eInvoiceManifestFile(invoice))),
       },
       reconciliations: {
         readiness: reconciliationReadiness,
@@ -324,6 +348,37 @@ export class DocumentEvidenceBundle {
         entityId: link.entityId,
         relationType: link.relationType,
       })),
+    };
+  }
+
+  private async listEInvoicesForManifest(workspace: CompanyWorkspace) {
+    return prisma.eInvoice.findMany({
+      where: { companyId: workspace.company.id, fiscalYearId: workspace.fiscalYear.id, archivedAt: null },
+      include: { accountingDrafts: { orderBy: { createdAt: "desc" }, take: 1 } },
+      orderBy: { createdAt: "asc" },
+    }).catch(() => []);
+  }
+
+  private async eInvoiceManifestFile(invoice: Awaited<ReturnType<DocumentEvidenceBundle["listEInvoicesForManifest"]>>[number]) {
+    const stored = invoice.rawXmlStorageKey ? await this.evidenceStorage.get(invoice.rawXmlStorageKey).catch(() => null) : null;
+    const latestDraft = invoice.accountingDrafts[0] ?? null;
+    return {
+      id: invoice.id,
+      source: invoice.source,
+      format: invoice.format,
+      status: invoice.status,
+      supplierName: invoice.supplierName,
+      supplierSiret: invoice.supplierSiret,
+      invoiceNumber: invoice.invoiceNumber,
+      issueDate: invoice.issueDate?.toISOString().slice(0, 10) ?? null,
+      amountHt: invoice.amountHt?.toString() ?? null,
+      amountVat: invoice.amountVat?.toString() ?? null,
+      amountTtc: invoice.amountTtc?.toString() ?? null,
+      attachmentId: invoice.attachmentId,
+      rawXmlAvailable: Boolean(stored),
+      rawXmlBase64: stored ? stored.body.toString("base64") : null,
+      latestDraftStatus: latestDraft?.status ?? null,
+      journalEntryId: latestDraft?.journalEntryId ?? null,
     };
   }
 
