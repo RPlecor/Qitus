@@ -171,6 +171,8 @@
 - **EInvoiceAccountingDraft**: the user-reviewable accounting proposal derived from an EInvoice; only approval creates a `JournalEntry` with source `E_INVOICE`.
 - **EInvoiceProviderAdapter**: the PA-neutral reception Seam for future Plateforme Agréée integrations; the mock Adapter validates sync without selecting a concrete PA.
 - **GenericAccreditedPlatformAdapter**: the live-shaped but non-network Adapter documenting the PA contract until a concrete Plateforme Agréée is selected and implemented.
+- **QontoAccreditedPlatformAdapter**: the guarded concrete Adapter for Qonto PA selection; it exposes safe readiness and refuses network calls until Qonto PA sandbox/API documentation and contract tests are validated.
+- **QontoPaReadiness**: the diagnostic Module tracking Qonto PA contract, sandbox credentials, webhook secret, formats, statuses, acknowledgement rules, pagination and proof export readiness without exposing secrets.
 - **AccreditedPlatformSelection**: the Qitus reading of candidate PA readiness, including documentation, sandbox, webhooks, formats, proof export, pricing and e-reporting scope.
 - **AccreditedPlatformSandboxAdapter**: the strict internal PA sandbox Adapter that exercises duplicate, rejected, cancelled, invalid XML and missing visual cases without claiming legal compliance.
 - **EInvoiceProviderContractTestKit**: the provider-agnostic contract test Module that validates connect, callback, webhook, sync, payload download, status acknowledgement and disconnect.

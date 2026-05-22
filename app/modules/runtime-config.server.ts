@@ -74,6 +74,10 @@ export type RuntimeConfig = {
   eInvoiceProviderClientId?: string;
   eInvoiceProviderClientSecret?: string;
   eInvoiceProviderWebhookSecret?: string;
+  qontoPaBaseUrl?: string;
+  qontoPaClientId?: string;
+  qontoPaClientSecret?: string;
+  qontoPaWebhookSecret?: string;
 };
 
 export function getRuntimeConfig(env: Record<string, string | undefined> = process.env): RuntimeConfig {
@@ -135,6 +139,10 @@ export function getRuntimeConfig(env: Record<string, string | undefined> = proce
     eInvoiceProviderClientId: env.E_INVOICE_PROVIDER_CLIENT_ID,
     eInvoiceProviderClientSecret: env.E_INVOICE_PROVIDER_CLIENT_SECRET,
     eInvoiceProviderWebhookSecret: env.E_INVOICE_PROVIDER_WEBHOOK_SECRET,
+    qontoPaBaseUrl: env.QONTO_PA_BASE_URL,
+    qontoPaClientId: env.QONTO_PA_CLIENT_ID,
+    qontoPaClientSecret: env.QONTO_PA_CLIENT_SECRET,
+    qontoPaWebhookSecret: env.QONTO_PA_WEBHOOK_SECRET,
   };
 }
 
@@ -186,7 +194,15 @@ export function assertRuntimeConfig(config = getRuntimeConfig()) {
       errors.push(`OPEN_BANKING_PROVIDER=${config.openBankingProvider} requires PROVIDER_SECRET_ENCRYPTION_KEY in ${config.appEnv}.`);
     }
   }
-  if (config.eInvoiceProvider !== "disabled" && config.eInvoiceProvider !== "mock") {
+  if (config.eInvoiceProvider === "qonto_pa") {
+    if (!config.qontoPaBaseUrl) errors.push("E_INVOICE_PROVIDER=qonto_pa requires QONTO_PA_BASE_URL.");
+    if (!config.qontoPaClientId) errors.push("E_INVOICE_PROVIDER=qonto_pa requires QONTO_PA_CLIENT_ID.");
+    if (!config.qontoPaClientSecret) errors.push("E_INVOICE_PROVIDER=qonto_pa requires QONTO_PA_CLIENT_SECRET.");
+    if (!config.qontoPaWebhookSecret) errors.push("E_INVOICE_PROVIDER=qonto_pa requires QONTO_PA_WEBHOOK_SECRET.");
+    if ((config.appEnv === "staging" || config.appEnv === "production") && !config.providerSecretEncryptionKey) {
+      errors.push(`E_INVOICE_PROVIDER=${config.eInvoiceProvider} requires PROVIDER_SECRET_ENCRYPTION_KEY in ${config.appEnv}.`);
+    }
+  } else if (config.eInvoiceProvider !== "disabled" && config.eInvoiceProvider !== "mock" && config.eInvoiceProvider !== "sandbox") {
     if (!config.eInvoiceProviderBaseUrl) errors.push(`E_INVOICE_PROVIDER=${config.eInvoiceProvider} requires E_INVOICE_PROVIDER_BASE_URL.`);
     if (!config.eInvoiceProviderClientId) errors.push(`E_INVOICE_PROVIDER=${config.eInvoiceProvider} requires E_INVOICE_PROVIDER_CLIENT_ID.`);
     if (!config.eInvoiceProviderClientSecret) errors.push(`E_INVOICE_PROVIDER=${config.eInvoiceProvider} requires E_INVOICE_PROVIDER_CLIENT_SECRET.`);
@@ -227,7 +243,11 @@ export function sanitizedRuntimeConfig(config = getRuntimeConfig()) {
       : config.openBankingProvider === "powens"
         ? Boolean(config.openBankingBaseUrl && config.openBankingClientId && config.openBankingClientSecret && config.openBankingWebhookSecret && (config.appEnv === "local" || config.providerSecretEncryptionKey))
         : Boolean(config.openBankingClientId && config.openBankingClientSecret && config.openBankingWebhookSecret && (config.appEnv === "local" || config.providerSecretEncryptionKey))),
-    hasEInvoiceProviderConfig: config.eInvoiceProvider === "mock" || (config.eInvoiceProvider !== "disabled" && Boolean(config.eInvoiceProviderBaseUrl && config.eInvoiceProviderClientId && config.eInvoiceProviderClientSecret && config.eInvoiceProviderWebhookSecret && (config.appEnv === "local" || config.providerSecretEncryptionKey))),
+    hasEInvoiceProviderConfig: config.eInvoiceProvider === "mock" || config.eInvoiceProvider === "sandbox" || (
+      config.eInvoiceProvider === "qonto_pa"
+        ? Boolean(config.qontoPaBaseUrl && config.qontoPaClientId && config.qontoPaClientSecret && config.qontoPaWebhookSecret && (config.appEnv === "local" || config.providerSecretEncryptionKey))
+        : config.eInvoiceProvider !== "disabled" && Boolean(config.eInvoiceProviderBaseUrl && config.eInvoiceProviderClientId && config.eInvoiceProviderClientSecret && config.eInvoiceProviderWebhookSecret && (config.appEnv === "local" || config.providerSecretEncryptionKey))
+    ),
     hasProviderSecretVaultKey: Boolean(config.providerSecretEncryptionKey) || config.appEnv === "local",
   };
 }

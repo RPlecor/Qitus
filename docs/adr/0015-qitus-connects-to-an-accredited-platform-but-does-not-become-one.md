@@ -19,6 +19,8 @@ French electronic invoicing requires reception through a Plateforme Agréée for
 - Receiving a PA invoice never creates accounting entries automatically; only user approval of an `EInvoiceAccountingDraft` creates `JournalEntry.source = E_INVOICE`.
 - Mock, sandbox and generic PA Adapters must never report `receptionCompliant=true`.
 - A real PA Adapter must pass `EInvoiceProviderContractTestKit` before being advertised as compliant.
+- Qonto PA is the first concrete target, but `QontoAccreditedPlatformAdapter` remains guarded and non-network until Qonto PA contract, sandbox, endpoints, webhooks and status semantics are documented.
+- Qonto PA credentials are distinct from the Qonto banking connector credentials; Qitus must not infer invoice reception from the Qonto Business API.
 
 ## Consequences
 
@@ -26,4 +28,5 @@ French electronic invoicing requires reception through a Plateforme Agréée for
 - The expert dossier can distinguish manual structured evidence from PA-received invoices.
 - Adding Qonto, jefacture, Pennylane, Sage or another PA means adding an Adapter behind the existing Seam, not changing accounting flows.
 - `AccreditedPlatformSandboxAdapter` can exercise provider-like edge cases, but its invoices remain non-compliant sandbox evidence.
+- Qonto PA readiness is product-visible so missing partner contract/API work is explicit rather than hidden as a generic connector failure.
 - Emission, e-reporting, payment reporting and certified PA status remain out of scope.

@@ -160,6 +160,21 @@ Powens gère le choix bancaire dans son Webview. Les comptes supprimés ou désa
 
 Qonto alimente les transactions via le pipeline d'import Qitus. Stripe alimente uniquement les modèles de rapprochement (`StripeEvent`, `StripePayout`) pour matcher payouts, frais et refunds. Les secrets restent dans l'environnement et ne sont jamais stockés en base.
 
+## Facturation électronique PA
+
+`E_INVOICE_PROVIDER=mock` et `sandbox` restent les chemins de validation locale. `generic_pa` documente le contrat PA sans provider concret.
+
+Qonto PA est la première cible concrète :
+
+- `E_INVOICE_PROVIDER=qonto_pa`
+- `QONTO_PA_BASE_URL`
+- `QONTO_PA_CLIENT_ID`
+- `QONTO_PA_CLIENT_SECRET`
+- `QONTO_PA_WEBHOOK_SECRET`
+- `PROVIDER_SECRET_ENCRYPTION_KEY` en staging/production.
+
+Tant que la documentation API PA/sandbox Qonto n'est pas contractualisée et que le contract test provider n'est pas validé, l'Adapter Qonto PA refuse connect/sync/download avec une erreur lisible. Ne pas réutiliser `QONTO_ID` ou `QONTO_API_SECRET` : ils appartiennent au connecteur bancaire Qonto direct, pas à la réception réglementaire des factures.
+
 ## Healthchecks
 
 - `GET /healthz` : liveness minimal.

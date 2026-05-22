@@ -1233,6 +1233,8 @@ Adapters :
 - `AccreditedPlatformSandboxAdapter` pour tester doublon, rejet, annulation, XML invalide, webhook hors ordre et pièce visuelle manquante.
 - `GenericAccreditedPlatformAdapter` pour figer le contrat PA et refuser proprement tant qu'aucune PA réelle n'est branchée.
 - `EInvoiceProviderContractTestKit` pour valider tout Adapter PA concret avant activation.
+- `QontoAccreditedPlatformAdapter` comme première cible PA concrète, guarded tant que contrat/API/sandbox Qonto PA ne sont pas documentés.
+- `QontoPaReadinessCenter` pour rendre visibles contrat manquant, sandbox à configurer, sandbox prête et contract test validé.
 - PA concrète à brancher ensuite sans changer le pipeline.
 
 Sécurité :
@@ -1375,6 +1377,7 @@ Validation :
 - ajouter `npm run validate:e-invoice-provider-mock`
 - ajouter `npm run validate:e-invoice-pa-sandbox`
 - ajouter `npm run validate:e-invoice-provider-contract`
+- ajouter `npm run validate:qonto-pa-readiness`
 
 ### Assumptions
 

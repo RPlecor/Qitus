@@ -223,6 +223,33 @@ export default function Connecteurs() {
         </section>
 
         <section className="card">
+          <div className="sec-head">
+            <div>
+              <h2>Qonto PA</h2>
+              <p className="sub">{paSelection.qontoPaReadiness.message}</p>
+            </div>
+            <StatusPill label={qontoPaStatusLabel(paSelection.qontoPaReadiness.status)} tone={paSelection.qontoPaReadiness.status === "ready" || paSelection.qontoPaReadiness.status === "sandbox_ready" ? "ok" : paSelection.qontoPaReadiness.status === "blocked" ? "error" : "warn"} />
+          </div>
+          <div className="alert orange">
+            Qonto PA est sélectionnée comme cible prioritaire, mais la réception conforme sera activée uniquement après validation sandbox et contract test provider.
+          </div>
+          <TableShell>
+            <table className="tbl">
+              <thead><tr><th>Pré-requis</th><th>Statut</th><th>Action</th></tr></thead>
+              <tbody>
+                {paSelection.qontoPaReadiness.checks.map((check) => (
+                  <tr key={check.code}>
+                    <td>{check.label}</td>
+                    <td><StatusPill label={check.status === "ready" ? "Prêt" : "Manquant"} tone={check.status === "ready" ? "ok" : "warn"} /></td>
+                    <td>{check.action}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </TableShell>
+        </section>
+
+        <section className="card">
           <div className="sec-head"><h2>Connecteurs historiques</h2><Link className="btn" to="/rapprochements">Rapprochements</Link></div>
           <TableShell>
             <table className="tbl">
@@ -313,5 +340,13 @@ function selectionLabel(value: string) {
   if (value === "sandbox_ready") return "Sandbox prête";
   if (value === "selected") return "Sélectionnée";
   if (value === "blocked") return "Bloqué";
+  return value;
+}
+
+function qontoPaStatusLabel(value: string) {
+  if (value === "contract_missing") return "Contrat manquant";
+  if (value === "blocked") return "Sandbox à configurer";
+  if (value === "sandbox_ready") return "Sandbox prête";
+  if (value === "ready") return "Contrat test validé";
   return value;
 }

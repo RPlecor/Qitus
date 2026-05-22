@@ -20,6 +20,7 @@ Tout Adapter PA concret doit satisfaire `EInvoiceProviderAdapter` et passer `EIn
 - La synchronisation crée ou met à jour des `EInvoice`, jamais des `JournalEntry`.
 - Les doublons sont absorbés par `sourceId` et checksum.
 - `receptionCompliant=true` est interdit pour mock, sandbox et generic_pa.
+- `QontoAccreditedPlatformAdapter` est un Adapter concret guarded : il peut diagnostiquer la cible Qonto PA, mais doit échouer au contract test tant que les endpoints partenaires ne sont pas implémentés.
 
 ## Contract test
 

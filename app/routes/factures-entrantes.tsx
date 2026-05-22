@@ -125,8 +125,10 @@ function formatLabel(value: string) {
 
 function sourceLabel(invoice: { source: string; providerLabel?: string | null }) {
   if (invoice.source === "UPLOAD") return "Upload manuel";
-  if (invoice.providerLabel?.toLowerCase().includes("sandbox")) return "Sandbox Qitus";
-  if (invoice.providerLabel?.toLowerCase().includes("mock")) return "Provider mock";
+  const providerLabel = invoice.providerLabel?.toLowerCase() ?? "";
+  if (providerLabel.includes("qonto")) return "Qonto PA";
+  if (providerLabel.includes("sandbox")) return "Sandbox Qitus";
+  if (providerLabel.includes("mock")) return "Provider mock";
   return invoice.providerLabel ? `PA ${invoice.providerLabel}` : "Provider PA";
 }
 

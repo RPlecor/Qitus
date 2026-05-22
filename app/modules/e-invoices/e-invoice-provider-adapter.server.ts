@@ -1,6 +1,7 @@
 import { createHmac } from "node:crypto";
 import { ExpectedRouteError } from "../route-errors.server";
 import { getRuntimeConfig, type RuntimeConfig } from "../runtime-config.server";
+import { QontoAccreditedPlatformAdapter } from "./providers/qonto-accredited-platform-adapter.server";
 
 export type EInvoiceProviderModeLabel = "disabled" | "mock" | "sandbox" | "generic_pa" | "live";
 export type EInvoiceProviderMandateStatus = "UNKNOWN" | "PENDING" | "ACTIVE" | "EXPIRED" | "REVOKED" | "ERROR";
@@ -301,6 +302,7 @@ export function createEInvoiceProviderAdapter(config: RuntimeConfig = getRuntime
   const provider = config.eInvoiceProvider;
   if (provider === "mock") return new MockEInvoiceProviderAdapter();
   if (provider === "sandbox") return new AccreditedPlatformSandboxAdapter();
+  if (provider === "qonto_pa") return new QontoAccreditedPlatformAdapter(config);
   if (provider === "disabled") return new DisabledEInvoiceProviderAdapter();
   return new GenericAccreditedPlatformAdapter(config);
 }

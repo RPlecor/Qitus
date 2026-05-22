@@ -1,5 +1,6 @@
 import { getRuntimeConfig, type RuntimeConfig } from "../runtime-config.server";
 import { createEInvoiceProviderAdapter } from "./e-invoice-provider-adapter.server";
+import { QontoPaReadinessCenter } from "./qonto-pa-readiness-center.server";
 
 export type AccreditedPlatformSelectionStatus = "not_started" | "evaluating" | "sandbox_ready" | "selected" | "blocked";
 
@@ -23,7 +24,8 @@ export class AccreditedPlatformSelectionCenter {
 
   async getSelection() {
     const providerStatus = await createEInvoiceProviderAdapter(this.config).getStatus();
-    const candidates = this.listCandidates();
+    const qontoPaReadiness = await new QontoPaReadinessCenter(this.config).getReadiness();
+    const candidates = this.listCandidates(qontoPaReadiness.status);
     const selected = candidates.find((candidate) => candidate.key === this.config.eInvoiceProvider) ?? null;
     return {
       configuredProvider: this.config.eInvoiceProvider,
@@ -32,17 +34,24 @@ export class AccreditedPlatformSelectionCenter {
       selectedCandidate: selected,
       checklist: this.buildChecklist(providerStatus.configured),
       candidates,
+      qontoPaReadiness,
       message: this.message(selected?.status ?? this.statusFromProvider()),
     };
   }
 
-  listCandidates(): AccreditedPlatformCandidate[] {
+  listCandidates(qontoStatus: "ready" | "blocked" | "sandbox_ready" | "contract_missing" = "contract_missing"): AccreditedPlatformCandidate[] {
     const genericCandidates: AccreditedPlatformCandidate[] = [
-      candidate("qonto_pa", "Qonto PA", "evaluating", "À confirmer selon accès API PA, sandbox et périmètre réception fournisseur."),
       candidate("jefacture", "jefacture", "evaluating", "Candidat orienté cabinet/EC ; documentation et sandbox partenaire à obtenir."),
       candidate("pennylane_pa", "Pennylane PA", "evaluating", "Candidat SaaS comptable ; vérifier API réception, webhooks et export preuve."),
       candidate("sage_pa", "Sage PA", "evaluating", "Candidat ERP/compta ; vérifier compatibilité TPE/SaaS et conditions d'accès."),
     ];
+    const qonto = candidate("qonto_pa", "Qonto PA", selectionStatusForQonto(qontoStatus), qontoNote(qontoStatus), {
+      docsReceived: qontoStatus !== "blocked",
+      sandboxAvailable: qontoStatus === "sandbox_ready" || qontoStatus === "ready",
+      webhooks: qontoStatus === "sandbox_ready" || qontoStatus === "ready",
+      formats: qontoStatus === "ready" ? ["UBL", "CII", "Factur-X"] : [],
+      proofExport: qontoStatus === "ready",
+    });
     const sandbox = candidate("sandbox", "Sandbox PA Qitus", "sandbox_ready", "Sandbox interne stricte, non conforme légalement.", {
       docsReceived: true,
       sandboxAvailable: true,
@@ -51,13 +60,14 @@ export class AccreditedPlatformSelectionCenter {
       proofExport: true,
     });
     const generic = candidate("generic_pa", "PA générique", this.config.eInvoiceProvider === "generic_pa" ? "evaluating" : "not_started", "Contrat Qitus prêt, Adapter concret non sélectionné.");
-    return [sandbox, generic, ...genericCandidates];
+    return [qonto, sandbox, generic, ...genericCandidates];
   }
 
   private statusFromProvider(): AccreditedPlatformSelectionStatus {
     if (this.config.eInvoiceProvider === "sandbox") return "sandbox_ready";
     if (this.config.eInvoiceProvider === "disabled" || this.config.eInvoiceProvider === "mock") return "not_started";
     if (this.config.eInvoiceProvider === "generic_pa") return "evaluating";
+    if (this.config.eInvoiceProvider === "qonto_pa") return "evaluating";
     return "selected";
   }
 
@@ -80,6 +90,20 @@ export class AccreditedPlatformSelectionCenter {
     if (status === "blocked") return "Sélection PA bloquée : information provider manquante.";
     return "Aucune PA réelle sélectionnée.";
   }
+}
+
+function selectionStatusForQonto(status: "ready" | "blocked" | "sandbox_ready" | "contract_missing"): AccreditedPlatformSelectionStatus {
+  if (status === "blocked") return "blocked";
+  if (status === "sandbox_ready") return "sandbox_ready";
+  if (status === "ready") return "selected";
+  return "evaluating";
+}
+
+function qontoNote(status: "ready" | "blocked" | "sandbox_ready" | "contract_missing") {
+  if (status === "blocked") return "Qonto PA est prioritaire, mais la configuration sandbox manque.";
+  if (status === "sandbox_ready") return "Qonto PA est prioritaire ; secrets sandbox présents, contract test à finaliser.";
+  if (status === "ready") return "Qonto PA est sélectionnée et prête côté contrat Qitus.";
+  return "Qonto PA est prioritaire ; contrat/API PA réception fournisseur à obtenir.";
 }
 
 function candidate(

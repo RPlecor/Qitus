@@ -4,6 +4,8 @@ import { AccreditedPlatformSandboxAdapter, GenericAccreditedPlatformAdapter, Moc
 import { EInvoiceLifecycleCenter } from "../app/modules/e-invoices/e-invoice-lifecycle-center.server";
 import { AccreditedPlatformSelectionCenter } from "../app/modules/e-invoices/accredited-platform-selection-center.server";
 import { EInvoiceProviderContractTestKit } from "../app/modules/e-invoices/e-invoice-provider-contract-test-kit.server";
+import { QontoPaReadinessCenter } from "../app/modules/e-invoices/qonto-pa-readiness-center.server";
+import { QontoAccreditedPlatformAdapter } from "../app/modules/e-invoices/providers/qonto-accredited-platform-adapter.server";
 
 const ubl = `<?xml version="1.0" encoding="UTF-8"?>
 <Invoice xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2" xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2">
@@ -95,6 +97,37 @@ describe("EInvoiceProviderAdapter", () => {
 
     const generic = await new AccreditedPlatformSelectionCenter({ eInvoiceProvider: "generic_pa" } as never).getSelection();
     expect(generic.status).toBe("evaluating");
+  });
+
+  it("keeps Qonto PA guarded until partner sandbox and contract are validated", async () => {
+    const adapter = new QontoAccreditedPlatformAdapter({ appEnv: "local", eInvoiceProvider: "qonto_pa" } as never);
+    const status = await adapter.getStatus();
+    expect(status.provider).toBe("qonto_pa");
+    expect(status.receptionCompliant).toBe(false);
+    expect(status.missingConfig).toContain("QONTO_PA_BASE_URL");
+    await expect(adapter.createConnection()).rejects.toThrow(/Configuration Qonto PA incomplète/);
+
+    const configured = new QontoAccreditedPlatformAdapter({
+      appEnv: "local",
+      eInvoiceProvider: "qonto_pa",
+      qontoPaBaseUrl: "https://sandbox.qonto-pa.example.test",
+      qontoPaClientId: "client",
+      qontoPaClientSecret: "secret",
+      qontoPaWebhookSecret: "webhook",
+    } as never);
+    await expect(configured.listIncomingInvoices()).rejects.toThrow(/documentation API PA\/sandbox Qonto/);
+  });
+
+  it("exposes Qonto PA readiness and prioritizes it in PA selection", async () => {
+    const readiness = await new QontoPaReadinessCenter({ appEnv: "local", eInvoiceProvider: "qonto_pa" } as never).getReadiness();
+    expect(readiness.status).toBe("blocked");
+    expect(readiness.receptionCompliant).toBe(false);
+    expect(readiness.checks.some((check) => check.code === "contract")).toBe(true);
+
+    const selection = await new AccreditedPlatformSelectionCenter({ appEnv: "local", eInvoiceProvider: "qonto_pa" } as never).getSelection();
+    expect(selection.candidates[0]?.key).toBe("qonto_pa");
+    expect(selection.qontoPaReadiness.status).toBe("blocked");
+    expect(selection.status).toBe("blocked");
   });
 
   it("translates provider statuses into Qitus lifecycle states", () => {

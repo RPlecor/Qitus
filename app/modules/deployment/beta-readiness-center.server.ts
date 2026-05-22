@@ -8,6 +8,7 @@ import { MetricCatalog } from "./metric-catalog.server";
 import { OpenBankingCenter } from "../open-banking/open-banking-center.server";
 import { StorageAuditCenter } from "../storage/storage-audit-center.server";
 import { getRuntimeConfig, type RuntimeConfig } from "../runtime-config.server";
+import { QontoPaReadinessCenter } from "../e-invoices/qonto-pa-readiness-center.server";
 
 export type BetaReadinessSeverity = "ready" | "warning" | "blocked";
 
@@ -36,13 +37,14 @@ export class BetaReadinessCenter {
   }
 
   async listChecks(workspace: CompanyWorkspace): Promise<BetaReadinessCheck[]> {
-    const [runtime, health, security, openBanking, storageAudit, metricCatalog] = await Promise.all([
+    const [runtime, health, security, openBanking, storageAudit, metricCatalog, qontoPaReadiness] = await Promise.all([
       Promise.resolve(new DeploymentRuntimeCenter(this.config).getRuntimeReport()),
       new HealthCheckCenter(this.config).getReadiness(),
       Promise.resolve(new SecurityHardeningCenter(this.config).getSecurityStatus()),
       new OpenBankingCenter(this.config).getStatus(workspace),
       new StorageAuditCenter(this.config).getStorageAudit(workspace),
       Promise.resolve(new MetricCatalog().assertRequiredMetricsPresent()),
+      new QontoPaReadinessCenter(this.config).getReadiness(),
     ]);
     const storage = new StorageConfigurationCenter(this.config).getStatus();
     const worker = new WorkerRuntimeCenter(this.config).getRuntimeStatus();
@@ -84,6 +86,13 @@ export class BetaReadinessCenter {
         status: openBanking.configured || !openBanking.enabled ? "ready" : "blocked",
         message: openBanking.message,
         action: openBanking.enabled && !openBanking.configured ? "Configurer le provider ou repasser OPEN_BANKING_PROVIDER=mock/disabled." : undefined,
+      },
+      {
+        code: "qonto_pa",
+        label: "Qonto PA",
+        status: this.config.eInvoiceProvider !== "qonto_pa" ? "ready" : qontoPaReadiness.status === "blocked" ? "blocked" : qontoPaReadiness.status === "ready" ? "ready" : "warning",
+        message: this.config.eInvoiceProvider !== "qonto_pa" ? "Qonto PA non sélectionnée comme provider actif." : qontoPaReadiness.message,
+        action: this.config.eInvoiceProvider === "qonto_pa" ? qontoPaReadiness.recommendedAction : undefined,
       },
       {
         code: "webhooks",

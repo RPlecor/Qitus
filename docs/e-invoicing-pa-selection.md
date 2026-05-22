@@ -25,3 +25,13 @@ Qitus ne devient pas Plateforme Agréée. Qitus se connecte à une PA immatricul
 ## Décision produit
 
 Une facture uploadée ou reçue via mock/sandbox peut être exploitée comptablement, mais elle n'est pas marquée comme réception PA conforme. Seul un Adapter PA concret validé pourra retourner `receptionCompliant=true`.
+
+## Cible prioritaire : Qonto PA
+
+Qonto PA est la première cible concrète. La sélection reste guarded tant que Qonto ne fournit pas l'accès partenaire/sandbox et les endpoints de réception fournisseurs :
+
+- utiliser `E_INVOICE_PROVIDER=qonto_pa` pour diagnostiquer la configuration ;
+- renseigner uniquement les variables `QONTO_PA_*` dédiées à la PA ;
+- ne pas réutiliser `QONTO_ID` ou `QONTO_API_SECRET`, réservés au connecteur bancaire Qonto ;
+- compléter `docs/providers/qonto-pa-api-intake.md` avant tout appel réseau réel ;
+- valider `EInvoiceProviderContractTestKit` avant de marquer une réception Qonto PA comme conforme.
