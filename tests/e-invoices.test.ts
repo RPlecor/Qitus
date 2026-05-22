@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { StructuredInvoiceParserCenter, extractEmbeddedInvoiceXml } from "../app/modules/e-invoices/structured-invoice-parser-center.server";
-import { GenericAccreditedPlatformAdapter, MockEInvoiceProviderAdapter } from "../app/modules/e-invoices/e-invoice-provider-adapter.server";
+import { AccreditedPlatformSandboxAdapter, GenericAccreditedPlatformAdapter, MockEInvoiceProviderAdapter } from "../app/modules/e-invoices/e-invoice-provider-adapter.server";
 import { EInvoiceLifecycleCenter } from "../app/modules/e-invoices/e-invoice-lifecycle-center.server";
+import { AccreditedPlatformSelectionCenter } from "../app/modules/e-invoices/accredited-platform-selection-center.server";
+import { EInvoiceProviderContractTestKit } from "../app/modules/e-invoices/e-invoice-provider-contract-test-kit.server";
 
 const ubl = `<?xml version="1.0" encoding="UTF-8"?>
 <Invoice xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2" xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2">
@@ -72,6 +74,27 @@ describe("EInvoiceProviderAdapter", () => {
     expect(status.configured).toBe(true);
     expect(status.receptionCompliant).toBe(false);
     await expect(adapter.listIncomingInvoices()).rejects.toThrow(/Adapter PA concret/);
+  });
+
+  it("runs the stricter sandbox provider contract without claiming compliance", async () => {
+    const adapter = new AccreditedPlatformSandboxAdapter();
+    const status = await adapter.getStatus();
+    expect(status.mode).toBe("sandbox");
+    expect(status.receptionCompliant).toBe(false);
+    const invoices = await adapter.listIncomingInvoices();
+    expect(invoices.some((invoice) => invoice.providerStatus === "REJECTED")).toBe(true);
+    expect(invoices.some((invoice) => invoice.providerStatus === "CANCELLED")).toBe(true);
+    const report = await new EInvoiceProviderContractTestKit(adapter).runContractTest();
+    expect(report.status).toBe("passed");
+  });
+
+  it("classifies PA selection state for sandbox and generic modes", async () => {
+    const sandbox = await new AccreditedPlatformSelectionCenter({ eInvoiceProvider: "sandbox", eInvoiceProviderWebhookSecret: "secret" } as never).getSelection();
+    expect(sandbox.status).toBe("sandbox_ready");
+    expect(sandbox.checklist.some((item) => item.code === "Formats structurés" && item.status === "ready")).toBe(true);
+
+    const generic = await new AccreditedPlatformSelectionCenter({ eInvoiceProvider: "generic_pa" } as never).getSelection();
+    expect(generic.status).toBe("evaluating");
   });
 
   it("translates provider statuses into Qitus lifecycle states", () => {

@@ -11,10 +11,11 @@ import { OpenBankingSyncWorkflow } from "~/modules/open-banking/open-banking-syn
 import { ConnectorSyncCenter } from "~/modules/reconciliations/connector-sync-center.server";
 import { StorageAuditCenter } from "~/modules/storage/storage-audit-center.server";
 import { EInvoiceProviderCenter } from "~/modules/e-invoices/e-invoice-provider-center.server";
+import { AccreditedPlatformSelectionCenter } from "~/modules/e-invoices/accredited-platform-selection-center.server";
 
 export async function loader(args: LoaderFunctionArgs) {
   const workspace = await requireCompanyWorkspace(args);
-  const [openBanking, openBankingFreshness, syncHistory, betaReadiness, connectors, readiness, storage, storageAudit, institutions, eInvoiceProvider] = await Promise.all([
+  const [openBanking, openBankingFreshness, syncHistory, betaReadiness, connectors, readiness, storage, storageAudit, institutions, eInvoiceProvider, paSelection] = await Promise.all([
     new OpenBankingCenter().getStatus(workspace),
     new OpenBankingFreshnessCenter().getFreshness(workspace),
     new OpenBankingSyncWorkflow().getSyncHistory(workspace),
@@ -25,12 +26,13 @@ export async function loader(args: LoaderFunctionArgs) {
     new StorageAuditCenter().getStorageAudit(workspace),
     new OpenBankingCenter().listInstitutions({ country: "FR" }).catch(() => []),
     new EInvoiceProviderCenter().getStatus(workspace),
+    new AccreditedPlatformSelectionCenter().getSelection(),
   ]);
-  return json({ openBanking, openBankingFreshness, syncHistory, betaReadiness, connectors, readiness, storage, storageAudit, institutions, eInvoiceProvider });
+  return json({ openBanking, openBankingFreshness, syncHistory, betaReadiness, connectors, readiness, storage, storageAudit, institutions, eInvoiceProvider, paSelection });
 }
 
 export default function Connecteurs() {
-  const { openBanking, openBankingFreshness, syncHistory, betaReadiness, connectors, readiness, storage, storageAudit, institutions, eInvoiceProvider } = useLoaderData<typeof loader>();
+  const { openBanking, openBankingFreshness, syncHistory, betaReadiness, connectors, readiness, storage, storageAudit, institutions, eInvoiceProvider, paSelection } = useLoaderData<typeof loader>();
   const [params] = useSearchParams();
   const notice = params.get("openBanking");
   const eInvoiceNotice = params.get("eInvoiceProvider");
@@ -179,6 +181,48 @@ export default function Connecteurs() {
         </section>
 
         <section className="card">
+          <div className="sec-head">
+            <div>
+              <h2>Choix Plateforme Agréée</h2>
+              <p className="sub">{paSelection.message}</p>
+            </div>
+            <StatusPill label={selectionLabel(paSelection.status)} tone={paSelection.status === "sandbox_ready" || paSelection.status === "selected" ? "ok" : paSelection.status === "blocked" ? "error" : "warn"} />
+          </div>
+          <TableShell>
+            <table className="tbl">
+              <thead><tr><th>Check</th><th>Statut</th><th>Action</th></tr></thead>
+              <tbody>
+                {paSelection.checklist.map((item) => (
+                  <tr key={item.code}>
+                    <td>{item.code}</td>
+                    <td><StatusPill label={item.status === "ready" ? "Prêt" : "Manquant"} tone={item.status === "ready" ? "ok" : "warn"} /></td>
+                    <td>{item.action}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </TableShell>
+          <TableShell>
+            <table className="tbl">
+              <thead><tr><th>Candidate</th><th>Statut</th><th>Sandbox</th><th>Webhooks</th><th>Formats</th><th>Preuve</th><th>Note</th></tr></thead>
+              <tbody>
+                {paSelection.candidates.map((candidate) => (
+                  <tr key={candidate.key}>
+                    <td>{candidate.label}</td>
+                    <td><StatusPill label={selectionLabel(candidate.status)} tone={candidate.status === "sandbox_ready" || candidate.status === "selected" ? "ok" : candidate.status === "blocked" ? "error" : "warn"} /></td>
+                    <td>{candidate.sandboxAvailable ? "Oui" : "Non"}</td>
+                    <td>{candidate.webhooks ? "Oui" : "Non"}</td>
+                    <td>{candidate.formats.join(", ") || "—"}</td>
+                    <td>{candidate.proofExport ? "Oui" : "Non"}</td>
+                    <td>{candidate.notes}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </TableShell>
+        </section>
+
+        <section className="card">
           <div className="sec-head"><h2>Connecteurs historiques</h2><Link className="btn" to="/rapprochements">Rapprochements</Link></div>
           <TableShell>
             <table className="tbl">
@@ -261,4 +305,13 @@ function freshnessLabel(value?: string) {
   if (value === "never_synced") return "Jamais sync";
   if (value === "revoked") return "Révoqué";
   return "—";
+}
+
+function selectionLabel(value: string) {
+  if (value === "not_started") return "Non démarré";
+  if (value === "evaluating") return "Évaluation";
+  if (value === "sandbox_ready") return "Sandbox prête";
+  if (value === "selected") return "Sélectionnée";
+  if (value === "blocked") return "Bloqué";
+  return value;
 }

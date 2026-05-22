@@ -171,6 +171,9 @@
 - **EInvoiceAccountingDraft**: the user-reviewable accounting proposal derived from an EInvoice; only approval creates a `JournalEntry` with source `E_INVOICE`.
 - **EInvoiceProviderAdapter**: the PA-neutral reception Seam for future Plateforme Agréée integrations; the mock Adapter validates sync without selecting a concrete PA.
 - **GenericAccreditedPlatformAdapter**: the live-shaped but non-network Adapter documenting the PA contract until a concrete Plateforme Agréée is selected and implemented.
+- **AccreditedPlatformSelection**: the Qitus reading of candidate PA readiness, including documentation, sandbox, webhooks, formats, proof export, pricing and e-reporting scope.
+- **AccreditedPlatformSandboxAdapter**: the strict internal PA sandbox Adapter that exercises duplicate, rejected, cancelled, invalid XML and missing visual cases without claiming legal compliance.
+- **EInvoiceProviderContractTestKit**: the provider-agnostic contract test Module that validates connect, callback, webhook, sync, payload download, status acknowledgement and disconnect.
 - **EInvoiceProviderConnection**: the company-level PA connection state, including non-secret provider ids, mandate status, last sync, last status refresh and safe capabilities.
 - **EInvoiceLifecycle**: the Module that translates provider invoice statuses into Qitus invoice states without creating accounting entries.
 - **EInvoiceAuditTrail**: the reviewable trace of PA webhooks, syncs, stored XML, provider status changes, drafts and accounting approval.

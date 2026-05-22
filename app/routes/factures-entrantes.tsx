@@ -23,6 +23,9 @@ export default function FacturesEntrantes() {
       <Main title="Factures entrantes" subtitle="Factures électroniques fournisseurs et brouillons comptables">
         {query.success ? <div className="alert blue"><strong>{query.success}</strong></div> : null}
         {query.error ? <div className="alert red"><strong>{query.error}</strong></div> : null}
+        <div className="alert orange">
+          <strong>Conformité PA.</strong> Les factures uploadées, mock ou sandbox sont exploitables dans Qitus, mais seules les factures reçues via une PA réelle validée seront marquées comme réception conforme.
+        </div>
         <div className="kpi-grid">
           <KpiCard label="Factures" value={String(invoices.length)} hint="Exercice actif" />
           <KpiCard label="À traiter" value={String(pending)} hint="Parsing, matching ou brouillon" />
@@ -122,6 +125,8 @@ function formatLabel(value: string) {
 
 function sourceLabel(invoice: { source: string; providerLabel?: string | null }) {
   if (invoice.source === "UPLOAD") return "Upload manuel";
+  if (invoice.providerLabel?.toLowerCase().includes("sandbox")) return "Sandbox Qitus";
+  if (invoice.providerLabel?.toLowerCase().includes("mock")) return "Provider mock";
   return invoice.providerLabel ? `PA ${invoice.providerLabel}` : "Provider PA";
 }
 

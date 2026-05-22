@@ -34,6 +34,8 @@
     "validate:e-invoice-provider-mock": "tsx scripts/validate-e-invoice-provider-mock.ts",
     "validate:e-invoice-pa-readiness": "tsx scripts/validate-e-invoice-pa-readiness.ts",
     "validate:e-invoice-pa-end-user": "tsx scripts/validate-e-invoice-pa-end-user.ts",
+    "validate:e-invoice-pa-sandbox": "tsx scripts/validate-e-invoice-pa-sandbox.ts",
+    "validate:e-invoice-provider-contract": "tsx scripts/validate-e-invoice-provider-contract.ts",
     "validate:chat-billing": "tsx scripts/validate-chat-billing.ts",
     "validate:end-user": "playwright test -c playwright.config.ts",
     "prisma:generate": "prisma generate",

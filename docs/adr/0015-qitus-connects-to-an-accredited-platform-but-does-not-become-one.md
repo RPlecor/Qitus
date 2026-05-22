@@ -17,10 +17,13 @@ French electronic invoicing requires reception through a Plateforme Agréée for
 - Qitus stores PA-safe identifiers, mandate status, provider invoice status, source XML and provider proof metadata.
 - Webhooks are verified, idempotent and auditable through `WebhookEvent`.
 - Receiving a PA invoice never creates accounting entries automatically; only user approval of an `EInvoiceAccountingDraft` creates `JournalEntry.source = E_INVOICE`.
+- Mock, sandbox and generic PA Adapters must never report `receptionCompliant=true`.
+- A real PA Adapter must pass `EInvoiceProviderContractTestKit` before being advertised as compliant.
 
 ## Consequences
 
 - Uploading Factur-X/UBL/CII remains useful, but it is not marked as PA-compliant reception.
 - The expert dossier can distinguish manual structured evidence from PA-received invoices.
 - Adding Qonto, jefacture, Pennylane, Sage or another PA means adding an Adapter behind the existing Seam, not changing accounting flows.
+- `AccreditedPlatformSandboxAdapter` can exercise provider-like edge cases, but its invoices remain non-compliant sandbox evidence.
 - Emission, e-reporting, payment reporting and certified PA status remain out of scope.

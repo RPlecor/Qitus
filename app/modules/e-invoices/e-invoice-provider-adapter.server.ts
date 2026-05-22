@@ -2,7 +2,7 @@ import { createHmac } from "node:crypto";
 import { ExpectedRouteError } from "../route-errors.server";
 import { getRuntimeConfig, type RuntimeConfig } from "../runtime-config.server";
 
-export type EInvoiceProviderModeLabel = "disabled" | "mock" | "generic_pa" | "live";
+export type EInvoiceProviderModeLabel = "disabled" | "mock" | "sandbox" | "generic_pa" | "live";
 export type EInvoiceProviderMandateStatus = "UNKNOWN" | "PENDING" | "ACTIVE" | "EXPIRED" | "REVOKED" | "ERROR";
 export type EInvoiceProviderLifecycleStatus = "RECEIVED" | "AVAILABLE" | "READ" | "MATCHED" | "ACCOUNTED" | "REJECTED" | "CANCELLED" | "ERROR";
 
@@ -130,6 +130,77 @@ export class MockEInvoiceProviderAdapter implements EInvoiceProviderAdapter {
   }
 }
 
+export class AccreditedPlatformSandboxAdapter implements EInvoiceProviderAdapter {
+  async getStatus(): Promise<EInvoiceProviderStatus> {
+    return {
+      provider: "sandbox",
+      providerLabel: "Sandbox PA Qitus",
+      mode: "sandbox",
+      configured: true,
+      receptionCompliant: false,
+      safeMessage: "Sandbox PA stricte prête : elle teste les cas provider sans valoir réception PA réelle.",
+      missingConfig: [],
+      capabilities: ["incoming_invoices", "structured_payloads", "webhook_test", "status_acknowledgement", "edge_cases"],
+    };
+  }
+
+  async createConnection(): Promise<EInvoiceProviderConnectionResult> {
+    return {
+      redirectUrl: null,
+      providerConnectionId: "sandbox-pa-connection",
+      providerCompanyId: "sandbox-pa-company",
+      status: "ACTIVE",
+      mandateStatus: "ACTIVE",
+      safeLabel: "Sandbox PA Qitus",
+      capabilities: ["incoming_invoices", "structured_payloads", "webhook_test", "status_acknowledgement", "edge_cases"],
+      safeMetadata: {
+        environment: "sandbox",
+        receptionCompliant: false,
+        cases: ["duplicate", "rejected", "cancelled", "invalid_xml", "missing_visual"],
+      },
+    };
+  }
+
+  async completeCallback(): Promise<EInvoiceProviderCallbackResult> {
+    return {
+      providerConnectionId: "sandbox-pa-connection",
+      providerCompanyId: "sandbox-pa-company",
+      status: "ACTIVE",
+      mandateStatus: "ACTIVE",
+      safeLabel: "Sandbox PA Qitus",
+      safeMetadata: { environment: "sandbox" },
+    };
+  }
+
+  async listIncomingInvoices() {
+    return [
+      sandboxInvoice("sandbox-ubl-ovh-2025-001", "SANDBOX-OVH-2025-001", "AVAILABLE"),
+      sandboxInvoice("sandbox-ubl-ovh-2025-001", "SANDBOX-OVH-2025-001", "AVAILABLE", { duplicateCase: true }),
+      sandboxInvoice("sandbox-rejected-2025-002", "SANDBOX-REJECTED-2025-002", "REJECTED"),
+      sandboxInvoice("sandbox-cancelled-2025-003", "SANDBOX-CANCELLED-2025-003", "CANCELLED"),
+      invalidSandboxInvoice(),
+    ];
+  }
+
+  async downloadInvoicePayload(providerInvoiceId: string) {
+    const invoice = (await this.listIncomingInvoices()).find((item) => item.sourceId === providerInvoiceId);
+    if (!invoice) throw new ExpectedRouteError("Facture sandbox PA introuvable.", 404);
+    return invoice;
+  }
+
+  async acknowledgeInvoiceStatus() {}
+
+  async disconnect() {}
+
+  async verifyWebhook(request: Request, rawBody: string) {
+    return verifyConfiguredSignature(request, rawBody, getRuntimeConfig().eInvoiceProviderWebhookSecret);
+  }
+
+  parseWebhook(rawBody: string): EInvoiceProviderWebhookPayload {
+    return parseProviderWebhookPayload(rawBody);
+  }
+}
+
 export class DisabledEInvoiceProviderAdapter implements EInvoiceProviderAdapter {
   async getStatus(): Promise<EInvoiceProviderStatus> {
     return {
@@ -229,6 +300,7 @@ export class GenericAccreditedPlatformAdapter implements EInvoiceProviderAdapter
 export function createEInvoiceProviderAdapter(config: RuntimeConfig = getRuntimeConfig()): EInvoiceProviderAdapter {
   const provider = config.eInvoiceProvider;
   if (provider === "mock") return new MockEInvoiceProviderAdapter();
+  if (provider === "sandbox") return new AccreditedPlatformSandboxAdapter();
   if (provider === "disabled") return new DisabledEInvoiceProviderAdapter();
   return new GenericAccreditedPlatformAdapter(config);
 }
@@ -277,6 +349,54 @@ function mockInvoice(): EInvoiceProviderInvoice {
       channel: "mock_pa",
     },
     providerMetadata: { sandbox: true },
+  };
+}
+
+function sandboxInvoice(sourceId: string, invoiceNumber: string, status: EInvoiceProviderLifecycleStatus, metadata: Record<string, unknown> = {}): EInvoiceProviderInvoice {
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<Invoice xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2" xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2">
+  <cbc:ID>${invoiceNumber}</cbc:ID>
+  <cbc:IssueDate>2025-04-15</cbc:IssueDate>
+  <cbc:DocumentCurrencyCode>EUR</cbc:DocumentCurrencyCode>
+  <cac:AccountingSupplierParty><cac:Party><cac:PartyLegalEntity><cbc:RegistrationName>Sandbox Fournisseur</cbc:RegistrationName><cbc:CompanyID>12345678900011</cbc:CompanyID></cac:PartyLegalEntity></cac:Party></cac:AccountingSupplierParty>
+  <cac:AccountingCustomerParty><cac:Party><cac:PartyLegalEntity><cbc:RegistrationName>Qitus Sandbox</cbc:RegistrationName></cac:PartyLegalEntity></cac:Party></cac:AccountingCustomerParty>
+  <cac:TaxTotal><cbc:TaxAmount currencyID="EUR">10.00</cbc:TaxAmount><cac:TaxSubtotal><cbc:TaxableAmount currencyID="EUR">50.00</cbc:TaxableAmount><cbc:TaxAmount currencyID="EUR">10.00</cbc:TaxAmount><cac:TaxCategory><cbc:Percent>20</cbc:Percent></cac:TaxCategory></cac:TaxSubtotal></cac:TaxTotal>
+  <cac:LegalMonetaryTotal><cbc:TaxExclusiveAmount currencyID="EUR">50.00</cbc:TaxExclusiveAmount><cbc:TaxInclusiveAmount currencyID="EUR">60.00</cbc:TaxInclusiveAmount><cbc:PayableAmount currencyID="EUR">60.00</cbc:PayableAmount></cac:LegalMonetaryTotal>
+</Invoice>`;
+  return {
+    sourceId,
+    filename: `${sourceId}.xml`,
+    mimeType: "application/xml",
+    bytes: Buffer.from(xml, "utf8"),
+    providerStatus: status,
+    providerReceivedAt: new Date("2025-04-16T09:00:00.000Z"),
+    providerProof: {
+      provider: "sandbox",
+      providerInvoiceId: sourceId,
+      status,
+      receivedAt: "2025-04-16T09:00:00.000Z",
+      channel: "qitus_sandbox_pa",
+    },
+    providerMetadata: { sandbox: true, missingVisual: true, ...metadata },
+  };
+}
+
+function invalidSandboxInvoice(): EInvoiceProviderInvoice {
+  return {
+    sourceId: "sandbox-invalid-xml-2025-004",
+    filename: "sandbox-invalid-xml-2025-004.xml",
+    mimeType: "application/xml",
+    bytes: Buffer.from("<Invoice><cbc:ID>INVALID", "utf8"),
+    providerStatus: "ERROR",
+    providerReceivedAt: new Date("2025-04-16T10:00:00.000Z"),
+    providerProof: {
+      provider: "sandbox",
+      providerInvoiceId: "sandbox-invalid-xml-2025-004",
+      status: "ERROR",
+      receivedAt: "2025-04-16T10:00:00.000Z",
+      channel: "qitus_sandbox_pa",
+    },
+    providerMetadata: { sandbox: true, invalidXmlCase: true },
   };
 }
 
