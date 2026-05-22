@@ -1,4 +1,5 @@
 import type { Import, ImportStatus } from "@prisma/client";
+import { canRetryCategorization } from "./import-actions.server";
 import { ImportStore } from "./import-store.server";
 
 export type ImportSummary = {
@@ -50,7 +51,7 @@ export class ImportHistory {
       actions: {
         needsMapping: importRow.status === "NEEDS_MAPPING",
         canRetry: importRow.status === "ERROR",
-        canRetryCategorization: importRow.status === "ERROR" && importRow.parsedRows > 0,
+        canRetryCategorization: canRetryCategorization(importRow),
       },
     };
   }

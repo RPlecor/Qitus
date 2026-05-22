@@ -15,7 +15,16 @@ describe("ImportHistory", () => {
       currentStep: "complete",
       progress: 100,
       statusKind: "warn",
+      actions: {
+        canRetryCategorization: true,
+      },
     });
+  });
+
+  it("does not expose categorization retry for an empty review import", () => {
+    const summary = new ImportHistory().summarizeImport(importRow({ status: "REVIEW", parsedRows: 0 }));
+
+    expect(summary.actions.canRetryCategorization).toBe(false);
   });
 
   it.each([

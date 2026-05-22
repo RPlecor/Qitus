@@ -61,7 +61,7 @@ export default function Imports() {
                   <div className="row-actions">
                     {importRow.actions.needsMapping ? <Link className="btn btn-sm" to={`/imports/${importRow.id}/mapping`}>Mapping</Link> : null}
                     {importRow.actions.canRetry ? <Form method="post" action={`/api/imports/${importRow.id}/retry`}><button className="btn btn-sm" type="submit">Retry</button></Form> : null}
-                    {importRow.actions.canRetryCategorization ? <Form method="post" action={`/api/imports/${importRow.id}/retry-categorization`}><button className="btn btn-sm" type="submit">Retry IA</button></Form> : null}
+                    {importRow.actions.canRetryCategorization ? <Form method="post" action={`/api/imports/${importRow.id}/retry-categorization`}><button className="btn btn-sm" type="submit">Relancer la catégorisation</button></Form> : null}
                   </div>
                   {importRow.errorMessage ? <div className="err-short">{importRow.errorMessage}</div> : null}
                 </td>

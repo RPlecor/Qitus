@@ -19,6 +19,22 @@ describe("ImportOrchestrator status", () => {
       canRetry: true,
       canRetryCategorization: true,
     });
+
+    expect(summarizeImportStatus(importRow({
+      status: "REVIEW",
+      parsedRows: 42,
+      reviewRows: 42,
+    })).actions).toEqual({
+      needsMapping: false,
+      canRetry: false,
+      canRetryCategorization: true,
+    });
+
+    expect(summarizeImportStatus(importRow({
+      status: "REVIEW",
+      parsedRows: 0,
+      reviewRows: 0,
+    })).actions.canRetryCategorization).toBe(false);
   });
 });
 

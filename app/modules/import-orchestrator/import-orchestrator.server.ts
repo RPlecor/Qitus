@@ -16,6 +16,7 @@ import {
   type ImportJobStep,
   type ImportRunner,
 } from "./import-executor.server";
+import { canRetryCategorization } from "./import-actions.server";
 import { ImportFileStore } from "./import-file-store.server";
 import { ImportSideEffects } from "./import-side-effects.server";
 import { ImportStore } from "./import-store.server";
@@ -262,7 +263,7 @@ export function summarizeImportStatus(importRow: Import): ImportStatusOverview {
     actions: {
       needsMapping: importRow.status === "NEEDS_MAPPING",
       canRetry: importRow.status === "ERROR",
-      canRetryCategorization: importRow.status === "ERROR" && importRow.parsedRows > 0,
+      canRetryCategorization: canRetryCategorization(importRow),
     },
   };
 }
