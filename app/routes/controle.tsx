@@ -7,7 +7,7 @@ import { ClosingAdjustmentCenter, type ClosingAdjustmentSummary } from "~/module
 import { requireCompanyWorkspace } from "~/modules/company-workspace/company-workspace.server";
 import { DocumentFreshnessCenter } from "~/modules/documents/document-freshness-center.server";
 import { EvidenceControlCenter } from "~/modules/evidence/evidence-control-center.server";
-import { AppShell, ButtonLink, KpiCard, Main } from "~/components/ui";
+import { AppShell, ButtonLink, KpiCard, Main, StatusPill, TableShell } from "~/components/ui";
 
 export async function loader(args: LoaderFunctionArgs) {
   const workspace = await requireCompanyWorkspace(args);
@@ -83,12 +83,13 @@ function ProposalSection({ proposals }: { proposals: ClosingAdjustmentSummary[] 
   return (
     <>
       <div className="sec-head"><h2>OD proposées</h2></div>
+      <TableShell>
       <table className="tbl">
         <thead><tr><th>Statut</th><th>Type</th><th>Libellé</th><th>Recalcul</th><th className="r">Montant</th><th></th></tr></thead>
         <tbody>
           {visible.map((proposal) => (
             <tr key={proposal.proposalKey}>
-              <td>{proposalStatusLabel(proposal.status)}</td>
+              <td><StatusPill label={proposalStatusLabel(proposal.status)} tone={proposal.status === "APPROVED" ? "ok" : proposal.status === "REJECTED" ? "error" : "warn"} /></td>
               <td>{kindLabel(proposal.kind)}</td>
               <td>{proposal.label}</td>
               <td>{proposal.staleReason ? "À recalculer" : `v${proposal.calculationVersion}`}</td>
@@ -96,9 +97,10 @@ function ProposalSection({ proposals }: { proposals: ClosingAdjustmentSummary[] 
               <td><Link className="btn btn-sm" to={`/controle/od/${encodeURIComponent(proposal.proposalKey)}`}>Voir</Link></td>
             </tr>
           ))}
-          {visible.length === 0 ? <tr><td colSpan={5} className="sub">Aucune OD déterministe proposée pour le moment.</td></tr> : null}
+          {visible.length === 0 ? <tr><td colSpan={6} className="sub">Aucune OD déterministe proposée pour le moment.</td></tr> : null}
         </tbody>
       </table>
+      </TableShell>
     </>
   );
 }
@@ -108,6 +110,7 @@ function DocumentFreshnessSection({ freshness }: { freshness: { staleCount: numb
   return (
     <>
       <div className="sec-head"><h2>Documents</h2></div>
+      <TableShell>
       <table className="tbl">
         <thead><tr><th>Fichier</th><th>État</th><th>Raison</th><th></th></tr></thead>
         <tbody>
@@ -121,6 +124,7 @@ function DocumentFreshnessSection({ freshness }: { freshness: { staleCount: numb
           ))}
         </tbody>
       </table>
+      </TableShell>
     </>
   );
 }
@@ -134,7 +138,7 @@ function ControlSection({ title, empty, controls }: { title: string; empty: stri
           <div key={control.code} className={`card control-card ${control.severity}`}>
             <div>
               <div className="control-title">
-                <span className={control.severity === "blocking" ? "st-error" : "st-warn"}>{control.severity === "blocking" ? "Bloquant" : "Avertissement"}</span>
+                <StatusPill label={control.severity === "blocking" ? "Bloquant" : "Avertissement"} tone={control.severity === "blocking" ? "error" : "warn"} />
                 <strong>{control.title}</strong>
               </div>
               <p className="sub">{control.detail}</p>
@@ -166,12 +170,13 @@ function HandledIssues({ issues }: { issues: Array<{ issueKey: string; controlCo
   return (
     <>
       <div className="sec-head"><h2>Déjà traités</h2></div>
+      <TableShell>
       <table className="tbl">
         <thead><tr><th>Statut</th><th>Contrôle</th><th>Élément</th><th>Note</th><th></th></tr></thead>
         <tbody>
           {issues.map((issue) => (
             <tr key={issue.issueKey}>
-              <td>{issue.status === "RESOLVED" ? "Résolu" : "Ignoré"}</td>
+              <td><StatusPill label={issue.status === "RESOLVED" ? "Résolu" : "Ignoré"} tone={issue.status === "RESOLVED" ? "ok" : "neutral"} /></td>
               <td>{issue.controlTitle}</td>
               <td>{issue.evidence.label ?? issue.issueKey}</td>
               <td className="sub">{issue.note ?? "—"}</td>
@@ -180,6 +185,7 @@ function HandledIssues({ issues }: { issues: Array<{ issueKey: string; controlCo
           ))}
         </tbody>
       </table>
+      </TableShell>
     </>
   );
 }

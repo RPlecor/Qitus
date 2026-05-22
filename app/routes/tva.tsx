@@ -1,6 +1,6 @@
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
 import { Form, Link, useLoaderData } from "@remix-run/react";
-import { AppShell, Main } from "~/components/ui";
+import { AppShell, KpiCard, Main, StatusPill, TableShell } from "~/components/ui";
 import { requireCompanyWorkspace } from "~/modules/company-workspace/company-workspace.server";
 import { VatControlCenter } from "~/modules/vat/vat-control-center.server";
 import { VatDeclarationCenter } from "~/modules/vat/vat-declaration-center.server";
@@ -37,24 +37,22 @@ export default function TvaPage() {
         {ledgerReadiness.status !== "ok" ? <VatReadinessAlert readiness={ledgerReadiness} /> : null}
 
         <div className="kpi-grid">
-          <div className="kpi"><div className="kpi-label">Régime</div><span className="kpi-val">{position.regime}</span><div className="sub">{position.exigibility}</div></div>
-          <div className="kpi"><div className="kpi-label">TVA collectée</div><span className="kpi-val">{formatEuro(position.totals.collected)}</span><div className="sub">44571</div></div>
-          <div className="kpi"><div className="kpi-label">TVA déductible</div><span className="kpi-val">{formatEuro(position.totals.deductible)}</span><div className="sub">44566</div></div>
-          <div className="kpi"><div className="kpi-label">Net</div><span className="kpi-val">{formatEuro(position.totals.net)}</span><div className="sub">{settlement.label ?? settlement.kind}</div></div>
+          <KpiCard label="Régime" value={position.regime} hint={position.exigibility} />
+          <KpiCard label="TVA collectée" value={formatEuro(position.totals.collected)} hint="44571" />
+          <KpiCard label="TVA déductible" value={formatEuro(position.totals.deductible)} hint="44566" />
+          <KpiCard label="Net" value={formatEuro(position.totals.net)} hint={settlement.label ?? settlement.kind} />
         </div>
 
-        <Form method="get" className="card">
-          <div className="form-row">
-            <div className="field"><label>Début</label><input type="date" name="dateFrom" defaultValue={query.dateFrom ?? position.periodStart} /></div>
-            <div className="field"><label>Fin</label><input type="date" name="dateTo" defaultValue={query.dateTo ?? position.periodEnd} /></div>
-            <div className="field"><label>&nbsp;</label><button className="btn" type="submit">Filtrer</button></div>
-          </div>
+        <Form method="get" className="card filter-bar">
+          <div className="field"><label>Début</label><input type="date" name="dateFrom" defaultValue={query.dateFrom ?? position.periodStart} /></div>
+          <div className="field"><label>Fin</label><input type="date" name="dateTo" defaultValue={query.dateTo ?? position.periodEnd} /></div>
+          <button className="btn" type="submit">Filtrer</button>
         </Form>
 
         <section className="panel">
           <div className="row between">
             <h2>Contrôles TVA</h2>
-            <span className={review.status === "blocked" ? "st-error" : review.status === "ready" ? "st-done" : "st-warn"}>{statusLabel(review.status)}</span>
+            <StatusPill label={statusLabel(review.status)} tone={review.status === "blocked" ? "error" : review.status === "ready" ? "ok" : "warn"} />
           </div>
           {queue.issues.length > 0 ? <p className="sub">{queue.issues.length} point{queue.issues.length > 1 ? "s" : ""} à traiter dans la revue guidée.</p> : null}
           <ul className="evidence-list">
@@ -85,16 +83,19 @@ export default function TvaPage() {
 
         <section className="panel">
           <h2>Comptes TVA</h2>
+          <TableShell>
           <table className="tbl">
             <thead><tr><th>Compte</th><th>Libellé</th><th>Débit</th><th>Crédit</th><th>Solde</th></tr></thead>
             <tbody>
-              {position.accounts.map((account) => <tr key={account.account}><td className="cpt">{account.account}</td><td>{account.label}</td><td>{formatEuro(account.debit)}</td><td>{formatEuro(account.credit)}</td><td>{formatEuro(account.balance)}</td></tr>)}
+              {position.accounts.map((account) => <tr key={account.account}><td className="cpt">{account.account}</td><td>{account.label}</td><td className="r mono">{formatEuro(account.debit)}</td><td className="r mono">{formatEuro(account.credit)}</td><td className="r mono">{formatEuro(account.balance)}</td></tr>)}
             </tbody>
           </table>
+          </TableShell>
         </section>
 
         <section className="panel">
           <h2>Déclarations brouillon</h2>
+          <TableShell>
           <table className="tbl">
             <thead><tr><th>Type</th><th>Période</th><th>Statut</th><th>Fraîcheur</th><th>Net</th><th></th></tr></thead>
             <tbody>
@@ -111,6 +112,7 @@ export default function TvaPage() {
               {declarations.length === 0 ? <tr><td colSpan={6} className="sub">Aucune déclaration TVA générée.</td></tr> : null}
             </tbody>
           </table>
+          </TableShell>
         </section>
       </Main>
     </AppShell>
@@ -131,13 +133,15 @@ function VatReadinessAlert({ readiness }: { readiness: { status: string; title: 
 
 function VatBucketTable({ rows }: { rows: Array<{ key: string; baseHt: number; deductible: number; collected: number; reverseChargeDue: number; net: number }> }) {
   return (
+    <TableShell>
     <table className="tbl">
-      <thead><tr><th>Clé</th><th>Base HT</th><th>Déductible</th><th>Collectée</th><th>Net</th></tr></thead>
+      <thead><tr><th>Clé</th><th className="r">Base HT</th><th className="r">Déductible</th><th className="r">Collectée</th><th className="r">Net</th></tr></thead>
       <tbody>
-        {rows.map((row) => <tr key={row.key}><td>{row.key}</td><td>{formatEuro(row.baseHt)}</td><td>{formatEuro(row.deductible)}</td><td>{formatEuro(row.collected + row.reverseChargeDue)}</td><td>{formatEuro(row.net)}</td></tr>)}
+        {rows.map((row) => <tr key={row.key}><td>{row.key}</td><td className="r mono">{formatEuro(row.baseHt)}</td><td className="r mono">{formatEuro(row.deductible)}</td><td className="r mono">{formatEuro(row.collected + row.reverseChargeDue)}</td><td className="r mono">{formatEuro(row.net)}</td></tr>)}
         {rows.length === 0 ? <tr><td colSpan={5} className="sub">Aucune ligne TVA sur la période.</td></tr> : null}
       </tbody>
     </table>
+    </TableShell>
   );
 }
 

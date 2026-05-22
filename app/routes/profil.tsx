@@ -1,6 +1,6 @@
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
 import { Form, Link, useLoaderData } from "@remix-run/react";
-import { AppShell, Main } from "~/components/ui";
+import { AppShell, Main, TableShell } from "~/components/ui";
 import { requireCompanyWorkspace } from "~/modules/company-workspace/company-workspace.server";
 import { CompanyProfile } from "~/modules/company-workspace/company-profile.server";
 import { PrivacyCenter } from "~/modules/privacy/privacy-center.server";
@@ -23,7 +23,7 @@ export default function Profil() {
     <AppShell active="profil">
       <Main title="Profil" subtitle="Informations entreprise">
         {ledgerReadiness.status !== "ok" ? (
-          <div className={`alert ${ledgerReadiness.status === "action_required" ? "orange" : "blue"}`} style={{ maxWidth: 760 }}>
+          <div className={`alert ${ledgerReadiness.status === "action_required" ? "orange" : "blue"}`} >
             <strong>{ledgerReadiness.title}</strong>
             <span>{ledgerReadiness.message}</span>
             <div className="row-actions">
@@ -31,7 +31,7 @@ export default function Profil() {
             </div>
           </div>
         ) : null}
-        <Form className="card" method="post" action="/api/companies/current" style={{ maxWidth: 760 }}>
+        <Form className="card" method="post" action="/api/companies/current" >
           <div className="form-row">
             <div className="field"><label>Nom</label><input name="name" defaultValue={company.name} /></div>
             <div className="field">
@@ -74,7 +74,7 @@ export default function Profil() {
           </div>
           <button className="btn btn-p" type="submit">Enregistrer</button>
         </Form>
-        <section className="card" style={{ maxWidth: 760 }}>
+        <section className="card" >
           <h2>RGPD et portabilité</h2>
           <p className="sub">L'export contient les données métier, l'activité, les documents référencés, le chat et le billing. L'anonymisation conserve les montants et écritures pour l'audit comptable.</p>
           <div className="form-actions">
@@ -88,21 +88,21 @@ export default function Profil() {
               <button className="btn" type="submit">Demander suppression</button>
             </Form>
           </div>
-          <div className="table-wrap">
-            <table>
+          <TableShell>
+            <table className="tbl">
               <thead><tr><th>Demande</th><th>Statut</th><th>Date</th></tr></thead>
               <tbody>
                 {privacy.requests.map((request) => (
                   <tr key={request.id}>
                     <td>{request.kind}</td>
                     <td>{request.status}</td>
-                    <td>{new Date(request.requestedAt).toLocaleString("fr-FR")}</td>
+                    <td className="mono">{new Date(request.requestedAt).toLocaleString("fr-FR")}</td>
                   </tr>
                 ))}
                 {privacy.requests.length === 0 ? <tr><td colSpan={3} className="sub">Aucune demande RGPD.</td></tr> : null}
               </tbody>
             </table>
-          </div>
+          </TableShell>
         </section>
       </Main>
     </AppShell>

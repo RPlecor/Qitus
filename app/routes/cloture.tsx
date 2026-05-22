@@ -2,7 +2,7 @@ import { json, redirect, type ActionFunctionArgs, type LoaderFunctionArgs } from
 import { Form, Link, useLoaderData } from "@remix-run/react";
 import { AnnualClosingCenter } from "~/modules/annual-closing/annual-closing-center.server";
 import { requireCompanyWorkspace } from "~/modules/company-workspace/company-workspace.server";
-import { AppShell, KpiCard, Main } from "~/components/ui";
+import { AppShell, KpiCard, Main, StatusPill, TableShell } from "~/components/ui";
 import { ExpertReviewShareCenter } from "~/modules/expert-review/expert-review-share-center.server";
 import { ExpertReviewWorkflow } from "~/modules/expert-dossier/expert-review-workflow.server";
 
@@ -62,27 +62,30 @@ export default function Cloture() {
             <p className="sub">Aucune validation expert-comptable enregistrée.</p>
           )}
           {createdShareUrl ? <div className="alert blue">Lien créé : <a href={createdShareUrl}>{createdShareUrl}</a></div> : null}
-          <Form method="post" action="/cloture" className="form-row">
+          <Form method="post" action="/cloture" className="filter-bar">
             <div className="field"><label>Libellé</label><input name="label" defaultValue="Revue expert-comptable" /></div>
-            <div className="field"><label>Expiration</label><input name="expiresInDays" defaultValue="30" /></div>
-            <button className="btn" type="submit">Créer un lien</button>
+            <div className="field narrow"><label>Expiration (j.)</label><input name="expiresInDays" defaultValue="30" /></div>
+            <button className="btn btn-p" type="submit">Créer un lien</button>
           </Form>
           {shareLinks.length > 0 ? (
+            <TableShell>
             <table className="tbl">
               <tbody>
                 {shareLinks.map((link) => (
                   <tr key={link.id}>
                     <td>{link.label}</td>
-                    <td>{link.reviewedAt ? `Validé par ${link.reviewerName}` : "En attente"}</td>
+                    <td><StatusPill label={link.reviewedAt ? `Validé par ${link.reviewerName}` : "En attente"} tone={link.reviewedAt ? "ok" : "warn"} /></td>
                     <td>Expire le {formatDateTime(link.expiresAt)}</td>
-                    <td>{link.revokedAt ? "Révoqué" : "Actif"}</td>
+                    <td><StatusPill label={link.revokedAt ? "Révoqué" : "Actif"} tone={link.revokedAt ? "error" : "ok"} /></td>
                   </tr>
                 ))}
               </tbody>
             </table>
+            </TableShell>
           ) : null}
         </div>
 
+        <TableShell>
         <table className="tbl">
           <thead><tr><th>N°</th><th>Étape</th><th>Statut</th><th>Preuve</th><th>Action</th><th></th></tr></thead>
           <tbody>
@@ -90,7 +93,7 @@ export default function Cloture() {
               <tr key={step.code}>
                 <td className="mono">{step.index}</td>
                 <td><strong>{step.title}</strong><div className="sub">{step.detail}</div></td>
-                <td>{stepStatusLabel(step.status)}</td>
+                <td><StatusPill label={stepStatusLabel(step.status)} tone={stepStatusTone(step.status)} /></td>
                 <td className="sub">{step.evidence[0] ? `${step.evidence[0].label} : ${step.evidence[0].value}` : "—"}</td>
                 <td><Link className="btn btn-sm" to={step.action.href}>{step.action.label}</Link></td>
                 <td><Link className="btn btn-sm" to={`/cloture/${step.code}`}>Détail</Link></td>
@@ -98,6 +101,7 @@ export default function Cloture() {
             ))}
           </tbody>
         </table>
+        </TableShell>
       </Main>
     </AppShell>
   );
@@ -114,7 +118,7 @@ function ClosingAction({ overview }: { overview: { run: { status: string }; canC
   }
   if (overview.run.status === "CLOSED") {
     return (
-      <Form method="post" action="/api/cloture/reopen" className="inline-form">
+      <Form method="post" action="/api/cloture/reopen">
         <input type="hidden" name="reason" value="Réouverture depuis l'interface locale" />
         <button className="btn">Réouvrir</button>
       </Form>
@@ -136,4 +140,12 @@ function stepStatusLabel(status: string) {
   if (status === "BLOCKED") return "Bloqué";
   if (status === "READY") return "Prêt";
   return "À traiter";
+}
+
+function stepStatusTone(status: string): "ok" | "done" | "warn" | "error" | "neutral" {
+  if (status === "DONE") return "done";
+  if (status === "SKIPPED") return "neutral";
+  if (status === "BLOCKED") return "error";
+  if (status === "READY") return "ok";
+  return "warn";
 }

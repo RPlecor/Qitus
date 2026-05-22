@@ -1,6 +1,6 @@
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
 import { Form, Link, useLoaderData } from "@remix-run/react";
-import { AppShell, Main } from "~/components/ui";
+import { AppShell, KpiCard, Main } from "~/components/ui";
 import { UsageMeter } from "~/modules/billing/usage-meter.server";
 import { AccountingChatCenter } from "~/modules/chat/accounting-chat-center.server";
 import { ChatContextBuilder } from "~/modules/chat/chat-context-builder.server";
@@ -11,19 +11,18 @@ export async function loader(args: LoaderFunctionArgs) {
   const url = new URL(args.request.url);
   const conversationId = url.searchParams.get("conversationId");
   const center = new AccountingChatCenter();
-  const [conversations, selected, usage, context, readiness] = await Promise.all([
+  const [conversations, selected, context, readiness, usage] = await Promise.all([
     center.listConversations(workspace),
     conversationId ? center.getConversation(workspace, conversationId) : Promise.resolve(null),
-    new UsageMeter().getUsageSummary(workspace),
     new ChatContextBuilder().buildChatContext(workspace),
     center.getChatReadiness(workspace),
+    new UsageMeter().getUsageSummary(workspace),
   ]);
-  const documentFreshness = context.documentFreshness as { staleCount?: number };
-  return json({ conversations, selected, usage, readiness, references: context.references, documentStaleCount: documentFreshness.staleCount ?? 0 });
+  return json({ conversations, selected, readiness, references: context.references, usage });
 }
 
 export default function Chat() {
-  const { conversations, selected, usage, readiness, references, documentStaleCount } = useLoaderData<typeof loader>();
+  const { conversations, selected, readiness, references, usage } = useLoaderData<typeof loader>();
   const selectedId = selected?.conversation.id ?? "";
 
   return (
@@ -34,32 +33,30 @@ export default function Chat() {
           <span>{readiness.message} Provider : {readiness.provider} · modèle : {readiness.model}.</span>
         </div>
         <div className="kpi-grid">
-          <div className="kpi"><div className="kpi-label">Plan</div><span className="kpi-val">{usage.subscription.tier}</span></div>
-          <div className="kpi"><div className="kpi-label">IA ce mois</div><span className="kpi-val">{usage.usage.aiCalls}/{usage.subscription.limits.aiCallsPerMonth}</span></div>
-          <div className="kpi"><div className="kpi-label">Imports ce mois</div><span className="kpi-val">{usage.usage.imports}/{usage.subscription.limits.importsPerMonth}</span></div>
-          <div className="kpi"><div className="kpi-label">Documents</div><span className="kpi-val">{documentStaleCount ? "À régénérer" : "À jour"}</span></div>
+          <KpiCard label="IA ce mois" value={`${usage.usage.aiCalls}/${usage.subscription.limits.aiCallsPerMonth}`} hint="Quota du plan" />
+          <KpiCard label="Imports ce mois" value={`${usage.usage.imports}/${usage.subscription.limits.importsPerMonth}`} hint="Quota du plan" />
         </div>
-
-        <div className="form-row" style={{ alignItems: "start" }}>
-          <section className="card" style={{ minWidth: 260 }}>
-            <h2>Conversations</h2>
-            <div className="row-actions" style={{ flexDirection: "column", alignItems: "stretch" }}>
-              <Link className="btn btn-sm" to="/chat">Nouvelle conversation</Link>
+        <div className="chat-layout">
+          <aside className="chat-sidebar">
+            <Link className="btn btn-p chat-new-btn" to="/chat">+ Nouvelle conversation</Link>
+            <nav className="chat-history">
               {conversations.map((conversation) => (
-                <Link key={conversation.id} className={`btn btn-sm ${conversation.id === selectedId ? "btn-p" : ""}`} to={`/chat?conversationId=${conversation.id}`}>
+                <Link key={conversation.id} className={`chat-history-item ${conversation.id === selectedId ? "active" : ""}`} to={`/chat?conversationId=${conversation.id}`}>
                   {conversation.title}
                 </Link>
               ))}
               {conversations.length === 0 ? <span className="sub">Aucun historique.</span> : null}
-            </div>
-          </section>
+            </nav>
+          </aside>
 
-          <section className="card" style={{ flex: 1 }}>
-            <h2>Conversation</h2>
+          <section className="chat-main">
             {selected ? (
-              <Form method="post" action={`/api/chat/conversations/${selected.conversation.id}/archive`} className="form-actions">
-                <button className="btn btn-sm" type="submit">Archiver</button>
-              </Form>
+              <div className="chat-main-head">
+                <h2>{selected.conversation.title}</h2>
+                <Form method="post" action={`/api/chat/conversations/${selected.conversation.id}/archive`}>
+                  <button className="btn btn-sm" type="submit">Archiver</button>
+                </Form>
+              </div>
             ) : null}
             <div className="chat-thread">
               {selected?.messages.map((message) => (
@@ -68,23 +65,21 @@ export default function Chat() {
                   <p>{message.content}</p>
                 </div>
               ))}
-              {!selected ? <p className="sub">Posez une question sur la clôture, les transactions, les OD ou les documents.</p> : null}
+              {!selected ? (
+                <div className="chat-empty">
+                  <p className="sub">Posez une question sur la clôture, les transactions, les OD ou les documents.</p>
+                  <p className="sub mono">{readiness.provider} · {readiness.model}</p>
+                </div>
+              ) : null}
             </div>
-            <Form method="post" action="/api/chat/message" className="form-card">
+            <Form method="post" action="/api/chat/message" className="chat-input">
               <input type="hidden" name="conversationId" value={selectedId} />
-              <label>
-                Message
-                <textarea name="message" rows={4} required placeholder="Pourquoi la clôture est bloquée ?" />
-              </label>
-              <div className="form-actions">
-                <button className="btn btn-p" type="submit">Envoyer</button>
-                <Link className="btn" to="/abonnement">Voir usage</Link>
-              </div>
+              <textarea name="message" rows={2} required placeholder="Pourquoi la clôture est bloquée ?" />
+              <button className="btn btn-p" type="submit">Envoyer</button>
             </Form>
-            <div className="alert">
-              <strong>Références utilisées</strong>
-              <span>{references.map((reference) => `${reference.label} (${reference.href})`).join(" · ")}</span>
-            </div>
+            {references.length > 0 ? (
+              <div className="chat-refs sub">Références : {references.map((reference) => reference.label).join(" · ")}</div>
+            ) : null}
           </section>
         </div>
       </Main>

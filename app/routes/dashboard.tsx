@@ -25,59 +25,98 @@ export async function loader(args: LoaderFunctionArgs) {
 
 export default function Dashboard() {
   const { companyName, fiscalYearLabel, demoMessage, overview, consistency } = useLoaderData<typeof loader>();
+  const issueCount = consistency.checks.filter((check) => !check.ok).length;
 
   return (
     <AppShell active="dashboard">
-      <Main title="Bonjour" subtitle={`${companyName} · Exercice ${fiscalYearLabel}`} action={<ButtonLink to="/imports" primary>Importer des transactions</ButtonLink>}>
+      <Main
+        title={companyName}
+        subtitle={`Exercice ${fiscalYearLabel}`}
+        action={<ButtonLink to="/imports" primary>Importer des transactions</ButtonLink>}
+      >
         {demoMessage ? <div className="alert blue">{demoMessage}</div> : null}
-        <div className={`alert ${consistency.status === "consistent" ? "blue" : "orange"}`}>
-          <strong>{consistency.label}</strong>
-          <span>{consistency.checks.filter((check) => !check.ok).length} point à revoir</span>
-        </div>
-        {overview.alerts.map((alert) => (
-          <div key={`${alert.type}-${alert.message}`} className={`alert ${alert.tone}`}>{alert.message}</div>
-        ))}
-        {overview.changeImpacts?.mode === "shadow" && overview.changeImpacts.impacts.length > 0 ? (
-          <div className="card impact-card">
-            <div className="sec-head">
-              <h2>Impacts à traiter</h2>
-              <span className="sub">Diagnostic en shadow mode · {overview.changeImpacts.performanceBudget.durationMs} ms</span>
-            </div>
-            <div className="impact-list">
-              {overview.changeImpacts.impacts.slice(0, 3).map((impact) => (
-                <div key={impact.code} className={`alert ${impact.severity === "blocking" ? "red" : "orange"}`}>
-                  <span>
-                    <strong>{impact.title}</strong>
-                    <br />
-                    {impact.message}
-                  </span>
-                  <Link className="btn btn-sm" to={impact.primaryAction.href}>{impact.primaryAction.label}</Link>
-                </div>
-              ))}
-            </div>
+
+        {/* ── Alertes — groupées dans un panel compact ── */}
+        {(overview.alerts.length > 0 || issueCount > 0) ? (
+          <div className="dash-notices">
+            {issueCount > 0 ? (
+              <div className="notice-item notice-warn">
+                <span className="notice-dot warn" />
+                <span>{consistency.label} — <strong>{issueCount} point{issueCount > 1 ? "s" : ""} à revoir</strong></span>
+              </div>
+            ) : (
+              <div className="notice-item notice-ok">
+                <span className="notice-dot ok" />
+                <span>{consistency.label}</span>
+              </div>
+            )}
+            {overview.alerts.map((alert) => (
+              <div key={`${alert.type}-${alert.message}`} className={`notice-item notice-${alert.tone}`}>
+                <span className={`notice-dot ${alert.tone}`} />
+                <span>{alert.message}</span>
+              </div>
+            ))}
           </div>
         ) : null}
+
+        {/* ── KPI financiers — première ligne ── */}
+        <div className="dash-section-label">Financier</div>
         <div className="kpi-grid">
           <KpiCard label="Chiffre d'affaires" value={formatEuro(overview.kpis.revenue)} hint="Écritures générées" />
           <KpiCard label="Charges" value={formatEuro(overview.kpis.expenses)} hint="Hors clôture" />
           <KpiCard label="Résultat" value={formatEuro(overview.kpis.result)} hint="Avant IS" />
           <KpiCard label="Trésorerie" value={formatEuro(overview.kpis.cash)} hint="Compte 5121" />
+        </div>
+
+        {/* ── KPI opérationnels — seconde ligne ── */}
+        <div className="dash-section-label">Opérationnel</div>
+        <div className="kpi-grid">
           <KpiCard label="À vérifier" value={String(overview.transactionState.reviewCount)} hint="Transactions en revue" />
           <KpiCard label="Documents" value={overview.documentFreshness?.staleCount ? "À régénérer" : "À jour"} hint={`${overview.documentFreshness?.staleCount ?? 0} obsolète`} />
           <KpiCard label="OD brouillon" value={String(overview.closingAdjustments?.draft ?? 0)} hint={`${overview.closingAdjustments?.approved ?? 0} validée`} />
           <KpiCard label="Couverture EC" value={overview.coverage ? `${overview.coverage.score}%` : "—"} hint={overview.coverage?.label ?? "Non calculée"} />
         </div>
+
+        {/* ── Impacts (ChangeImpactCenter shadow mode) ── */}
+        {overview.changeImpacts?.mode === "shadow" && overview.changeImpacts.impacts.length > 0 ? (
+          <div className="card impact-card">
+            <div className="sec-head">
+              <h2>Impacts à traiter</h2>
+              <span className="sub">{overview.changeImpacts.performanceBudget.durationMs} ms</span>
+            </div>
+            {overview.changeImpacts.impacts.slice(0, 3).map((impact) => (
+              <div key={impact.code} className={`impact-row ${impact.severity}`}>
+                <div className="impact-content">
+                  <strong>{impact.title}</strong>
+                  <span>{impact.message}</span>
+                </div>
+                <Link className="btn btn-sm" to={impact.primaryAction.href}>{impact.primaryAction.label}</Link>
+              </div>
+            ))}
+          </div>
+        ) : null}
+
+        {/* ── Dernières transactions ── */}
         <div className="sec-head">
           <h2>Dernières transactions</h2>
           <ButtonLink to="/transactions">Tout voir</ButtonLink>
         </div>
         <TableShell>
           <table className="tbl">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Libellé</th>
+                <th>Compte</th>
+                <th className="r">Montant</th>
+                <th>Statut</th>
+              </tr>
+            </thead>
             <tbody>
               {overview.recentTransactions.map((transaction) => (
                 <tr key={transaction.id}>
                   <td className="mono">{formatShortDate(transaction.date)}</td>
-                  <td>
+                  <td className="col-vendor">
                     {transaction.needsReview ? <Link to={`/transactions/${transaction.id}`}>{transaction.label}</Link> : transaction.label}
                   </td>
                   <td><span className="cpt">{transaction.account}</span></td>

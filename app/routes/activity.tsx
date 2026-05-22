@@ -40,12 +40,12 @@ export default function Activity() {
             <Link className="btn btn-sm" to="/api/activity-log/audit">Audit JSON</Link>
           </div>
         </div>
-        <Form className="card form-row" method="get">
+        <Form className="card filter-bar" method="get">
           <div className="field"><label>Type</label><input name="type" defaultValue={filters.type ?? ""} placeholder="document, import..." /></div>
           <div className="field"><label>Action</label><input name="action" defaultValue={filters.action ?? ""} placeholder="document.generated" /></div>
           <div className="field"><label>Depuis</label><input type="date" name="from" defaultValue={filters.from ?? ""} /></div>
           <div className="field"><label>Jusqu'à</label><input type="date" name="to" defaultValue={filters.to ?? ""} /></div>
-          <button className="btn btn-p" type="submit">Filtrer</button>
+          <button className="btn" type="submit">Filtrer</button>
         </Form>
         <TableShell>
           <table className="tbl">

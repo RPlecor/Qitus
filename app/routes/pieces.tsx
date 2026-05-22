@@ -1,6 +1,7 @@
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
 import { Form, Link, useLoaderData } from "@remix-run/react";
-import { AppShell, Main } from "~/components/ui";
+import { useRef, useState } from "react";
+import { AppShell, KpiCard, Main, StatusPill, TableShell } from "~/components/ui";
 import { requireCompanyWorkspace } from "~/modules/company-workspace/company-workspace.server";
 import { AttachmentCenter } from "~/modules/evidence/attachment-center.server";
 import { EvidenceControlCenter } from "~/modules/evidence/evidence-control-center.server";
@@ -35,54 +36,34 @@ export default function Pieces() {
         {query.error ? <div className="alert red"><strong>{query.error}</strong></div> : null}
 
         <div className="kpi-grid">
-          <div className="kpi"><div className="kpi-label">Pièces</div><span className="kpi-val">{attachments.length}</span><div className="sub">Liste courante</div></div>
-          <div className="kpi"><div className="kpi-label">Requises manquantes</div><span className="kpi-val">{review.requiredMissing}</span><div className="sub">Écritures sans pièce</div></div>
-          <div className="kpi"><div className="kpi-label">Non rattachées</div><span className="kpi-val">{review.orphanAttachments}</span><div className="sub">À relier</div></div>
-          <div className="kpi"><div className="kpi-label">OCR à revoir</div><span className="kpi-val">{review.extractionFailures}</span><div className="sub">Non bloquant</div></div>
+          <KpiCard label="Pièces" value={String(attachments.length)} hint="Liste courante" />
+          <KpiCard label="Requises manquantes" value={String(review.requiredMissing)} hint="Écritures sans pièce" />
+          <KpiCard label="Non rattachées" value={String(review.orphanAttachments)} hint="À relier" />
+          <KpiCard label="OCR à revoir" value={String(review.extractionFailures)} hint="Non bloquant" />
         </div>
 
-        <Form method="post" action="/api/attachments" encType="multipart/form-data" className="card">
-          <input type="hidden" name="returnTo" value="/pieces" />
-          <div className="form-row">
-            <div className="field">
-              <label>Ajouter une pièce</label>
-              <input type="file" name="file" accept=".pdf,.png,.jpg,.jpeg,.txt,application/pdf,image/png,image/jpeg,text/plain" />
-              <span className="help">PDF, PNG, JPG ou TXT · 10 Mo max · OCR local non bloquant.</span>
-            </div>
-            <div className="field">
-              <label>&nbsp;</label>
-              <button className="btn btn-p" type="submit">Uploader</button>
-            </div>
-          </div>
-        </Form>
+        <UploadZone />
 
-        <Form method="get" className="card">
-          <div className="form-row">
-            <div className="field">
-              <label>Statut</label>
-              <select name="status" defaultValue={query.status ?? ""}>
-                <option value="">Actives</option>
-                <option value="UPLOADED">Uploadées</option>
-                <option value="EXTRACTED">Extraites</option>
-                <option value="EXTRACTION_FAILED">OCR échoué</option>
-                <option value="ARCHIVED">Archivées</option>
-              </select>
-            </div>
-            <div className="field">
-              <label>Vue</label>
-              <select name="orphan" defaultValue={query.orphan ?? ""}>
-                <option value="">Toutes</option>
-                <option value="1">Non rattachées</option>
-              </select>
-            </div>
-            <div className="field">
-              <label>&nbsp;</label>
-              <div className="row-actions">
-                <button className="btn" type="submit">Filtrer</button>
-                <Link className="btn btn-ghost" to="/pieces">Réinitialiser</Link>
-              </div>
-            </div>
+        <Form method="get" className="card filter-bar">
+          <div className="field">
+            <label>Statut</label>
+            <select name="status" defaultValue={query.status ?? ""}>
+              <option value="">Actives</option>
+              <option value="UPLOADED">Uploadées</option>
+              <option value="EXTRACTED">Extraites</option>
+              <option value="EXTRACTION_FAILED">OCR échoué</option>
+              <option value="ARCHIVED">Archivées</option>
+            </select>
           </div>
+          <div className="field">
+            <label>Vue</label>
+            <select name="orphan" defaultValue={query.orphan ?? ""}>
+              <option value="">Toutes</option>
+              <option value="1">Non rattachées</option>
+            </select>
+          </div>
+          <button className="btn" type="submit">Filtrer</button>
+          <Link className="btn btn-ghost" to="/pieces">Réinitialiser</Link>
         </Form>
 
         <div className="grid two">
@@ -102,13 +83,15 @@ export default function Pieces() {
           </section>
         </div>
 
-        <table className="tbl">
-          <thead><tr><th>Fichier</th><th>Statut</th><th>Fournisseur</th><th>Date</th><th>TTC</th><th>Liens</th><th></th></tr></thead>
-          <tbody>
-            {attachments.map((attachment) => (
-              <tr key={attachment.id}>
-                <td>{attachment.originalFilename}<div className="sub">{formatBytes(attachment.sizeBytes)}</div></td>
-                <td><span className={statusClass(attachment.status)}>{statusLabel(attachment.status)}</span></td>
+        <div className="sec-head"><h2>Pièces déposées</h2></div>
+        <TableShell>
+          <table className="tbl">
+            <thead><tr><th>Fichier</th><th>Statut</th><th>Fournisseur</th><th>Date</th><th>TTC</th><th>Liens</th><th></th></tr></thead>
+            <tbody>
+              {attachments.map((attachment) => (
+                <tr key={attachment.id}>
+                  <td>{attachment.originalFilename}<div className="sub">{formatBytes(attachment.sizeBytes)}</div></td>
+                  <td><StatusPill label={statusLabel(attachment.status)} tone={statusTone(attachment.status)} /></td>
                 <td>{attachment.supplierName ?? "—"}</td>
                 <td>{attachment.invoiceDate ?? "—"}</td>
                 <td>{attachment.amountTtc ? formatEuro(attachment.amountTtc) : "—"}</td>
@@ -119,8 +102,47 @@ export default function Pieces() {
             {attachments.length === 0 ? <tr><td colSpan={7} className="sub">Aucune pièce déposée.</td></tr> : null}
           </tbody>
         </table>
+        </TableShell>
       </Main>
     </AppShell>
+  );
+}
+
+function UploadZone() {
+  const [fileName, setFileName] = useState<string | null>(null);
+  const [dragOver, setDragOver] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  return (
+    <Form ref={formRef} method="post" action="/api/attachments" encType="multipart/form-data">
+      <input type="hidden" name="returnTo" value="/pieces" />
+      <div
+        className={`upload-zone${dragOver ? " drag-over" : ""}`}
+        onDragOver={(event) => { event.preventDefault(); setDragOver(true); }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={() => setDragOver(false)}
+      >
+        <svg className="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+          <polyline points="17 8 12 3 7 8" />
+          <line x1="12" y1="3" x2="12" y2="15" />
+        </svg>
+        <div className="upload-label">Glissez un fichier ici ou <span>parcourir</span></div>
+        <div className="upload-hint">PDF, PNG, JPG ou TXT · 10 Mo max · OCR local non bloquant</div>
+        {fileName ? <div className="upload-selected">📎 {fileName}</div> : null}
+        <input
+          type="file"
+          name="file"
+          accept=".pdf,.png,.jpg,.jpeg,.txt,application/pdf,image/png,image/jpeg,text/plain"
+          onChange={(event) => setFileName(event.target.files?.[0]?.name ?? null)}
+        />
+      </div>
+      {fileName ? (
+        <div className="upload-actions">
+          <button className="btn btn-p" type="submit">Uploader</button>
+        </div>
+      ) : null}
+    </Form>
   );
 }
 
@@ -131,11 +153,11 @@ export function statusLabel(status: string) {
   return "Uploadée";
 }
 
-export function statusClass(status: string) {
-  if (status === "EXTRACTED") return "st-done";
-  if (status === "EXTRACTION_FAILED") return "st-warn";
-  if (status === "ARCHIVED") return "sub";
-  return "st-ok";
+export function statusTone(status: string): "ok" | "done" | "warn" | "neutral" {
+  if (status === "EXTRACTED") return "done";
+  if (status === "EXTRACTION_FAILED") return "warn";
+  if (status === "ARCHIVED") return "neutral";
+  return "ok";
 }
 
 function formatBytes(value: number) {

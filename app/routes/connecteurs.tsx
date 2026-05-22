@@ -77,7 +77,7 @@ export default function Connecteurs() {
             <StatusPill label={openBankingFreshness.status === "fresh" ? "À jour" : openBankingFreshness.status === "never_connected" ? "Jamais connecté" : "À revoir"} tone={openBankingFreshness.status === "fresh" ? "ok" : "warn"} />
           </div>
           <p className="sub">{openBanking.message}</p>
-          <div className="actions">
+          <div className="row-actions">
             <Form method="post" action="/api/open-banking/connect">
               <input type="hidden" name="country" value="FR" />
               {openBanking.selectionMode === "institution_select" && institutions.length > 0 ? (
@@ -109,7 +109,7 @@ export default function Connecteurs() {
                     <td className="mono">{connection.lastSyncedAt ? shortDate(connection.lastSyncedAt) : "Jamais"}</td>
                     <td>{connection.accounts.map((account) => account.name).join(", ") || "—"}</td>
                     <td>
-                      <div className="actions">
+                      <div className="row-actions">
                         <Form method="post" action={`/api/open-banking/connections/${connection.id}/sync`}>
                           <button className="btn" type="submit">Sync</button>
                         </Form>

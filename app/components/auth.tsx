@@ -2,15 +2,15 @@ import type { ReactNode } from "react";
 
 export const qitusClerkAppearance = {
   variables: {
-    colorPrimary: "#16a34a",
-    colorText: "#1a1a1a",
-    colorTextSecondary: "#64748b",
+    colorPrimary: "#1B6B4A",
+    colorText: "#1C1917",
+    colorTextSecondary: "#78716C",
     colorBackground: "#ffffff",
     colorInputBackground: "#ffffff",
-    colorInputText: "#1a1a1a",
-    borderRadius: "8px",
-    fontFamily: "\"DM Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
-    fontFamilyButtons: "\"DM Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+    colorInputText: "#1C1917",
+    borderRadius: "10px",
+    fontFamily: "-apple-system, BlinkMacSystemFont, \"Inter\", \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+    fontFamilyButtons: "-apple-system, BlinkMacSystemFont, \"Inter\", \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
   },
   elements: {
     rootBox: "qitus-clerk-root",

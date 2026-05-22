@@ -110,20 +110,20 @@ export default function ExpertDossierPage() {
           <span>{exportVerification.verification.blockingCount} blocage(s) · {exportVerification.verification.warningCount} avertissement(s)</span>
         </div>
 
-        <div className="card card-head">
-          <div>
-            <strong>Préparer et partager</strong>
-            <div className="sub">Le snapshot fige l'état transmis. Toute modification comptable rendra le dossier obsolète.</div>
-          </div>
-          <div className="actions">
+        <div className="card">
+          <div className="card-head">
+            <div>
+              <strong>Préparer et partager</strong>
+              <div className="sub">Le snapshot fige l'état transmis. Toute modification comptable rendra le dossier obsolète.</div>
+            </div>
             <Form method="post"><input type="hidden" name="intent" value="prepare" /><button className="btn" type="submit">Préparer le dossier</button></Form>
-            <Form method="post" className="inline-form">
-              <input type="hidden" name="intent" value="share" />
-              <input name="label" defaultValue="Dossier expert-comptable" />
-              <input name="expiresInDays" defaultValue="30" />
-              <button className="btn btn-p" type="submit">Partager au cabinet</button>
-            </Form>
           </div>
+          <Form method="post" className="filter-bar">
+            <input type="hidden" name="intent" value="share" />
+            <div className="field"><label>Libellé</label><input name="label" defaultValue="Dossier expert-comptable" /></div>
+            <div className="field narrow"><label>Expiration (j.)</label><input name="expiresInDays" defaultValue="30" /></div>
+            <button className="btn btn-p" type="submit">Partager au cabinet</button>
+          </Form>
         </div>
 
         <div className="sec-head"><h2>Sections du dossier</h2></div>

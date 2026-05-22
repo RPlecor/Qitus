@@ -1,6 +1,6 @@
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
 import { Form, Link, useLoaderData } from "@remix-run/react";
-import { AppShell, ButtonLink, Main, TableShell } from "~/components/ui";
+import { AppShell, ButtonLink, KpiCard, Main, TableShell } from "~/components/ui";
 import { requireCompanyWorkspace } from "~/modules/company-workspace/company-workspace.server";
 import { EvidenceControlCenter } from "~/modules/evidence/evidence-control-center.server";
 import { JournalAuditCenter } from "~/modules/journal/journal-audit-center.server";
@@ -27,20 +27,22 @@ export default function Ecritures() {
         subtitle={`${summary.entriesCount} écriture${summary.entriesCount > 1 ? "s" : ""} · ${summary.linesCount} ligne${summary.linesCount > 1 ? "s" : ""}`}
         action={<a className="btn" href={`/api/journal-entries/export?${exportParams(query)}`}>Exporter CSV</a>}
       >
-        <div className={`alert ${audit.status === "exportable" ? "blue" : "orange"}`}>
-          <strong>{audit.label}</strong>
-          <span>{audit.issueCount === 0 ? "Aucune anomalie" : `${audit.issueCount} anomalie${audit.issueCount > 1 ? "s" : ""}`}</span>
-        </div>
-        <div className={`alert ${evidence.requiredMissing === 0 ? "blue" : "orange"}`}>
-          <strong>{evidence.requiredMissing === 0 ? "Pièces requises présentes" : "Écritures sans pièce"}</strong>
-          <span>{evidence.requiredMissing === 0 ? `${evidence.orphanAttachments} pièce(s) non rattachée(s)` : `${evidence.requiredMissing} pièce(s) requise(s) manquante(s)`}</span>
-        </div>
-        {audit.issues.slice(0, 3).map((issue) => (
-          <div key={`${issue.code}-${issue.entryId}`} className="alert orange">
-            <strong>Écriture {issue.entryNum}</strong>
-            <span>{issue.detail}</span>
+        <div className="dash-notices">
+          <div className={`notice-item ${audit.status === "exportable" ? "notice-ok" : "notice-warn"}`}>
+            <span className={`notice-dot ${audit.status === "exportable" ? "ok" : "orange"}`} />
+            <span>{audit.label} — {audit.issueCount === 0 ? "aucune anomalie" : <strong>{audit.issueCount} anomalie{audit.issueCount > 1 ? "s" : ""}</strong>}</span>
           </div>
-        ))}
+          <div className={`notice-item ${evidence.requiredMissing === 0 ? "notice-ok" : "notice-warn"}`}>
+            <span className={`notice-dot ${evidence.requiredMissing === 0 ? "ok" : "orange"}`} />
+            <span>{evidence.requiredMissing === 0 ? `Pièces requises présentes — ${evidence.orphanAttachments} non rattachée(s)` : <strong>{evidence.requiredMissing} pièce(s) requise(s) manquante(s)</strong>}</span>
+          </div>
+          {audit.issues.slice(0, 3).map((issue) => (
+            <div key={`${issue.code}-${issue.entryId}`} className="notice-item notice-warn">
+              <span className="notice-dot orange" />
+              <span>Écriture {issue.entryNum} — {issue.detail}</span>
+            </div>
+          ))}
+        </div>
         <Form method="get" className="card">
           <div className="form-row">
             <div className="field">
@@ -86,10 +88,10 @@ export default function Ecritures() {
         </Form>
 
         <div className="kpi-grid">
-          <div className="kpi"><div className="kpi-label">Débit</div><span className="kpi-val">{formatEuro(summary.debitTotal)}</span></div>
-          <div className="kpi"><div className="kpi-label">Crédit</div><span className="kpi-val">{formatEuro(summary.creditTotal)}</span></div>
-          <div className="kpi"><div className="kpi-label">Équilibre</div><span className="kpi-val">{summary.balanced ? "Équilibré" : "À vérifier"}</span></div>
-          <div className="kpi"><div className="kpi-label">Page</div><span className="kpi-val">{page}/{totalPages}</span></div>
+          <KpiCard label="Débit" value={formatEuro(summary.debitTotal)} />
+          <KpiCard label="Crédit" value={formatEuro(summary.creditTotal)} />
+          <KpiCard label="Équilibre" value={summary.balanced ? "Équilibré" : "À vérifier"} />
+          <KpiCard label="Page" value={`${page}/${totalPages}`} />
         </div>
 
         <TableShell>

@@ -1,6 +1,6 @@
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
 import { Link, useLoaderData } from "@remix-run/react";
-import { AppShell, KpiCard, Main } from "~/components/ui";
+import { AppShell, KpiCard, Main, TableShell } from "~/components/ui";
 import { requireCompanyWorkspace } from "~/modules/company-workspace/company-workspace.server";
 import { ConnectorSyncCenter } from "~/modules/reconciliations/connector-sync-center.server";
 import { ReconciliationFreshnessCenter } from "~/modules/reconciliations/reconciliation-freshness-center.server";
@@ -39,6 +39,7 @@ export default function Rapprochements() {
         </div>
         <section className="card">
           <div className="sec-head"><h2>Connecteurs</h2><span>{connectors.mode}</span></div>
+          <TableShell>
           <table className="tbl">
             <tbody>
               {connectors.connectors.map((connector) => (
@@ -46,6 +47,7 @@ export default function Rapprochements() {
               ))}
             </tbody>
           </table>
+          </TableShell>
         </section>
         <div className="grid two">
           {cards.map((card) => (

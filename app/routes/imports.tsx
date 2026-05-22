@@ -1,7 +1,7 @@
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
 import { Form, Link, useLoaderData, useRevalidator, useSearchParams } from "@remix-run/react";
-import { useEffect } from "react";
-import { AppShell, Main, StatusBadge } from "~/components/ui";
+import { useEffect, useState } from "react";
+import { AppShell, Main, StatusBadge, TableShell } from "~/components/ui";
 import { requireCompanyWorkspace } from "~/modules/company-workspace/company-workspace.server";
 import { ImportCleanupCenter } from "~/modules/import-orchestrator/import-cleanup-center.server";
 import { ImportHistory } from "~/modules/import-orchestrator/import-history.server";
@@ -36,19 +36,9 @@ export default function Imports() {
         {searchParams.get("deleted") ? <div className="alert blue"><strong>{searchParams.get("deleted")}</strong></div> : null}
         {searchParams.get("reset") ? <div className="alert blue"><strong>{searchParams.get("reset")}</strong></div> : null}
         {searchParams.get("error") ? <div className="alert red"><strong>{searchParams.get("error")}</strong></div> : null}
-        <div className="card" style={{ maxWidth: 680 }}>
-          <h2>Importez un relevé bancaire.</h2>
-          <p className="sub">Formats MVP : Qonto, BNP Paribas, Société Générale, Boursorama, ou mapping manuel.</p>
-          <Form method="post" action="/api/imports" encType="multipart/form-data">
-            <div className="field">
-              <label>Fichier CSV</label>
-              <input type="file" name="file" accept=".csv,text/csv" required />
-            </div>
-            <button className="btn btn-p" type="submit">Lancer l'import</button>
-          </Form>
-        </div>
-        <div className="card" style={{ maxWidth: 760 }}>
-          <h2>Réinitialiser les imports de l'exercice.</h2>
+        <ImportUploadZone />
+        <div className="card">
+          <h2>Réinitialiser les imports de l'exercice</h2>
           <p className="sub">
             Supprime {resetPreview.importCount} import(s), {resetPreview.transactionCount} transaction(s),
             {" "}{resetPreview.journalEntryCount} écriture(s) d'import et {resetPreview.journalLineCount} ligne(s) comptable(s).
@@ -64,6 +54,7 @@ export default function Imports() {
           </Form>
         </div>
         <div className="sec-head"><h2>Historique</h2></div>
+        <TableShell>
         <table className="tbl">
           <thead><tr><th>Date</th><th>Fichier</th><th>Format</th><th>Étape</th><th>Progression</th><th className="r">Lignes</th><th className="r">Catégorisées</th><th className="r">À vérifier</th><th>Durée</th><th>Statut</th><th>Actions</th></tr></thead>
           <tbody>
@@ -113,6 +104,7 @@ export default function Imports() {
             ) : null}
           </tbody>
         </table>
+        </TableShell>
       </Main>
     </AppShell>
   );
@@ -140,6 +132,43 @@ function stepLabel(step: string | null) {
     complete: "Terminé",
   };
   return step ? labels[step] ?? step : "—";
+}
+
+function ImportUploadZone() {
+  const [fileName, setFileName] = useState<string | null>(null);
+  const [dragOver, setDragOver] = useState(false);
+
+  return (
+    <Form method="post" action="/api/imports" encType="multipart/form-data">
+      <div
+        className={`upload-zone${dragOver ? " drag-over" : ""}`}
+        onDragOver={(event) => { event.preventDefault(); setDragOver(true); }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={() => setDragOver(false)}
+      >
+        <svg className="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+          <polyline points="17 8 12 3 7 8" />
+          <line x1="12" y1="3" x2="12" y2="15" />
+        </svg>
+        <div className="upload-label">Glissez un relevé CSV ou <span>parcourir</span></div>
+        <div className="upload-hint">Qonto, BNP Paribas, Société Générale, Boursorama ou mapping manuel</div>
+        {fileName ? <div className="upload-selected">📎 {fileName}</div> : null}
+        <input
+          type="file"
+          name="file"
+          accept=".csv,text/csv"
+          required
+          onChange={(event) => setFileName(event.target.files?.[0]?.name ?? null)}
+        />
+      </div>
+      {fileName ? (
+        <div className="upload-actions">
+          <button className="btn btn-p" type="submit">Lancer l'import</button>
+        </div>
+      ) : null}
+    </Form>
+  );
 }
 
 function formatDuration(value: number | null) {

@@ -1,6 +1,6 @@
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
 import { Link, useLoaderData } from "@remix-run/react";
-import { AppShell, KpiCard, Main } from "~/components/ui";
+import { AppShell, KpiCard, Main, StatusPill, TableShell } from "~/components/ui";
 import { AccountingCoverageCenter, type CoverageArea } from "~/modules/accounting-coverage/accounting-coverage-center.server";
 import { requireCompanyWorkspace } from "~/modules/company-workspace/company-workspace.server";
 
@@ -36,7 +36,7 @@ export default function Couverture() {
               {highRiskAreas.slice(0, 5).map((area) => (
                 <li key={area.code}>
                   <span>{area.title}</span>
-                  <span className="st-error">{statusLabel(area.status)}</span>
+                  <StatusPill label={statusLabel(area.status)} tone="error" />
                   <Link className="btn btn-sm" to={`/couverture/${area.code}`}>Détail</Link>
                 </li>
               ))}
@@ -45,13 +45,14 @@ export default function Couverture() {
         ) : null}
 
         <div className="sec-head"><h2>Domaines de couverture</h2></div>
+        <TableShell>
         <table className="tbl">
           <thead><tr><th>Domaine</th><th>Statut</th><th>Risque</th><th>Résumé</th><th>Phase</th><th></th></tr></thead>
           <tbody>
             {coverage.areas.map((area: CoverageArea) => (
               <tr key={area.code}>
                 <td>{area.title}</td>
-                <td><span className={statusClass(area.status)}>{statusLabel(area.status)}</span></td>
+                <td><StatusPill label={statusLabel(area.status)} tone={statusTone(area.status)} /></td>
                 <td>{riskLabel(area.risk)}</td>
                 <td className="sub">{area.summary}</td>
                 <td>{area.nextPhase}</td>
@@ -60,6 +61,7 @@ export default function Couverture() {
             ))}
           </tbody>
         </table>
+        </TableShell>
       </Main>
     </AppShell>
   );
@@ -72,11 +74,11 @@ export function statusLabel(status: string) {
   return "Non applicable";
 }
 
-export function statusClass(status: string) {
-  if (status === "covered") return "st-done";
-  if (status === "missing") return "st-error";
-  if (status === "partial") return "st-warn";
-  return "sub";
+export function statusTone(status: string): "ok" | "done" | "error" | "warn" | "neutral" {
+  if (status === "covered") return "done";
+  if (status === "missing") return "error";
+  if (status === "partial") return "warn";
+  return "neutral";
 }
 
 export function riskLabel(risk: string) {

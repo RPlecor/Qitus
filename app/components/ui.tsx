@@ -107,8 +107,7 @@ export function AppShell({ children, active = "dashboard" }: { children: ReactNo
     <div className="shell">
       <aside className="sidebar">
         <div className="s-brand" aria-label="Qitus">
-          <span className="s-brand-mark">Q</span>
-          <span className="s-brand-name">Qitus</span>
+          <span className="s-brand-name"><span className="q">Q</span>itus</span>
         </div>
         <div className="s-id">
           <strong>{shell?.companyName ?? "ACME DIGITAL"}</strong>

@@ -1,6 +1,6 @@
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
 import { Form, Link, useLoaderData } from "@remix-run/react";
-import { AppShell, Main } from "~/components/ui";
+import { AppShell, Main, StatusPill, TableShell } from "~/components/ui";
 import { requireCompanyWorkspace } from "~/modules/company-workspace/company-workspace.server";
 import { CorrectionRuleCenter } from "~/modules/correction-rules/correction-rule-center.server";
 
@@ -22,22 +22,20 @@ export default function Corrections() {
   return (
     <AppShell active="corrections">
       <Main title="Règles" subtitle="Corrections apprises">
-        <Form method="get" className="card">
-          <div className="form-row">
-            <div className="field">
-              <label>Recherche</label>
-              <input name="search" defaultValue={query.search} />
-            </div>
-            <div className="field">
-              <label>Statut</label>
-              <select name="active" defaultValue={query.active}>
-                <option value="all">Toutes</option>
-                <option value="true">Actives</option>
-                <option value="false">Inactives</option>
-              </select>
-            </div>
+        <Form method="get" className="card filter-bar">
+          <div className="field">
+            <label>Recherche</label>
+            <input name="search" defaultValue={query.search} placeholder="Contrepartie, compte..." />
           </div>
-          <button className="btn btn-p" type="submit">Filtrer</button>
+          <div className="field">
+            <label>Statut</label>
+            <select name="active" defaultValue={query.active}>
+              <option value="all">Toutes</option>
+              <option value="true">Actives</option>
+              <option value="false">Inactives</option>
+            </select>
+          </div>
+          <button className="btn" type="submit">Filtrer</button>
         </Form>
 
         <div className="sec-head"><h2>Créer une règle</h2></div>
@@ -55,28 +53,30 @@ export default function Corrections() {
         </Form>
 
         <div className="sec-head"><h2>Règles existantes</h2></div>
-        <table className="tbl">
-          <thead><tr><th>Statut</th><th>Contrepartie</th><th>Compte</th><th>Condition</th><th>Impact</th><th>Note</th><th></th></tr></thead>
-          <tbody>
-            {rules.map((rule) => (
-              <tr key={rule.id}>
-                <td>{rule.active ? "Active" : "Inactive"}</td>
-                <td>{rule.counterparty}</td>
-                <td><span className="cpt">{rule.preferredAccount}</span> {rule.preferredAccountLabel ?? ""}</td>
-                <td>{rule.condition ?? "—"}</td>
-                <td><Link to={`/corrections/${rule.id}`}>{rule.matchCountSnapshot} match{rule.matchCountSnapshot > 1 ? "s" : ""}</Link></td>
-                <td className="sub">{rule.note ?? "—"}</td>
-                <td>
-                  <Form method="post" action={`/api/correction-rules/${rule.id}`}>
-                    <input type="hidden" name="intent" value={rule.active ? "disable" : "enable"} />
-                    <button className="btn btn-sm" type="submit">{rule.active ? "Désactiver" : "Réactiver"}</button>
-                  </Form>
-                </td>
-              </tr>
-            ))}
-            {rules.length === 0 ? <tr><td colSpan={7} className="sub">Aucune règle de correction.</td></tr> : null}
-          </tbody>
-        </table>
+        <TableShell>
+          <table className="tbl">
+            <thead><tr><th>Statut</th><th>Contrepartie</th><th>Compte</th><th>Condition</th><th>Impact</th><th>Note</th><th></th></tr></thead>
+            <tbody>
+              {rules.map((rule) => (
+                <tr key={rule.id}>
+                  <td><StatusPill label={rule.active ? "Active" : "Inactive"} tone={rule.active ? "ok" : "neutral"} /></td>
+                  <td>{rule.counterparty}</td>
+                  <td><span className="cpt">{rule.preferredAccount}</span> {rule.preferredAccountLabel ?? ""}</td>
+                  <td>{rule.condition ?? "—"}</td>
+                  <td><Link to={`/corrections/${rule.id}`}>{rule.matchCountSnapshot} match{rule.matchCountSnapshot > 1 ? "s" : ""}</Link></td>
+                  <td className="sub">{rule.note ?? "—"}</td>
+                  <td>
+                    <Form method="post" action={`/api/correction-rules/${rule.id}`}>
+                      <input type="hidden" name="intent" value={rule.active ? "disable" : "enable"} />
+                      <button className="btn btn-sm" type="submit">{rule.active ? "Désactiver" : "Réactiver"}</button>
+                    </Form>
+                  </td>
+                </tr>
+              ))}
+              {rules.length === 0 ? <tr><td colSpan={7} className="sub">Aucune règle de correction.</td></tr> : null}
+            </tbody>
+          </table>
+        </TableShell>
       </Main>
     </AppShell>
   );

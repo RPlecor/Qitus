@@ -1,6 +1,6 @@
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
 import { Form, Link, useLoaderData } from "@remix-run/react";
-import { AppShell, ButtonLink, Main, StatusBadge, TableShell } from "~/components/ui";
+import { AppShell, ButtonLink, KpiCard, Main, StatusBadge, TableShell } from "~/components/ui";
 import { requireCompanyWorkspace } from "~/modules/company-workspace/company-workspace.server";
 import { TransactionExplorer } from "~/modules/transactions/transaction-explorer.server";
 import { TransactionFilterStateCenter, type TransactionFilterState } from "~/modules/transactions/transaction-filter-state";
@@ -53,8 +53,6 @@ export default function Transactions() {
                 <option value="has_rule">Avec règle</option>
               </select>
             </div>
-          </div>
-          <div className="form-row">
             <div className="field"><label htmlFor="transaction-date-from">Du</label><input id="transaction-date-from" type="date" name="dateFrom" defaultValue={filterState.dateFrom} /></div>
             <div className="field"><label htmlFor="transaction-date-to">Au</label><input id="transaction-date-to" type="date" name="dateTo" defaultValue={filterState.dateTo} /></div>
           </div>
@@ -68,8 +66,6 @@ export default function Transactions() {
                 <option value="credit">Encaissements</option>
               </select>
             </div>
-          </div>
-          <div className="form-row">
             <div className="field">
               <label htmlFor="transaction-page-size">Par page</label>
               <select id="transaction-page-size" name="pageSize" defaultValue={filterState.pageSize}>
@@ -82,7 +78,7 @@ export default function Transactions() {
               <label>&nbsp;</label>
               <div className="row-actions">
                 <button className="btn btn-p" type="submit">Filtrer</button>
-                <Link className="btn" to="/transactions">Réinitialiser les filtres</Link>
+                <Link className="btn" to="/transactions">Réinitialiser</Link>
               </div>
             </div>
           </div>
@@ -95,10 +91,10 @@ export default function Transactions() {
         ) : null}
 
         <div className="kpi-grid">
-          <div className="kpi"><div className="kpi-label">Total</div><span className="kpi-val">{facets.total}</span></div>
-          <div className="kpi"><div className="kpi-label">À vérifier</div><span className="kpi-val">{facets.review}</span></div>
-          <div className="kpi"><div className="kpi-label">Corrigées</div><span className="kpi-val">{facets.corrected}</span></div>
-          <div className="kpi"><div className="kpi-label">Avec règle</div><span className="kpi-val">{facets.hasRule}</span></div>
+          <KpiCard label="Total" value={String(facets.total)} />
+          <KpiCard label="À vérifier" value={String(facets.review)} />
+          <KpiCard label="Corrigées" value={String(facets.corrected)} />
+          <KpiCard label="Avec règle" value={String(facets.hasRule)} />
         </div>
 
         {filterState.status === "review" && queueSummary.empty ? (
