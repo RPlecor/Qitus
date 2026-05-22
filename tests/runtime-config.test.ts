@@ -19,7 +19,14 @@ describe("RuntimeConfig", () => {
       observabilityMode: "local",
       cronMode: "disabled",
       openBankingProvider: "disabled",
+      changeImpactsMode: "shadow",
     });
+  });
+
+  it("supports the change impacts migration mode", () => {
+    expect(getRuntimeConfig({ DATABASE_URL: "postgresql://localhost:5432/paperasse", CHANGE_IMPACTS_MODE: "off" }).changeImpactsMode).toBe("off");
+    expect(getRuntimeConfig({ DATABASE_URL: "postgresql://localhost:5432/paperasse", CHANGE_IMPACTS_MODE: "active" }).changeImpactsMode).toBe("active");
+    expect(() => getRuntimeConfig({ DATABASE_URL: "postgresql://localhost:5432/paperasse", CHANGE_IMPACTS_MODE: "loud" })).toThrow("CHANGE_IMPACTS_MODE");
   });
 
   it("requires Clerk keys only when AUTH_MODE=clerk", () => {

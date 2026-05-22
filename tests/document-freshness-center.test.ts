@@ -46,4 +46,24 @@ describe("DocumentFreshnessCenter", () => {
     expect(freshness.staleCount).toBe(0);
     expect(freshness.documents[0].statusLabel).toBe("À jour");
   });
+
+  it("marks documents stale after a company profile update", () => {
+    const freshness = buildDocumentFreshness([
+      {
+        id: "doc_fec",
+        type: DocumentType.FEC,
+        filename: "fec.txt",
+        generatedAt: new Date("2025-12-31T10:00:00.000Z"),
+      },
+    ], [
+      {
+        code: "profile_updated",
+        label: "Profil entreprise modifié",
+        at: "2025-12-31T10:30:00.000Z",
+      },
+    ]);
+
+    expect(freshness.staleCount).toBe(1);
+    expect(freshness.documents[0].reasons[0].code).toBe("profile_updated");
+  });
 });

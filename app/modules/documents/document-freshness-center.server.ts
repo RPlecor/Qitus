@@ -3,7 +3,7 @@ import type { CompanyWorkspace } from "../company-workspace/company-workspace.se
 import { prisma } from "../db.server";
 
 export type DocumentFreshnessReason = {
-  code: "import_completed" | "transaction_corrected" | "journal_entry_updated" | "closing_adjustment_approved";
+  code: "import_completed" | "transaction_corrected" | "journal_entry_updated" | "closing_adjustment_approved" | "profile_updated";
   label: string;
   at: string;
 };
@@ -52,7 +52,7 @@ export class DocumentFreshnessCenter {
   }
 
   async getStaleReasons(workspace: CompanyWorkspace): Promise<DocumentFreshnessReason[]> {
-    const [lastImport, lastCategorization, lastEntry, lastClosingAdjustment] = await Promise.all([
+    const [lastImport, lastCategorization, lastEntry, lastClosingAdjustment, lastProfileChange] = await Promise.all([
       prisma.import.findFirst({
         where: { fiscalYearId: workspace.fiscalYear.id, completedAt: { not: null } },
         orderBy: { completedAt: "desc" },
@@ -72,6 +72,11 @@ export class DocumentFreshnessCenter {
         where: { fiscalYearId: workspace.fiscalYear.id, status: "APPROVED", approvedAt: { not: null } },
         orderBy: { approvedAt: "desc" },
         select: { approvedAt: true, label: true },
+      }),
+      prisma.activityLog.findFirst({
+        where: { companyId: workspace.company.id, fiscalYearId: workspace.fiscalYear.id, action: { in: ["profile.updated", "profile.onboarding_completed"] } },
+        orderBy: { createdAt: "desc" },
+        select: { createdAt: true, action: true },
       }),
     ]);
     return [
@@ -94,6 +99,11 @@ export class DocumentFreshnessCenter {
         code: "closing_adjustment_approved" as const,
         label: `Dernière OD validée : ${lastClosingAdjustment.label}`,
         at: lastClosingAdjustment.approvedAt.toISOString(),
+      } : null,
+      lastProfileChange ? {
+        code: "profile_updated" as const,
+        label: lastProfileChange.action === "profile.onboarding_completed" ? "Profil entreprise initialisé" : "Profil entreprise modifié",
+        at: lastProfileChange.createdAt.toISOString(),
       } : null,
     ].filter((reason): reason is DocumentFreshnessReason => Boolean(reason));
   }

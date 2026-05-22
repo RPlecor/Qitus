@@ -13,6 +13,7 @@ export type ObjectStorageMode = "local" | "s3";
 export type ObservabilityMode = "disabled" | "local" | "sentry" | "otel";
 export type CronMode = "disabled" | "local" | "worker";
 export type OpenBankingProviderMode = "disabled" | "mock" | "bridge" | "powens" | "gocardless" | "tink" | "yapily";
+export type ChangeImpactsMode = "off" | "shadow" | "active";
 
 export type RuntimeConfig = {
   appEnv: AppEnvironment;
@@ -66,6 +67,7 @@ export type RuntimeConfig = {
   openBankingRedirectUri?: string;
   openBankingBaseUrl?: string;
   providerSecretEncryptionKey?: string;
+  changeImpactsMode: ChangeImpactsMode;
 };
 
 export function getRuntimeConfig(env: Record<string, string | undefined> = process.env): RuntimeConfig {
@@ -121,6 +123,7 @@ export function getRuntimeConfig(env: Record<string, string | undefined> = proce
     openBankingRedirectUri: env.OPEN_BANKING_REDIRECT_URI,
     openBankingBaseUrl: env.OPEN_BANKING_BASE_URL,
     providerSecretEncryptionKey: env.PROVIDER_SECRET_ENCRYPTION_KEY,
+    changeImpactsMode: parseChangeImpactsMode(env.CHANGE_IMPACTS_MODE),
   };
 }
 
@@ -191,6 +194,7 @@ export function sanitizedRuntimeConfig(config = getRuntimeConfig()) {
     observabilityMode: config.observabilityMode,
     cronMode: config.cronMode,
     openBankingProvider: config.openBankingProvider,
+    changeImpactsMode: config.changeImpactsMode,
     enablePdfGeneration: config.enablePdfGeneration,
     hasDatabaseUrl: Boolean(config.databaseUrl),
     hasSessionSecret: Boolean(config.sessionSecret),
@@ -270,6 +274,12 @@ export function parseOpenBankingProvider(value: string | undefined): OpenBanking
   const mode = value?.toLowerCase() ?? "disabled";
   if (mode === "disabled" || mode === "mock" || mode === "bridge" || mode === "powens" || mode === "gocardless" || mode === "tink" || mode === "yapily") return mode;
   throw new Error(`Unsupported OPEN_BANKING_PROVIDER value: ${value}`);
+}
+
+export function parseChangeImpactsMode(value: string | undefined): ChangeImpactsMode {
+  const mode = value?.toLowerCase() ?? "shadow";
+  if (mode === "off" || mode === "shadow" || mode === "active") return mode;
+  throw new Error(`Unsupported CHANGE_IMPACTS_MODE value: ${value}`);
 }
 
 function parsePositiveInt(value: string | undefined, fallback: number) {

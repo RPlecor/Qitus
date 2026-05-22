@@ -37,6 +37,26 @@ export default function Dashboard() {
         {overview.alerts.map((alert) => (
           <div key={`${alert.type}-${alert.message}`} className={`alert ${alert.tone}`}>{alert.message}</div>
         ))}
+        {overview.changeImpacts?.mode === "shadow" && overview.changeImpacts.impacts.length > 0 ? (
+          <div className="card impact-card">
+            <div className="sec-head">
+              <h2>Impacts à traiter</h2>
+              <span className="sub">Diagnostic en shadow mode · {overview.changeImpacts.performanceBudget.durationMs} ms</span>
+            </div>
+            <div className="impact-list">
+              {overview.changeImpacts.impacts.slice(0, 3).map((impact) => (
+                <div key={impact.code} className={`alert ${impact.severity === "blocking" ? "red" : "orange"}`}>
+                  <span>
+                    <strong>{impact.title}</strong>
+                    <br />
+                    {impact.message}
+                  </span>
+                  <Link className="btn btn-sm" to={impact.primaryAction.href}>{impact.primaryAction.label}</Link>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
         <div className="kpi-grid">
           <KpiCard label="Chiffre d'affaires" value={formatEuro(overview.kpis.revenue)} hint="Écritures générées" />
           <KpiCard label="Charges" value={formatEuro(overview.kpis.expenses)} hint="Hors clôture" />

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildDashboardAlerts } from "../app/modules/dashboard/dashboard-overview.server";
+import { buildDashboardAlerts, filterDashboardAlertsForActiveImpacts } from "../app/modules/dashboard/dashboard-overview.server";
 
 describe("DashboardOverview", () => {
   it("builds review and missing-document alerts from business state", () => {
@@ -40,5 +40,16 @@ describe("DashboardOverview", () => {
       tone: "orange",
       message: "1 OD brouillon à relire dans Contrôle.",
     });
+  });
+
+  it("keeps legacy alerts in shadow but can remove migrated duplicates in active mode", () => {
+    const alerts = buildDashboardAlerts(0, 1, ["FEC"], null, { staleDocuments: 1, draftAdjustments: 1 });
+
+    expect(filterDashboardAlertsForActiveImpacts(alerts, {
+      impacts: [
+        { source: "documents" },
+        { source: "closing" },
+      ],
+    } as never)).toEqual([]);
   });
 });

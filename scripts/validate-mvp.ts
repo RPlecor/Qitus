@@ -230,7 +230,7 @@ async function expectPhase10Apis() {
   const exportResponse = await request("/api/exports/all");
   const exportBody = await exportResponse.text();
   check(exportResponse.ok, `Export RGPD attendu OK, obtenu ${exportResponse.status}.`);
-  check(exportBody.includes("paperasse-user-export-v1"), "Export RGPD doit contenir la version d'export.");
+  check(exportBody.includes("qitus-user-export-v1"), "Export RGPD doit contenir la version d'export.");
 }
 
 async function expectVatApis(expectedStatus: string) {
@@ -247,7 +247,7 @@ async function expectEvidenceBundle() {
   const response = await request("/api/documents/evidence-bundle");
   const body = await response.text();
   check(response.status === 200, `Paquet de preuve attendu 200, obtenu ${response.status}: ${body.slice(0, 200)}`);
-  check(response.headers.get("content-disposition")?.includes("paperasse-evidence-2025.json") === true, "Le paquet de preuve doit annoncer un manifest JSON 2025.");
+  check(response.headers.get("content-disposition")?.includes("qitus-evidence-2025.json") === true, "Le paquet de preuve doit annoncer un manifest JSON 2025.");
   const manifest = JSON.parse(body) as { documents: Array<{ filename: string }>; journal: { auditStatus: string; csv: string } };
   check(manifest.journal.auditStatus === "exportable", `Audit manifest attendu exportable, obtenu ${manifest.journal.auditStatus}.`);
   check(manifest.journal.csv.includes("\"journal\""), "Le manifest doit inclure l'export CSV du journal.");
@@ -298,7 +298,7 @@ async function validateAnnualClosing() {
   ]) {
     await requestJson<{ step: { status: string } }>(`/api/cloture/steps/${step}/run`, { method: "POST" });
   }
-  await pageContains("/cloture/archive", ["Archive prête", "paperasse-evidence-2025.json"]);
+  await pageContains("/cloture/archive", ["Archive prête", "qitus-evidence-2025.json"]);
   const overview = await requestJson<{ canClose: boolean; steps: Array<{ status: string }> }>("/api/cloture");
   check(overview.canClose, "La clôture doit être possible après exécution des 12 étapes.");
   await requestJson<{ overview: { fiscalYearStatus: string } }>("/api/cloture/close", { method: "POST" });

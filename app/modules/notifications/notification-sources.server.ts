@@ -2,6 +2,7 @@ import { AccountingCoverageCenter } from "../accounting-coverage/accounting-cove
 import { EvidenceRequirementCenter } from "../accounting-coverage/evidence-requirement-center.server";
 import { AccountingReviewCenter } from "../accounting-review/accounting-review-center.server";
 import { BillingStatusCenter } from "../billing/billing-status-center.server";
+import { ChangeImpactCenter } from "../change-impacts/change-impact-center.server";
 import { ClosingAdjustmentFreshnessCenter } from "../closing-adjustments/closing-adjustment-freshness-center.server";
 import { ClosingAdjustmentReviewWorkflow } from "../closing-adjustments/closing-adjustment-review-workflow.server";
 import { ClosingWorkpaperCenter } from "../closing-workpapers/closing-workpaper-center.server";
@@ -27,6 +28,7 @@ export function defaultNotificationSources(): NotificationSource[] {
     new ReconciliationNotificationSource(),
     new ClosingNotificationSource(),
     new EvidenceNotificationSource(),
+    new ChangeImpactNotificationSource(),
     new CoverageNotificationSource(),
     new BillingNotificationSource(),
     new RegulatoryNotificationSource(),
@@ -248,6 +250,28 @@ class ClosingNotificationSource implements NotificationSource {
       } : null,
     ];
     return specs.filter((spec): spec is NotificationSpec => spec !== null);
+  }
+}
+
+class ChangeImpactNotificationSource implements NotificationSource {
+  readonly sourceKey = "change-impacts";
+  constructor(private readonly impacts = new ChangeImpactCenter()) {}
+
+  async listNotificationSpecs(workspace: CompanyWorkspace): Promise<NotificationSpec[]> {
+    const overview = await this.impacts.getImpactOverview(workspace, { surface: "dashboard" });
+    const coveredSources = new Set(["documents", "vat", "reconciliations", "closing"]);
+    return overview.impacts
+      .filter((impact) => (impact.status === "blocked" || impact.status === "action_required" || impact.severity === "blocking") && !coveredSources.has(impact.source))
+      .slice(0, 5)
+      .map((impact) => ({
+        type: "CLOSING_BLOCKER",
+        severity: impact.severity === "blocking" ? "BLOCKING" as const : "WARNING" as const,
+        title: impact.title,
+        body: impact.message,
+        href: impact.primaryAction.href,
+        dedupeKey: `impact:${impact.code}`,
+        metadata: { code: impact.code, source: impact.source, blockingCapabilities: impact.blockingCapabilities },
+      }));
   }
 }
 

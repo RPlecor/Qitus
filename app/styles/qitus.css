@@ -593,6 +593,18 @@ p { margin: 0; }
   border: 1px solid var(--green-border);
 }
 
+.impact-card {
+  margin-bottom: 18px;
+}
+
+.impact-card .sec-head {
+  margin-top: 0;
+}
+
+.impact-card .alert:last-child {
+  margin-bottom: 0;
+}
+
 /* ── KPI GRID ── */
 .kpi-grid {
   display: grid;
