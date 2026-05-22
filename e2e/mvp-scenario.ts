@@ -14,7 +14,7 @@ export async function expectInitialMvpState(page: Page) {
 
   await goToSidebar(page, "TVA");
   await expect(page.getByText("Position déclarative et brouillons CA3/CA12")).toBeVisible();
-  await expect(page.getByText("FRANCHISE", { exact: true })).toBeVisible();
+  await expect(page.getByText("Franchise en base", { exact: true })).toBeVisible();
   await expect(page.getByText("Non applicable")).toBeVisible();
 
   await goToSidebar(page, "Transactions");

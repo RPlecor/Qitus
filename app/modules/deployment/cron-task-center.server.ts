@@ -4,6 +4,9 @@ import { getDevCompanyWorkspace, type CompanyWorkspace } from "../company-worksp
 import { ActivityLogCenter } from "../activity-log/activity-log-center.server";
 import { NotificationCenter } from "../notifications/notification-center.server";
 import { RegulatoryFreshnessCenter } from "../regulatory/regulatory-freshness-center.server";
+import { AccountingRulePackCenter } from "../accounting-rules/accounting-rule-pack-center.server";
+import { RegulatorySourceCenter } from "../accounting-rules/regulatory-source-center.server";
+import { RuleApplicationWorkflow } from "../accounting-rules/rule-application-workflow.server";
 import { getRuntimeConfig, type RuntimeConfig } from "../runtime-config.server";
 
 export class CronTaskCenter {
@@ -16,6 +19,28 @@ export class CronTaskCenter {
     workspace ??= await getDevCompanyWorkspace();
     await new RegulatoryFreshnessCenter().recordFreshnessCheck(workspace, { source: "cron", ok: true });
     return { task: "regulatory_freshness", status: "done" as const };
+  }
+
+  async syncRegulatorySources() {
+    const sources = await new RegulatorySourceCenter().syncOfficialSources();
+    return { task: "regulatory_sources", status: "done" as const, sources };
+  }
+
+  async buildAndActivateRulePacks() {
+    const pack = await new AccountingRulePackCenter().buildRulePackFromRegulatoryChanges();
+    return { task: "accounting_rule_packs", status: "done" as const, packId: pack.id, packStatus: pack.status };
+  }
+
+  async refreshRuleUpdateImpacts(workspace?: CompanyWorkspace) {
+    workspace ??= await getDevCompanyWorkspace();
+    const status = await new RuleApplicationWorkflow().markImpactsForExistingData(workspace);
+    await this.activity.recordActivity(workspace, {
+      action: "accounting_rule_update.impacts_refreshed",
+      entityType: "accounting_rule_pack",
+      entityId: status.activePack?.id,
+      metadata: { status: status.status },
+    });
+    return { task: "accounting_rule_impacts", status: "done" as const };
   }
 
   async refreshFiscalDeadlineNotifications(workspace?: CompanyWorkspace) {
@@ -49,7 +74,7 @@ export class CronTaskCenter {
     return {
       mode: this.config.cronMode,
       workdirCleanupMaxAgeMinutes: this.config.workdirCleanupMaxAgeMinutes,
-      tasks: ["regulatory_freshness", "notifications", "cleanup_workdirs"],
+      tasks: ["regulatory_freshness", "regulatory_sources", "accounting_rule_packs", "accounting_rule_impacts", "notifications", "cleanup_workdirs"],
     };
   }
 }

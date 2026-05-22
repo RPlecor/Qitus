@@ -9,6 +9,9 @@ async function main() {
     const cron = new CronTaskCenter(config);
     await cron.cleanupTemporaryWorkdirs();
     await cron.runRegulatoryFreshnessCheck().catch((error) => console.error("regulatory freshness failed", error));
+    await cron.syncRegulatorySources().catch((error) => console.error("regulatory source sync failed", error));
+    await cron.buildAndActivateRulePacks().catch((error) => console.error("accounting rule pack update failed", error));
+    await cron.refreshRuleUpdateImpacts().catch((error) => console.error("accounting rule impact refresh failed", error));
     await cron.refreshFiscalDeadlineNotifications().catch((error) => console.error("notification refresh failed", error));
   }
   if (config.importExecutionMode === "bullmq") {

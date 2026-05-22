@@ -233,6 +233,8 @@ function activityLabel(action: string) {
     "privacy.soft_deleted": "Suppression demandée",
     "privacy.anonymized": "Données anonymisées",
     "regulatory_freshness.checked": "Fraîcheur réglementaire vérifiée",
+    "accounting_rule_update.applied": "Règles comptables appliquées",
+    "accounting_rule_update.impacts_refreshed": "Impacts des règles comptables actualisés",
     "profile.updated": "Profil modifié",
     "profile.onboarding_completed": "Onboarding terminé",
     "vat.declaration_generated": "Déclaration TVA générée",
@@ -279,6 +281,8 @@ function activityDetail(row: ActivityLogSummary) {
   if (row.action.startsWith("fiscal_year.") && typeof metadata?.startDate === "string") return metadata.startDate;
   if (row.action.startsWith("privacy.") && typeof metadata?.kind === "string") return metadata.kind;
   if (row.action.startsWith("regulatory_freshness.") && typeof metadata?.source === "string") return metadata.source;
+  if (row.action.startsWith("accounting_rule_update.") && typeof metadata?.status === "string") return metadata.status;
+  if (row.action.startsWith("accounting_rule_update.") && typeof metadata?.affectedTransactionCount === "number") return `${metadata.affectedTransactionCount} transaction(s) concernée(s)`;
   if (row.action.startsWith("correction_rule.") && typeof metadata?.counterparty === "string") return metadata.counterparty;
   if (row.action.startsWith("closing_adjustment.") && typeof metadata?.label === "string") return metadata.label;
   if (row.action.startsWith("import.") && typeof metadata?.filename === "string") return metadata.filename;

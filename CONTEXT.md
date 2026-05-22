@@ -116,6 +116,11 @@
 - **Notification**: one persisted product alert derived from business Modules, with read/dismiss state and a stable dedupe key.
 - **NotificationCenter**: the Module that refreshes, lists, summarizes, reads and dismisses Notifications without making them a new source of business truth.
 - **RegulatoryFreshness**: the local freshness state of regulatory data checks, currently activity-backed until Phase 11 cron jobs.
+- **RegulatorySourceSnapshot**: one immutable retrieval of an official source such as BOFiP RSS, ANC/PCG or impots.gouv documentation, identified by checksum and source URL.
+- **RegulatoryChange**: one detected change derived from a RegulatorySourceSnapshot, kept as traceable official evidence before Qitus turns it into executable rules.
+- **AccountingRulePack**: a versioned set of deterministic Qitus accounting rules, activated for future imports while older packs are archived.
+- **RuleImpactPreview**: the calculated preview of existing transactions, user CorrectionRules and derived artifacts that would be affected by a newer AccountingRulePack.
+- **AutomaticRuleApplication**: the workspace record proving the active AccountingRulePack applies to future imports; existing entries are never rewritten silently.
 - **PrivacyRequest**: one user data request such as export, soft delete, anonymization or purge, tracked for RGPD audit.
 - **PrivacyCenter**: the Module that handles soft deletion, anonymization and protected purge decisions.
 - **DataExportCenter**: the Module that builds the complete user/company JSON export for portability.

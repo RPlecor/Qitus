@@ -114,7 +114,7 @@ export default function TvaPage() {
                   <td><Link className="btn btn-sm" to={`/tva/${declaration.id}`}>Ouvrir</Link></td>
                 </tr>
               ))}
-              {visibleDeclarations.length === 0 ? <tr><td colSpan={6} className="sub">Aucune déclaration TVA active.</td></tr> : null}
+              {visibleDeclarations.length === 0 ? <tr><td colSpan={6} className="sub">Aucune déclaration TVA générée.</td></tr> : null}
             </tbody>
           </table>
           </TableShell>

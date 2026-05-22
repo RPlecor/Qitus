@@ -50,6 +50,7 @@ model Company {
   fiscalYears        FiscalYear[]
   bankAccounts       BankAccount[]
   vendorMappings     VendorMapping[]
+  accountingRuleApplications AccountingRuleApplication[]
   documents          Document[]
   activityLogs       ActivityLog[]
   shareLinks         ShareLink[]
@@ -82,6 +83,7 @@ model FiscalYear {
   transactions   Transaction[]
   categorizations Categorization[]
   correctionRules CorrectionRule[]
+  accountingRuleApplications AccountingRuleApplication[]
   journalEntries JournalEntry[]
   documents      Document[]
   activityLogs   ActivityLog[]
@@ -185,6 +187,8 @@ model VendorMapping {
   id             String    @id @default(cuid())
   companyId      String?
   company        Company?  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  rulePackId     String?
+  rulePack       AccountingRulePack? @relation(fields: [rulePackId], references: [id], onDelete: SetNull)
   pattern        String
   matchType      MatchType
   accountDebit   String
@@ -198,11 +202,89 @@ model VendorMapping {
   hitCount       Int       @default(0)
   source         String    @default("seed")
   active         Boolean   @default(true)
+  effectiveFrom  DateTime?
+  effectiveTo    DateTime?
+  supersededAt   DateTime?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
   @@index([companyId, pattern])
   @@index([matchType])
+  @@index([rulePackId])
+  @@index([effectiveFrom, effectiveTo])
+}
+
+model RegulatorySourceSnapshot {
+  id              String             @id @default(cuid())
+  source          String
+  sourceUrl       String
+  retrievedAt     DateTime           @default(now())
+  checksum        String
+  publishedAt     DateTime?
+  title           String
+  rawMetadataJson Json?
+  changes         RegulatoryChange[]
+
+  @@unique([source, checksum])
+  @@index([source, retrievedAt])
+}
+
+model RegulatoryChange {
+  id               String                   @id @default(cuid())
+  sourceSnapshotId String
+  sourceSnapshot   RegulatorySourceSnapshot @relation(fields: [sourceSnapshotId], references: [id], onDelete: Cascade)
+  changeKey        String
+  severity         RegulatoryChangeSeverity @default(INFO)
+  status           RegulatoryChangeStatus   @default(NEW)
+  title            String
+  summary          String
+  effectiveFrom    DateTime?
+  sourceUrl        String
+  metadataJson     Json?
+  createdAt        DateTime                 @default(now())
+  updatedAt        DateTime                 @updatedAt
+
+  @@unique([sourceSnapshotId, changeKey])
+  @@index([changeKey])
+  @@index([status])
+}
+
+model AccountingRulePack {
+  id            String                      @id @default(cuid())
+  version       String                      @unique
+  status        AccountingRulePackStatus    @default(DRAFT)
+  source        String
+  checksum      String
+  effectiveFrom DateTime?
+  activatedAt   DateTime?
+  summary       String
+  metadataJson  Json?
+  vendorMappings VendorMapping[]
+  applications  AccountingRuleApplication[]
+  createdAt     DateTime                    @default(now())
+  updatedAt     DateTime                    @updatedAt
+
+  @@index([status])
+  @@index([effectiveFrom])
+}
+
+model AccountingRuleApplication {
+  id           String                          @id @default(cuid())
+  companyId    String
+  company      Company                         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  fiscalYearId String
+  fiscalYear   FiscalYear                      @relation(fields: [fiscalYearId], references: [id], onDelete: Cascade)
+  rulePackId   String
+  rulePack     AccountingRulePack              @relation(fields: [rulePackId], references: [id], onDelete: Cascade)
+  status       AccountingRuleApplicationStatus @default(AUTO_APPLIED)
+  appliedAt    DateTime?
+  impactJson   Json?
+  note         String?
+  createdAt    DateTime                        @default(now())
+  updatedAt    DateTime                        @updatedAt
+
+  @@unique([companyId, fiscalYearId, rulePackId])
+  @@index([companyId, fiscalYearId, status])
 }
 
 model Categorization {
@@ -1010,6 +1092,31 @@ enum NotificationSeverity {
   INFO
   WARNING
   BLOCKING
+}
+
+enum RegulatoryChangeSeverity {
+  INFO
+  WARNING
+  BLOCKING
+}
+
+enum RegulatoryChangeStatus {
+  NEW
+  PACKED
+  IGNORED
+}
+
+enum AccountingRulePackStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+  NEEDS_REVIEW
+}
+
+enum AccountingRuleApplicationStatus {
+  AUTO_APPLIED
+  SKIPPED
+  NEEDS_REVIEW
 }
 
 enum PrivacyRequestKind {

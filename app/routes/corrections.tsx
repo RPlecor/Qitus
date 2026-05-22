@@ -22,6 +22,12 @@ export default function Corrections() {
   return (
     <AppShell active="corrections">
       <Main title="Règles" subtitle="Corrections apprises">
+        <div className="alert blue">
+          <strong>Deux niveaux de règles</strong>
+          <span>Les règles utilisateur ci-dessous restent prioritaires. Les règles globales Qitus sont mises à jour automatiquement depuis les sources officielles pour les futurs imports.</span>
+          <Link className="btn btn-sm" to="/regles-comptables">Voir les règles comptables</Link>
+        </div>
+
         <Form method="get" className="card filter-bar">
           <div className="field">
             <label>Recherche</label>

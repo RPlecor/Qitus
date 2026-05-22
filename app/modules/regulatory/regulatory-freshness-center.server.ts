@@ -1,4 +1,5 @@
 import type { CompanyWorkspace } from "../company-workspace/company-workspace.server";
+import { AccountingRulePackCenter } from "../accounting-rules/accounting-rule-pack-center.server";
 import { prisma } from "../db.server";
 
 const MAX_REGULATORY_AGE_DAYS = 30;
@@ -8,16 +9,30 @@ export type RegulatoryFreshness = {
   label: string;
   lastCheckedAt: string | null;
   ageDays: number | null;
+  activeRulePackVersion?: string | null;
+  activeRulePackActivatedAt?: string | null;
 };
 
 export class RegulatoryFreshnessCenter {
+  constructor(private readonly rulePacks = new AccountingRulePackCenter()) {}
+
   async getFreshness(workspace: CompanyWorkspace): Promise<RegulatoryFreshness> {
-    const latest = await prisma.activityLog.findFirst({
-      where: { companyId: workspace.company.id, action: "regulatory_freshness.checked" },
-      orderBy: { createdAt: "desc" },
-    });
+    const [latest, activeRulePack] = await Promise.all([
+      prisma.activityLog.findFirst({
+        where: { companyId: workspace.company.id, action: "regulatory_freshness.checked" },
+        orderBy: { createdAt: "desc" },
+      }),
+      this.rulePacks.getActiveRulePack(),
+    ]);
     if (!latest) {
-      return { status: "unknown", label: "Fraîcheur réglementaire non vérifiée", lastCheckedAt: null, ageDays: null };
+      return {
+        status: "unknown",
+        label: "Fraîcheur réglementaire non vérifiée",
+        lastCheckedAt: null,
+        ageDays: null,
+        activeRulePackVersion: activeRulePack?.version ?? null,
+        activeRulePackActivatedAt: activeRulePack?.activatedAt?.toISOString() ?? null,
+      };
     }
     const ageDays = Math.floor((Date.now() - latest.createdAt.getTime()) / 86_400_000);
     return {
@@ -25,6 +40,8 @@ export class RegulatoryFreshnessCenter {
       label: ageDays > MAX_REGULATORY_AGE_DAYS ? "Fraîcheur réglementaire à vérifier" : "Fraîcheur réglementaire vérifiée",
       lastCheckedAt: latest.createdAt.toISOString(),
       ageDays,
+      activeRulePackVersion: activeRulePack?.version ?? null,
+      activeRulePackActivatedAt: activeRulePack?.activatedAt?.toISOString() ?? null,
     };
   }
 
@@ -50,7 +67,7 @@ export class RegulatoryFreshnessCenter {
       title: freshness.label,
       body: freshness.status === "unknown"
         ? "Aucune vérification réglementaire locale n'a encore été enregistrée."
-        : `Dernière vérification il y a ${freshness.ageDays} jours.`,
+        : `Dernière vérification il y a ${freshness.ageDays} jours. Pack actif : ${freshness.activeRulePackVersion ?? "non initialisé"}.`,
       href: "/notifications",
       dedupeKey: "regulatory:freshness",
       metadata: freshness,

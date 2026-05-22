@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   ChangeImpactCenter,
+  AccountingRulesImpactSource,
   DocumentImpactSource,
   VatImpactSource,
   buildChangeImpactOverviewForTest,
@@ -181,6 +182,20 @@ describe("Change impact sources", () => {
       severity: "blocking",
       blockingCapabilities: ["generate_vat_declaration"],
     });
+  });
+
+  it("AccountingRulesImpactSource stays quiet until a pack is applied to the workspace", async () => {
+    const source = new AccountingRulesImpactSource({
+      async getRuleUpdateStatus() {
+        return {
+          activePack: { id: "pack_1" },
+          application: null,
+          impact: { existingDataRequiresExplicitAction: true, affectedTransactionCount: 3, conflictCount: 0 },
+        };
+      },
+    } as never);
+
+    await expect(source.listImpacts(workspace)).resolves.toEqual([]);
   });
 });
 

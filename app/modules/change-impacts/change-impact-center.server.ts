@@ -1,5 +1,6 @@
 import type { FiscalYearStatus } from "@prisma/client";
 import { ClosingAdjustmentFreshnessCenter } from "../closing-adjustments/closing-adjustment-freshness-center.server";
+import { RuleApplicationWorkflow } from "../accounting-rules/rule-application-workflow.server";
 import type { CompanyWorkspace } from "../company-workspace/company-workspace.server";
 import { prisma } from "../db.server";
 import { DocumentFreshnessCenter } from "../documents/document-freshness-center.server";
@@ -82,7 +83,7 @@ export type ChangeImpactSource = {
   listImpacts(workspace: CompanyWorkspace, options?: ChangeImpactSourceOptions): Promise<ChangeImpact[]>;
 };
 
-const DASHBOARD_SOURCE_KEYS = new Set(["imports-ledger", "documents", "fec", "vat", "reconciliations", "closing"]);
+const DASHBOARD_SOURCE_KEYS = new Set(["accounting-rules", "imports-ledger", "documents", "fec", "vat", "reconciliations", "closing"]);
 const HEAVY_SOURCE_KEYS = new Set(["evidence", "expert-dossier", "connectors"]);
 
 export class ChangeImpactCenter {
@@ -286,6 +287,53 @@ export class ImportLedgerImpactSource implements ChangeImpactSource {
       primaryAction: { label: "Ouvrir les imports", href: "/imports" },
       secondaryAction: { label: "Voir les transactions à vérifier", href: "/transactions?status=review" },
       metadata: { count: staleRows.length },
+    })];
+  }
+}
+
+export class AccountingRulesImpactSource implements ChangeImpactSource {
+  readonly sourceKey = "accounting-rules";
+  readonly surfaces: ChangeImpactSurface[] = ["dashboard", "imports", "couverture"];
+  constructor(private readonly workflow = new RuleApplicationWorkflow()) {}
+
+  async listImpacts(workspace: CompanyWorkspace): Promise<ChangeImpact[]> {
+    const status = await this.workflow.getRuleUpdateStatus(workspace);
+    const activePack = status.activePack;
+    if (!activePack) return [impact({
+      code: "accounting_rules.missing_pack",
+      source: this.sourceKey,
+      status: "warning",
+      severity: "warning",
+      title: "Règles comptables à initialiser",
+      message: "Aucun pack de règles Qitus actif n'est disponible pour les futurs imports.",
+      why: ["Synchronise les règles officielles ou relance le seed Qitus."],
+      surfaces: this.surfaces,
+      blockingCapabilities: [],
+      affectedArtifacts: ["VendorMapping"],
+      primaryAction: { label: "Ouvrir les règles comptables", href: "/regles-comptables" },
+    })];
+
+    if (!status.application) return [];
+
+    const impactPreview = status.impact as { affectedTransactionCount?: number; conflictCount?: number; existingDataRequiresExplicitAction?: boolean } | null;
+    if (!impactPreview?.existingDataRequiresExplicitAction) return [];
+    return [impact({
+      code: "accounting_rules.existing_data_impacted",
+      source: this.sourceKey,
+      status: "warning",
+      severity: "warning",
+      title: "Règles comptables mises à jour",
+      message: "Les futurs imports utilisent les règles à jour. Des transactions existantes pourraient bénéficier d'une relance explicite de catégorisation.",
+      why: [
+        `${impactPreview.affectedTransactionCount ?? 0} transaction(s) existante(s) potentiellement concernée(s).`,
+        `${impactPreview.conflictCount ?? 0} conflit(s) avec des règles utilisateur prioritaires.`,
+      ],
+      surfaces: this.surfaces,
+      blockingCapabilities: [],
+      affectedArtifacts: ["Imports existants", "Catégorisations"],
+      primaryAction: { label: "Ouvrir les règles comptables", href: "/regles-comptables" },
+      secondaryAction: { label: "Ouvrir les imports", href: "/imports" },
+      metadata: impactPreview,
     })];
   }
 }
@@ -496,6 +544,7 @@ export class ClosedFiscalYearImpactSource implements ChangeImpactSource {
 export function defaultChangeImpactSources(): ChangeImpactSource[] {
   return [
     new ClosedFiscalYearImpactSource(),
+    new AccountingRulesImpactSource(),
     new ImportLedgerImpactSource(),
     new DocumentImpactSource(),
     new FecImpactSource(),

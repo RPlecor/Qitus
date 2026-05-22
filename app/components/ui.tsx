@@ -24,6 +24,7 @@ import {
   FolderCheck,
   Plug,
   LogOut,
+  LibraryBig,
 } from "lucide-react";
 
 const ICON_SIZE = 16;
@@ -58,6 +59,9 @@ function buildNav(showDemo: boolean): NavSection[] {
         { id: "connecteurs", icon: <Plug size={ICON_SIZE} strokeWidth={ICON_STROKE} />, label: "Connecteurs", href: "/connecteurs" },
         { id: "transactions", icon: <ArrowLeftRight size={ICON_SIZE} strokeWidth={ICON_STROKE} />, label: "Transactions", href: "/transactions" },
         { id: "corrections", icon: <Settings2 size={ICON_SIZE} strokeWidth={ICON_STROKE} />, label: "Règles", href: "/corrections" },
+        ...(showDemo
+          ? [{ id: "regles-comptables", icon: <LibraryBig size={ICON_SIZE} strokeWidth={ICON_STROKE} />, label: "Règles comptables", href: "/regles-comptables" }]
+          : []),
         { id: "pieces", icon: <Paperclip size={ICON_SIZE} strokeWidth={ICON_STROKE} />, label: "Pièces", href: "/pieces" },
       ],
     },

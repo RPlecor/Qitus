@@ -1071,7 +1071,26 @@ Objectif : stabiliser le socle Phase 16 avant les extensions post-beta, avec rea
 
 Cette phase ne choisit pas encore un provider bancaire live. Le mock Open Banking reste la preuve automatisée. Après readiness beta verte, la Phase 17 peut démarrer sur les extensions métier sans rouvrir les Seams d'infrastructure.
 
-## Phase 17 — Extensions métier après beta
+## Phase 17 — Mise à jour automatique des règles comptables officielles
+
+Objectif : automatiser la veille et l'activation des règles comptables Qitus à partir de sources officielles, sans action demandée à l'utilisateur final.
+
+- `RegulatorySourceAdapter` isole les sources BOFiP RSS, ANC/PCG et impots.gouv documentation derrière un Seam d'Adapters.
+- `RegulatorySourceCenter` stocke des `RegulatorySourceSnapshot` et `RegulatoryChange` traçables par checksum, sans créer directement d'écriture ni de mapping.
+- `AccountingRulePackCenter` construit, active et archive des `AccountingRulePack` versionnés ; le pack actif alimente les futurs imports.
+- `RuleImpactPreviewCenter` et `RuleApplicationWorkflow` signalent les impacts sur les données existantes sans mutation silencieuse.
+- `ChangeImpactCenter` remonte les règles mises à jour, les imports à relancer, et les documents/FEC/dossier EC potentiellement obsolètes.
+- `/regles-comptables` reste une surface dev/admin de transparence : sources consultées, dernière synchronisation, pack actif et packs en revue interne.
+- Nouveau script : `npm run validate:accounting-rules-auto-update`.
+
+Décisions :
+
+- Les écritures existantes ne sont jamais modifiées automatiquement.
+- Les `CorrectionRule` utilisateur restent prioritaires.
+- Les changements BOFiP ou impots.gouv textuels ambigus restent en revue interne Qitus (`NEEDS_REVIEW`), invisibles comme tâche utilisateur.
+- Les futurs imports utilisent automatiquement le pack actif.
+
+## Phase 18 — Extensions métier après beta
 
 Objectif : exploiter les autres capacités du repo Qitus.
 

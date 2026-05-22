@@ -29,6 +29,7 @@
     "validate:stripe-connector": "tsx scripts/validate-connectors-live-shaped.ts",
     "validate:bridge-connector": "tsx scripts/validate-connectors-live-shaped.ts",
     "validate:powens-connector": "tsx scripts/validate-connectors-live-shaped.ts",
+    "validate:accounting-rules-auto-update": "tsx scripts/validate-accounting-rules-auto-update.ts",
     "validate:chat-billing": "tsx scripts/validate-chat-billing.ts",
     "validate:end-user": "playwright test -c playwright.config.ts",
     "prisma:generate": "prisma generate",
