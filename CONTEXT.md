@@ -73,6 +73,10 @@
 - **SuspenseAccountReview**: the Module-owned review of suspense accounts `471`, `467`, `511` and `580`.
 - **ConnectorSync**: the Module that runs disabled, fixture or live Qonto/Stripe sync through Adapters without storing provider secrets in the database.
 - **ConnectorStatus**: a non-secret diagnostic view of connector mode, source and configuration readiness for Qonto and Stripe.
+- **ConnectorProductSurface**: the product-facing Module that translates Qonto banking, Stripe, Open Banking and Qonto PA technical readiness into safe user statuses without exposing test Adapter names.
+- **InternalConnectorTestMode**: an explicit runtime mode that exposes manual connector test actions for validation while keeping simulated providers out of the normal product Interface.
+- **QontoBankingConnector**: the direct Qonto Business API connector for importing bank transactions through the existing ImportOrchestrator pipeline.
+- **QontoPaConnector**: the separate Qonto Plateforme Agréée connector for incoming supplier e-invoices; it never reuses Qonto banking credentials or claims compliance before partner validation.
 - **TaxPackageDraft**: a local `.md` draft of the fiscal package generated from deterministic journal totals and company metadata.
 - **TaxPackageTemplateRenderer**: the Module that renders the structured fiscal package source with case labels, amounts, and calculation references.
 - **DocumentPdfRenderer**: the Adapter that optionally turns structured fiscal package sources into PDFs via Qitus CLI scripts and Puppeteer.

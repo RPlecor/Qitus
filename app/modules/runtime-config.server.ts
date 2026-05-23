@@ -69,6 +69,7 @@ export type RuntimeConfig = {
   openBankingBaseUrl?: string;
   providerSecretEncryptionKey?: string;
   changeImpactsMode: ChangeImpactsMode;
+  qitusInternalTestMode: boolean;
   eInvoiceProvider: EInvoiceProviderMode;
   eInvoiceProviderBaseUrl?: string;
   eInvoiceProviderClientId?: string;
@@ -134,6 +135,7 @@ export function getRuntimeConfig(env: Record<string, string | undefined> = proce
     openBankingBaseUrl: env.OPEN_BANKING_BASE_URL,
     providerSecretEncryptionKey: env.PROVIDER_SECRET_ENCRYPTION_KEY,
     changeImpactsMode: parseChangeImpactsMode(env.CHANGE_IMPACTS_MODE),
+    qitusInternalTestMode: parseBoolean(env.QITUS_INTERNAL_TEST_MODE, false),
     eInvoiceProvider: parseEInvoiceProvider(env.E_INVOICE_PROVIDER),
     eInvoiceProviderBaseUrl: env.E_INVOICE_PROVIDER_BASE_URL,
     eInvoiceProviderClientId: env.E_INVOICE_PROVIDER_CLIENT_ID,
@@ -231,6 +233,7 @@ export function sanitizedRuntimeConfig(config = getRuntimeConfig()) {
     cronMode: config.cronMode,
     openBankingProvider: config.openBankingProvider,
     changeImpactsMode: config.changeImpactsMode,
+    qitusInternalTestMode: config.qitusInternalTestMode,
     eInvoiceProvider: config.eInvoiceProvider,
     enablePdfGeneration: config.enablePdfGeneration,
     hasDatabaseUrl: Boolean(config.databaseUrl),
@@ -325,7 +328,7 @@ export function parseChangeImpactsMode(value: string | undefined): ChangeImpacts
 }
 
 export function parseEInvoiceProvider(value: string | undefined): EInvoiceProviderMode {
-  const mode = value?.toLowerCase() ?? "mock";
+  const mode = value?.toLowerCase() ?? "disabled";
   if (/^[a-z0-9_-]+$/.test(mode)) return mode;
   throw new Error(`Unsupported E_INVOICE_PROVIDER value: ${value}`);
 }
@@ -334,4 +337,12 @@ function parsePositiveInt(value: string | undefined, fallback: number) {
   const parsed = Number(value);
   if (!Number.isFinite(parsed) || parsed <= 0) return fallback;
   return Math.floor(parsed);
+}
+
+function parseBoolean(value: string | undefined, fallback: boolean) {
+  if (value === undefined) return fallback;
+  const normalized = value.toLowerCase();
+  if (normalized === "1" || normalized === "true" || normalized === "yes") return true;
+  if (normalized === "0" || normalized === "false" || normalized === "no") return false;
+  return fallback;
 }

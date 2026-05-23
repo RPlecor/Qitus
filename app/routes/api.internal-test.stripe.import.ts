@@ -1,4 +1,4 @@
-import { json, redirect, type ActionFunctionArgs } from "@remix-run/node";
+import { json, type ActionFunctionArgs } from "@remix-run/node";
 import { ActivityLogCenter } from "~/modules/activity-log/activity-log-center.server";
 import { assertFiscalYearMutable } from "~/modules/annual-closing/annual-closing-center.server";
 import { requireCompanyWorkspace } from "~/modules/company-workspace/company-workspace.server";
@@ -9,13 +9,13 @@ import { getRuntimeConfig } from "~/modules/runtime-config.server";
 export async function action(args: ActionFunctionArgs) {
   const workspace = await requireCompanyWorkspace(args);
   try {
-    if (!getRuntimeConfig().qitusInternalTestMode) throw new ExpectedRouteError("Banc de test interne désactivé.", 403);
+    const config = getRuntimeConfig();
+    if (!config.qitusInternalTestMode) throw new ExpectedRouteError("Banc de test interne désactivé.", 403);
     await assertFiscalYearMutable(workspace);
     const imported = await new StripeReconciliationCenter().importStripeFixture(workspace);
-    await new ActivityLogCenter().recordActivity(workspace, { action: "internal_test.stripe_imported", entityType: "reconciliation", metadata: { testMode: true, ...imported } });
-    if (args.request.headers.get("accept")?.includes("application/json")) return json({ imported });
-    return redirect("/rapprochements/stripe");
+    await new ActivityLogCenter().recordActivity(workspace, { action: "internal_test.stripe_imported", entityType: "connector", entityId: "stripe", metadata: { testMode: true, ...imported } });
+    return json({ imported, testMode: true });
   } catch (error) {
-    return jsonOrRedirectError(args.request, error, "/rapprochements/stripe");
+    return jsonOrRedirectError(args.request, error, "/connecteurs");
   }
 }

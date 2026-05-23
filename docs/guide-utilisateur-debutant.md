@@ -572,9 +572,9 @@ Une fois le mapping valide, Qitus peut reprendre l'import.
 
 Chemin : `/connecteurs`
 
-Cette page regroupe les connexions externes et les diagnostics d'infrastructure.
+Cette page regroupe les connexions externes et les diagnostics d'infrastructure. L'utilisateur voit uniquement les connecteurs produit : Qonto bancaire, Stripe, Open Banking et Qonto PA.
 
-En mode local, les connecteurs peuvent etre des mocks ou des fixtures.
+Un banc de test interne peut exister en environnement technique, mais il est affiche separement et ne correspond jamais a une connexion de production.
 
 ### Cartes KPI
 
@@ -584,9 +584,9 @@ Indique si un provider bancaire est configure.
 
 Statuts possibles :
 
-- desactive ;
-- mock ;
-- provider configure ;
+- non configure ;
+- a connecter ;
+- connecte ;
 - erreur de configuration.
 
 #### Connexions actives
@@ -1913,7 +1913,7 @@ Chemin : `/rapprochements/stripe`
 
 ### Actions
 
-- `Importer fixture Stripe` : charger des donnees locales de test.
+- `Tester un payout Stripe` : charger des donnees controlees uniquement si le banc de test interne est active.
 - `Sync connecteur` : synchroniser si connecteur configure.
 - `Lancer rapprochement` : calculer les matches.
 
@@ -2795,7 +2795,7 @@ Champs :
 
 - nom ;
 - description ;
-- fixtures importees ;
+- fichiers de test importes ;
 - etat attendu ;
 - avertissement de reset destructif.
 
@@ -2979,4 +2979,3 @@ Si vous ne comprenez pas un point :
 6. Demandez a votre expert-comptable si le point a un impact fiscal ou juridique.
 
 Qitus est concu pour rendre les decisions visibles et auditables. Le bon reflexe est de documenter vos choix avec des notes et des pieces.
-

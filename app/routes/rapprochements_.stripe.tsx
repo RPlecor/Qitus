@@ -7,7 +7,8 @@ import { requireCompanyWorkspace } from "~/modules/company-workspace/company-wor
 import { ConnectorSyncCenter } from "~/modules/reconciliations/connector-sync-center.server";
 import { ReconciliationFreshnessCenter } from "~/modules/reconciliations/reconciliation-freshness-center.server";
 import { StripeReconciliationCenter } from "~/modules/reconciliations/stripe-reconciliation-center.server";
-import { jsonOrRedirectError } from "~/modules/route-errors.server";
+import { ExpectedRouteError, jsonOrRedirectError } from "~/modules/route-errors.server";
+import { getRuntimeConfig } from "~/modules/runtime-config.server";
 
 export async function loader(args: LoaderFunctionArgs) {
   const workspace = await requireCompanyWorkspace(args);
@@ -19,7 +20,7 @@ export async function loader(args: LoaderFunctionArgs) {
     new ReconciliationFreshnessCenter().getRunFreshness(workspace, "STRIPE"),
     Promise.resolve(new ConnectorSyncCenter().getConnectorStatus(workspace)),
   ]);
-  return json({ summary, events, matches, freshness, connectors });
+  return json({ summary, events, matches, freshness, connectors, internalTestMode: getRuntimeConfig().qitusInternalTestMode });
 }
 
 export async function action(args: ActionFunctionArgs) {
@@ -29,11 +30,14 @@ export async function action(args: ActionFunctionArgs) {
   try {
     await assertFiscalYearMutable(workspace);
     if (form.get("intent") === "fixture") {
+      if (!getRuntimeConfig().qitusInternalTestMode) throw new ExpectedRouteError("Banc de test interne désactivé.", 403);
       await center.importStripeFixture(workspace);
-      await new ActivityLogCenter().recordActivity(workspace, { action: "reconciliation.stripe_fixture_imported", entityType: "reconciliation", metadata: { provider: "stripe" } });
+      await new ActivityLogCenter().recordActivity(workspace, { action: "internal_test.stripe_imported", entityType: "reconciliation", metadata: { provider: "stripe", testMode: true } });
     }
     if (form.get("intent") === "sync") {
-      await new ConnectorSyncCenter().syncStripe(workspace);
+      const config = getRuntimeConfig();
+      if (!config.qitusInternalTestMode && config.connectorsMode === "fixture") throw new ExpectedRouteError("Banc de test interne désactivé.", 403);
+      await new ConnectorSyncCenter(config).syncStripe(workspace);
       await new ActivityLogCenter().recordActivity(workspace, { action: "reconciliation.stripe_synced", entityType: "reconciliation", metadata: { provider: "stripe" } });
     }
     if (form.get("intent") === "run") {
@@ -47,7 +51,7 @@ export async function action(args: ActionFunctionArgs) {
 }
 
 export default function RapprochementStripe() {
-  const { summary, events, matches, freshness, connectors } = useLoaderData<typeof loader>();
+  const { summary, events, matches, freshness, connectors, internalTestMode } = useLoaderData<typeof loader>();
   const stripeConnector = connectors.connectors.find((connector) => connector.provider === "stripe");
   return (
     <AppShell active="rapprochements">
@@ -55,7 +59,7 @@ export default function RapprochementStripe() {
         <div className={`alert ${freshness.status === "stale" ? "orange" : "blue"}`}><strong>{freshness.label}</strong><span>{freshness.staleReasons[0] ?? stripeConnector?.message ?? "Fixture locale disponible."}</span></div>
         <div className="card">
           <div className="row-actions">
-            <Form method="post"><input type="hidden" name="intent" value="fixture" /><button className="btn" type="submit">Importer fixture Stripe</button></Form>
+            {internalTestMode ? <Form method="post"><input type="hidden" name="intent" value="fixture" /><button className="btn" type="submit">Tester un payout Stripe</button></Form> : null}
             <Form method="post"><input type="hidden" name="intent" value="sync" /><button className="btn" type="submit">Sync connecteur</button></Form>
             <Form method="post"><input type="hidden" name="intent" value="run" /><button className="btn btn-p" type="submit">Lancer rapprochement</button></Form>
           </div>

@@ -2,264 +2,110 @@ import { json, type LoaderFunctionArgs } from "@remix-run/node";
 import { Form, Link, useLoaderData, useSearchParams } from "@remix-run/react";
 import { AppShell, KpiCard, Main, StatusPill, TableShell } from "~/components/ui";
 import { requireCompanyWorkspace } from "~/modules/company-workspace/company-workspace.server";
-import { BetaReadinessCenter } from "~/modules/deployment/beta-readiness-center.server";
+import { ConnectorProductSurfaceCenter } from "~/modules/connectors/connector-product-surface-center.server";
 import { HealthCheckCenter } from "~/modules/deployment/health-check-center.server";
 import { StorageConfigurationCenter } from "~/modules/deployment/storage-configuration-center.server";
-import { OpenBankingCenter } from "~/modules/open-banking/open-banking-center.server";
-import { OpenBankingFreshnessCenter } from "~/modules/open-banking/open-banking-freshness-center.server";
 import { OpenBankingSyncWorkflow } from "~/modules/open-banking/open-banking-sync-workflow.server";
-import { ConnectorSyncCenter } from "~/modules/reconciliations/connector-sync-center.server";
 import { StorageAuditCenter } from "~/modules/storage/storage-audit-center.server";
-import { EInvoiceProviderCenter } from "~/modules/e-invoices/e-invoice-provider-center.server";
-import { AccreditedPlatformSelectionCenter } from "~/modules/e-invoices/accredited-platform-selection-center.server";
 
 export async function loader(args: LoaderFunctionArgs) {
   const workspace = await requireCompanyWorkspace(args);
-  const [openBanking, openBankingFreshness, syncHistory, betaReadiness, connectors, readiness, storage, storageAudit, institutions, eInvoiceProvider, paSelection] = await Promise.all([
-    new OpenBankingCenter().getStatus(workspace),
-    new OpenBankingFreshnessCenter().getFreshness(workspace),
-    new OpenBankingSyncWorkflow().getSyncHistory(workspace),
-    new BetaReadinessCenter().getReadiness(workspace),
-    Promise.resolve(new ConnectorSyncCenter().getConnectorStatus(workspace)),
+  const [surface, readiness, storage, storageAudit, syncHistory] = await Promise.all([
+    new ConnectorProductSurfaceCenter().getConnectorOverview(workspace),
     new HealthCheckCenter().getReadiness(),
     Promise.resolve(new StorageConfigurationCenter().getStatus()),
     new StorageAuditCenter().getStorageAudit(workspace),
-    new OpenBankingCenter().listInstitutions({ country: "FR" }).catch(() => []),
-    new EInvoiceProviderCenter().getStatus(workspace),
-    new AccreditedPlatformSelectionCenter().getSelection(),
+    new OpenBankingSyncWorkflow().getSyncHistory(workspace),
   ]);
-  return json({ openBanking, openBankingFreshness, syncHistory, betaReadiness, connectors, readiness, storage, storageAudit, institutions, eInvoiceProvider, paSelection });
+  return json({ surface, readiness, storage, storageAudit, syncHistory });
 }
 
 export default function Connecteurs() {
-  const { openBanking, openBankingFreshness, syncHistory, betaReadiness, connectors, readiness, storage, storageAudit, institutions, eInvoiceProvider, paSelection } = useLoaderData<typeof loader>();
+  const { surface, readiness, storage, storageAudit, syncHistory } = useLoaderData<typeof loader>();
   const [params] = useSearchParams();
   const notice = params.get("openBanking");
   const eInvoiceNotice = params.get("eInvoiceProvider");
   const error = params.get("error");
-  const activeConnections = openBanking.connections.filter((connection) => connection.status === "ACTIVE").length;
 
   return (
     <AppShell active="connecteurs">
-      <Main title="Connecteurs" subtitle="Open Banking, Qonto, Stripe et runtime beta">
+      <Main title="Connecteurs" subtitle="Qonto, Stripe, Open Banking et facturation électronique">
         {notice ? <div className="alert blue">Open Banking : {noticeLabel(notice)}</div> : null}
         {eInvoiceNotice ? <div className="alert blue">Facturation électronique : {noticeLabel(eInvoiceNotice)}</div> : null}
         {error ? <div className="alert orange">{error}</div> : null}
+
         <div className="kpi-grid">
-          <KpiCard label="Open Banking" value={openBanking.enabled ? openBanking.provider : "Désactivé"} hint={openBanking.message} />
-          <KpiCard label="Connexions actives" value={String(activeConnections)} hint="Consentements read-only" />
+          <KpiCard label="Connecteurs" value={`${surface.summary.configured}/${surface.summary.total}`} hint="Configurés" />
+          <KpiCard label="Connexions" value={String(surface.summary.connected)} hint="Connexions actives" />
           <KpiCard label="Readiness" value={readiness.status === "ready" ? "Prêt" : "À revoir"} hint={`${readiness.dependencies.filter((item) => item.status === "error").length} erreur(s)`} />
           <KpiCard label="Stockage" value={storage.mode.toUpperCase()} hint={storage.configured ? "Configuré" : "Incomplet"} />
         </div>
 
         <section className="card">
           <div className="sec-head">
+            <h2>Connecteurs produit</h2>
+            <StatusPill label={surface.summary.blocked === 0 ? "Lisible" : "À configurer"} tone={surface.summary.blocked === 0 ? "ok" : "warn"} />
+          </div>
+          <div className="grid two">
+            {surface.cards.map((connector) => (
+              <article className="panel" key={connector.key}>
+                <div className="sec-head">
+                  <div>
+                    <h3>{connector.label}</h3>
+                    <p className="sub">{connector.description}</p>
+                  </div>
+                  <StatusPill label={connector.state} tone={stateTone(connector.state)} />
+                </div>
+                <p>{connector.message}</p>
+                <div className="grid two">
+                  {connector.details.map((detail) => <div className="kv" key={detail.label}><span>{detail.label}</span><strong>{detail.value}</strong></div>)}
+                </div>
+                <div className="row-actions">
+                  {connector.primaryAction ? <ConnectorAction action={connector.primaryAction} /> : null}
+                  {connector.secondaryAction ? <ConnectorAction action={connector.secondaryAction} /> : null}
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        {surface.internalTest.enabled ? (
+          <section className="card">
+            <div className="sec-head">
+              <h2>Banc de test interne</h2>
+              <StatusPill label="Interne" tone="warn" />
+            </div>
+            <div className="alert orange">{surface.internalTest.banner}</div>
+            <div className="row-actions">
+              {surface.internalTest.actions.map((action) => (
+                action.key === "qonto_pa"
+                  ? <Link className="btn" to={action.href} key={action.key} title={action.description}>{action.label}</Link>
+                  : <Form method="post" action={action.href} key={action.key}>
+                    <button className="btn" type="submit" title={action.description}>{action.label}</button>
+                  </Form>
+              ))}
+            </div>
+          </section>
+        ) : null}
+
+        <section className="card">
+          <div className="sec-head">
             <h2>Readiness beta</h2>
-            <StatusPill label={betaReadiness.status === "ready" ? "Prêt" : betaReadiness.status === "warning" ? "À surveiller" : "Bloqué"} tone={betaReadiness.status === "ready" ? "ok" : betaReadiness.status === "warning" ? "warn" : "error"} />
+            <StatusPill label={surface.betaReadiness.status === "ready" ? "Prêt" : surface.betaReadiness.status === "warning" ? "À surveiller" : "Bloqué"} tone={surface.betaReadiness.status === "ready" ? "ok" : surface.betaReadiness.status === "warning" ? "warn" : "error"} />
           </div>
           <p className="sub">
-            {betaReadiness.summary.ready}/{betaReadiness.summary.total} checks prêts · {betaReadiness.summary.warnings} warning(s) · {betaReadiness.summary.blocked} blocage(s)
+            {surface.betaReadiness.summary.ready}/{surface.betaReadiness.summary.total} checks prêts · {surface.betaReadiness.summary.warnings} warning(s) · {surface.betaReadiness.summary.blocked} blocage(s)
           </p>
           <TableShell>
             <table className="tbl">
               <thead><tr><th>Check</th><th>Statut</th><th>Message</th><th>Action</th></tr></thead>
               <tbody>
-                {betaReadiness.checks.map((check) => (
+                {surface.betaReadiness.checks.map((check) => (
                   <tr key={check.code}>
                     <td>{check.label}</td>
                     <td><StatusPill label={check.status} tone={check.status === "ready" ? "ok" : check.status === "warning" ? "warn" : "error"} /></td>
                     <td>{check.message}</td>
                     <td>{check.action ?? "—"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </TableShell>
-        </section>
-
-        <section className="card">
-          <div className="sec-head">
-            <h2>Open Banking provider</h2>
-            <StatusPill label={openBankingFreshness.status === "fresh" ? "À jour" : openBankingFreshness.status === "never_connected" ? "Jamais connecté" : "À revoir"} tone={openBankingFreshness.status === "fresh" ? "ok" : "warn"} />
-          </div>
-          <p className="sub">{openBanking.message}</p>
-          <div className="row-actions">
-            <Form method="post" action="/api/open-banking/connect">
-              <input type="hidden" name="country" value="FR" />
-              {openBanking.selectionMode === "institution_select" && institutions.length > 0 ? (
-                <select name="institutionId" aria-label="Établissement bancaire">
-                  {institutions.map((institution, index) => institution ? <option key={institution.id} value={institution.id}>{institution.name}</option> : <option key={index} value="">Établissement indisponible</option>)}
-                </select>
-              ) : null}
-              <button className="btn btn-p" type="submit" disabled={!openBanking.enabled}>
-                {openBanking.selectionMode === "provider_webview" ? "Ouvrir le parcours bancaire provider" : "Connecter une banque"}
-              </button>
-            </Form>
-            <Form method="post" action="/api/open-banking/sync">
-              <button className="btn" type="submit" disabled={!openBanking.enabled}>Synchroniser</button>
-            </Form>
-            <Form method="post" action="/api/open-banking/disconnect">
-              <button className="btn" type="submit" disabled={activeConnections === 0}>Révoquer</button>
-            </Form>
-          </div>
-          <TableShell>
-            <table className="tbl">
-              <thead><tr><th>Connexion</th><th>Statut</th><th>Fraîcheur</th><th>Expiration</th><th>Dernière sync</th><th>Comptes</th><th>Actions</th></tr></thead>
-              <tbody>
-                {openBanking.connections.map((connection) => (
-                  <tr key={connection.id}>
-                    <td>{connection.provider}</td>
-                    <td><StatusPill label={connection.status} tone={connection.status === "ACTIVE" ? "ok" : "warn"} /></td>
-                    <td>{freshnessLabel(openBankingFreshness.connections.find((item) => item.connectionId === connection.id)?.status)}</td>
-                    <td className="mono">{connection.consentExpiresAt ? shortDate(connection.consentExpiresAt) : "—"}</td>
-                    <td className="mono">{connection.lastSyncedAt ? shortDate(connection.lastSyncedAt) : "Jamais"}</td>
-                    <td>{connection.accounts.map((account) => account.name).join(", ") || "—"}</td>
-                    <td>
-                      <div className="row-actions">
-                        <Form method="post" action={`/api/open-banking/connections/${connection.id}/sync`}>
-                          <button className="btn" type="submit">Sync</button>
-                        </Form>
-                        {connection.status !== "ACTIVE" ? (
-                          <Form method="post" action={`/api/open-banking/connections/${connection.id}/reconnect`}>
-                            <button className="btn" type="submit">Reconnecter</button>
-                          </Form>
-                        ) : null}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-                {openBanking.connections.length === 0 ? <tr><td colSpan={7} className="sub">Aucune connexion bancaire.</td></tr> : null}
-              </tbody>
-            </table>
-          </TableShell>
-        </section>
-
-        <section className="card">
-          <div className="sec-head">
-            <div>
-              <h2>Facture électronique entrante</h2>
-              <p className="sub">{eInvoiceProvider.readiness.message} · {eInvoiceProvider.safeMessage}</p>
-            </div>
-            <StatusPill label={eInvoiceProvider.readiness.receptionCompliant ? "Réception PA conforme" : eInvoiceProvider.configured ? "PA à finaliser" : "Non configurée"} tone={eInvoiceProvider.readiness.receptionCompliant ? "ok" : eInvoiceProvider.configured ? "warn" : "error"} />
-          </div>
-          <div className="grid two">
-            <div className="kv"><span>Provider</span><strong>{eInvoiceProvider.providerLabel ?? eInvoiceProvider.provider}</strong></div>
-            <div className="kv"><span>Mode</span><strong>{eInvoiceProvider.mode}</strong></div>
-            <div className="kv"><span>Conformité réception</span><strong>{eInvoiceProvider.readiness.receptionCompliant ? "Oui" : "Non"}</strong></div>
-            <div className="kv"><span>Action recommandée</span><strong>{eInvoiceProvider.readiness.recommendedAction ?? "—"}</strong></div>
-          </div>
-          <div className="row-actions">
-            <Form method="post" action="/api/e-invoice-providers/connect">
-              <button className="btn" type="submit" disabled={eInvoiceProvider.mode === "disabled"}>Connecter / rattacher PA</button>
-            </Form>
-            <Form method="post" action="/api/e-invoice-providers/sync">
-              <button className="btn btn-p" type="submit" disabled={eInvoiceProvider.mode === "disabled"}>Synchroniser les factures</button>
-            </Form>
-            <Form method="post" action="/api/e-invoice-providers/disconnect">
-              <button className="btn" type="submit" disabled={eInvoiceProvider.connections.length === 0}>Révoquer</button>
-            </Form>
-            <Link className="btn" to="/factures-entrantes">Ouvrir les factures entrantes</Link>
-          </div>
-          <TableShell>
-            <table className="tbl">
-              <thead><tr><th>Connexion</th><th>Statut</th><th>Mandat</th><th>Dernière sync</th><th>Dernier statut</th><th>Erreur</th></tr></thead>
-              <tbody>
-                {eInvoiceProvider.connections.map((connection) => (
-                  <tr key={connection.id}>
-                    <td>{connection.safeLabel ?? connection.provider}</td>
-                    <td><StatusPill label={connection.status} tone={connection.status === "ACTIVE" ? "ok" : "warn"} /></td>
-                    <td>{connection.mandateStatus}</td>
-                    <td>{connection.lastSyncedAt ? shortDate(connection.lastSyncedAt) : "Jamais"}</td>
-                    <td>{connection.lastStatusSyncedAt ? shortDate(connection.lastStatusSyncedAt) : "—"}</td>
-                    <td>{connection.errorMessage ?? "—"}</td>
-                  </tr>
-                ))}
-                {eInvoiceProvider.connections.length === 0 ? <tr><td colSpan={6} className="sub">Aucune PA connectée. Le mock sert uniquement à valider le parcours, il ne vaut pas réception légale conforme.</td></tr> : null}
-              </tbody>
-            </table>
-          </TableShell>
-        </section>
-
-        <section className="card">
-          <div className="sec-head">
-            <div>
-              <h2>Choix Plateforme Agréée</h2>
-              <p className="sub">{paSelection.message}</p>
-            </div>
-            <StatusPill label={selectionLabel(paSelection.status)} tone={paSelection.status === "sandbox_ready" || paSelection.status === "selected" ? "ok" : paSelection.status === "blocked" ? "error" : "warn"} />
-          </div>
-          <TableShell>
-            <table className="tbl">
-              <thead><tr><th>Check</th><th>Statut</th><th>Action</th></tr></thead>
-              <tbody>
-                {paSelection.checklist.map((item) => (
-                  <tr key={item.code}>
-                    <td>{item.code}</td>
-                    <td><StatusPill label={item.status === "ready" ? "Prêt" : "Manquant"} tone={item.status === "ready" ? "ok" : "warn"} /></td>
-                    <td>{item.action}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </TableShell>
-          <TableShell>
-            <table className="tbl">
-              <thead><tr><th>Candidate</th><th>Statut</th><th>Sandbox</th><th>Webhooks</th><th>Formats</th><th>Preuve</th><th>Note</th></tr></thead>
-              <tbody>
-                {paSelection.candidates.map((candidate) => (
-                  <tr key={candidate.key}>
-                    <td>{candidate.label}</td>
-                    <td><StatusPill label={selectionLabel(candidate.status)} tone={candidate.status === "sandbox_ready" || candidate.status === "selected" ? "ok" : candidate.status === "blocked" ? "error" : "warn"} /></td>
-                    <td>{candidate.sandboxAvailable ? "Oui" : "Non"}</td>
-                    <td>{candidate.webhooks ? "Oui" : "Non"}</td>
-                    <td>{candidate.formats.join(", ") || "—"}</td>
-                    <td>{candidate.proofExport ? "Oui" : "Non"}</td>
-                    <td>{candidate.notes}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </TableShell>
-        </section>
-
-        <section className="card">
-          <div className="sec-head">
-            <div>
-              <h2>Qonto PA</h2>
-              <p className="sub">{paSelection.qontoPaReadiness.message}</p>
-            </div>
-            <StatusPill label={qontoPaStatusLabel(paSelection.qontoPaReadiness.status)} tone={paSelection.qontoPaReadiness.status === "ready" || paSelection.qontoPaReadiness.status === "sandbox_ready" ? "ok" : paSelection.qontoPaReadiness.status === "blocked" ? "error" : "warn"} />
-          </div>
-          <div className="alert orange">
-            Qonto PA est sélectionnée comme cible prioritaire, mais la réception conforme sera activée uniquement après validation sandbox et contract test provider.
-          </div>
-          <TableShell>
-            <table className="tbl">
-              <thead><tr><th>Pré-requis</th><th>Statut</th><th>Action</th></tr></thead>
-              <tbody>
-                {paSelection.qontoPaReadiness.checks.map((check) => (
-                  <tr key={check.code}>
-                    <td>{check.label}</td>
-                    <td><StatusPill label={check.status === "ready" ? "Prêt" : "Manquant"} tone={check.status === "ready" ? "ok" : "warn"} /></td>
-                    <td>{check.action}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </TableShell>
-        </section>
-
-        <section className="card">
-          <div className="sec-head"><h2>Connecteurs historiques</h2><Link className="btn" to="/rapprochements">Rapprochements</Link></div>
-          <TableShell>
-            <table className="tbl">
-              <tbody>
-                {connectors.connectors.map((connector) => (
-                  <tr key={connector.provider}>
-                    <td>{connector.provider.toUpperCase()}</td>
-                    <td>{connector.source}</td>
-                    <td>{connector.configured ? "Configuré" : "Non configuré"}</td>
-                    <td>{connector.message}</td>
                   </tr>
                 ))}
               </tbody>
@@ -313,6 +159,13 @@ export default function Connecteurs() {
   );
 }
 
+function ConnectorAction({ action }: { action: { label: string; href: string; method?: "post" } }) {
+  if (action.method === "post") {
+    return <Form method="post" action={action.href}><button className="btn" type="submit">{action.label}</button></Form>;
+  }
+  return <Link className="btn" to={action.href}>{action.label}</Link>;
+}
+
 function shortDate(value: string) {
   return new Intl.DateTimeFormat("fr-FR", { dateStyle: "short", timeStyle: "short" }).format(new Date(value));
 }
@@ -325,28 +178,8 @@ function noticeLabel(value: string) {
   return value;
 }
 
-function freshnessLabel(value?: string) {
-  if (value === "fresh") return "À jour";
-  if (value === "stale") return "À relancer";
-  if (value === "expired") return "Expiré";
-  if (value === "never_synced") return "Jamais sync";
-  if (value === "revoked") return "Révoqué";
-  return "—";
-}
-
-function selectionLabel(value: string) {
-  if (value === "not_started") return "Non démarré";
-  if (value === "evaluating") return "Évaluation";
-  if (value === "sandbox_ready") return "Sandbox prête";
-  if (value === "selected") return "Sélectionnée";
-  if (value === "blocked") return "Bloqué";
-  return value;
-}
-
-function qontoPaStatusLabel(value: string) {
-  if (value === "contract_missing") return "Contrat manquant";
-  if (value === "blocked") return "Sandbox à configurer";
-  if (value === "sandbox_ready") return "Sandbox prête";
-  if (value === "ready") return "Contrat test validé";
-  return value;
+function stateTone(value: string) {
+  if (value === "Connecté" || value === "Synchronisé" || value === "Réception PA conforme") return "ok";
+  if (value === "Erreur configuration" || value === "PA en attente partenaire") return "error";
+  return "warn";
 }

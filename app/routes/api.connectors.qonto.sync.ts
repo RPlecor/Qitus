@@ -3,14 +3,17 @@ import { assertFiscalYearMutable } from "~/modules/annual-closing/annual-closing
 import { requireCompanyWorkspace } from "~/modules/company-workspace/company-workspace.server";
 import { RateLimitCenter } from "~/modules/deployment/rate-limit-center.server";
 import { ConnectorSyncCenter } from "~/modules/reconciliations/connector-sync-center.server";
-import { jsonOrRedirectError } from "~/modules/route-errors.server";
+import { ExpectedRouteError, jsonOrRedirectError } from "~/modules/route-errors.server";
+import { getRuntimeConfig } from "~/modules/runtime-config.server";
 
 export async function action(args: ActionFunctionArgs) {
   const workspace = await requireCompanyWorkspace(args);
   try {
+    const config = getRuntimeConfig();
+    if (!config.qitusInternalTestMode && config.connectorsMode === "fixture") throw new ExpectedRouteError("Banc de test interne désactivé.", 403);
     await assertFiscalYearMutable(workspace);
     new RateLimitCenter().assertAllowed({ key: `qonto-sync:${workspace.company.id}`, limit: 12, windowMs: 60_000, label: "Synchronisation Qonto" });
-    return json({ sync: await new ConnectorSyncCenter().syncQonto(workspace) });
+    return json({ sync: await new ConnectorSyncCenter(config).syncQonto(workspace) });
   } catch (error) {
     return jsonOrRedirectError(args.request, error, "/rapprochements/banque");
   }

@@ -89,7 +89,8 @@ Pour exposer à de vrais utilisateurs :
 - `AUTH_MODE=clerk`
 - `BILLING_MODE=stripe`
 - `OBJECT_STORAGE_MODE=s3`
-- `OPEN_BANKING_PROVIDER=mock|gocardless|bridge|powens|tink|yapily`
+- `OPEN_BANKING_PROVIDER=disabled|gocardless|bridge|powens|tink|yapily`
+- `QITUS_INTERNAL_TEST_MODE=false` par défaut ; passer à `true` uniquement pour les validations manuelles internes.
 
 `npm run validate:production-config` refuse une configuration production incomplète.
 
@@ -102,10 +103,10 @@ Pour exposer à de vrais utilisateurs :
 5. Démarrer les workers si requis : `npm run worker:all`.
 6. Vérifier la config : `npm run validate:production-config`.
 7. Vérifier le socle beta : `npm run validate:beta-infra`.
-8. Vérifier Open Banking mock : `npm run validate:open-banking`.
+8. Vérifier Open Banking en mode de validation interne : `npm run validate:open-banking`.
 9. Vérifier le parcours Open Banking end-user : `npm run validate:open-banking-end-user`.
 
-Rollback local : revenir à `OBJECT_STORAGE_MODE=local`, `OPEN_BANKING_PROVIDER=disabled` ou `mock`, puis relancer `/readyz` et `/api/beta-readiness`.
+Rollback local : revenir à `OBJECT_STORAGE_MODE=local`, `OPEN_BANKING_PROVIDER=disabled`, puis relancer `/readyz` et `/api/beta-readiness`.
 
 ## Open Banking
 
@@ -162,7 +163,7 @@ Qonto alimente les transactions via le pipeline d'import Qitus. Stripe alimente 
 
 ## Facturation électronique PA
 
-`E_INVOICE_PROVIDER=mock` et `sandbox` restent les chemins de validation locale. `generic_pa` documente le contrat PA sans provider concret.
+Les providers simulés restent réservés au banc de test interne et aux scripts de validation. Ils ne doivent pas apparaître comme choix produit dans `/connecteurs`.
 
 Qonto PA est la première cible concrète :
 
@@ -173,7 +174,7 @@ Qonto PA est la première cible concrète :
 - `QONTO_PA_WEBHOOK_SECRET`
 - `PROVIDER_SECRET_ENCRYPTION_KEY` en staging/production.
 
-Tant que la documentation API PA/sandbox Qonto n'est pas contractualisée et que le contract test provider n'est pas validé, l'Adapter Qonto PA refuse connect/sync/download avec une erreur lisible. Ne pas réutiliser `QONTO_ID` ou `QONTO_API_SECRET` : ils appartiennent au connecteur bancaire Qonto direct, pas à la réception réglementaire des factures.
+Tant que la documentation API PA partenaire Qonto n'est pas contractualisée et que le contract test provider n'est pas validé, le connecteur Qonto PA refuse connect/sync/download avec une erreur lisible. Ne pas réutiliser `QONTO_ID` ou `QONTO_API_SECRET` : ils appartiennent au connecteur bancaire Qonto direct, pas à la réception réglementaire des factures.
 
 ## Healthchecks
 

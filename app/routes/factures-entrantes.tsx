@@ -4,6 +4,7 @@ import { AppShell, KpiCard, Main, StatusPill, TableShell } from "~/components/ui
 import { requireCompanyWorkspace } from "~/modules/company-workspace/company-workspace.server";
 import { EInvoiceCenter } from "~/modules/e-invoices/e-invoice-center.server";
 import { EInvoiceProviderCenter } from "~/modules/e-invoices/e-invoice-provider-center.server";
+import { getRuntimeConfig } from "~/modules/runtime-config.server";
 
 export async function loader(args: LoaderFunctionArgs) {
   const workspace = await requireCompanyWorkspace(args);
@@ -12,11 +13,11 @@ export async function loader(args: LoaderFunctionArgs) {
     new EInvoiceCenter().listEInvoices(workspace, { status: url.searchParams.get("status") }),
     new EInvoiceProviderCenter().getStatus(workspace),
   ]);
-  return json({ invoices, provider, query: Object.fromEntries(url.searchParams) });
+  return json({ invoices, provider, internalTestMode: getRuntimeConfig().qitusInternalTestMode, query: Object.fromEntries(url.searchParams) });
 }
 
 export default function FacturesEntrantes() {
-  const { invoices, provider, query } = useLoaderData<typeof loader>();
+  const { invoices, provider, internalTestMode, query } = useLoaderData<typeof loader>();
   const pending = invoices.filter((invoice) => !["ACCOUNTED", "ARCHIVED"].includes(invoice.status)).length;
   return (
     <AppShell active="factures-entrantes">
@@ -24,13 +25,13 @@ export default function FacturesEntrantes() {
         {query.success ? <div className="alert blue"><strong>{query.success}</strong></div> : null}
         {query.error ? <div className="alert red"><strong>{query.error}</strong></div> : null}
         <div className="alert orange">
-          <strong>Conformité PA.</strong> Les factures uploadées, mock ou sandbox sont exploitables dans Qitus, mais seules les factures reçues via une PA réelle validée seront marquées comme réception conforme.
+          <strong>Conformité PA.</strong> Les factures déposées manuellement sont exploitables dans Qitus, mais seules les factures reçues via une Plateforme Agréée validée seront marquées comme réception conforme.
         </div>
         <div className="kpi-grid">
           <KpiCard label="Factures" value={String(invoices.length)} hint="Exercice actif" />
           <KpiCard label="À traiter" value={String(pending)} hint="Parsing, matching ou brouillon" />
           <KpiCard label="Comptabilisées" value={String(invoices.filter((invoice) => invoice.status === "ACCOUNTED").length)} />
-          <KpiCard label="Provider" value={provider.provider} hint={provider.configured ? "Configuré" : "Désactivé"} />
+          <KpiCard label="Réception PA" value={provider.readiness.receptionCompliant ? "Conforme" : "À configurer"} hint={provider.configured ? "Configuré" : "Désactivé"} />
         </div>
 
         <section className="panel">
@@ -49,7 +50,7 @@ export default function FacturesEntrantes() {
             </div>
           </div>
           <div className="grid two">
-            <div className="kv"><span>Provider</span><strong>{provider.providerLabel ?? provider.provider}</strong></div>
+            <div className="kv"><span>Provider</span><strong>{provider.provider === "qonto_pa" ? "Qonto PA" : "Facturation électronique"}</strong></div>
             <div className="kv"><span>Réception conforme PA</span><strong>{provider.readiness.receptionCompliant ? "Oui" : "Non"}</strong></div>
           </div>
         </section>
@@ -77,7 +78,7 @@ export default function FacturesEntrantes() {
               {invoices.map((invoice) => (
                 <tr key={invoice.id}>
                   <td>{invoice.supplierName ?? "—"}<div className="sub">{invoice.attachmentFilename ?? invoice.source}</div></td>
-                  <td>{sourceLabel(invoice)}<div className="sub">{invoice.providerStatus ? `Statut PA ${invoice.providerStatus}` : "—"}</div></td>
+                  <td>{sourceLabel(invoice, internalTestMode)}<div className="sub">{invoice.providerStatus ? `Statut PA ${invoice.providerStatus}` : "—"}</div></td>
                   <td className="mono">{invoice.invoiceNumber ?? "—"}</td>
                   <td className="mono">{invoice.issueDate ?? "—"}</td>
                   <td>{formatLabel(invoice.format)}</td>
@@ -88,7 +89,7 @@ export default function FacturesEntrantes() {
                   <td><Link className="btn btn-sm" to={`/factures-entrantes/${invoice.id}`}>Ouvrir</Link></td>
                 </tr>
               ))}
-              {invoices.length === 0 ? <tr><td colSpan={10} className="sub">Aucune facture électronique entrante. Déposez un XML/Factur-X dans Pièces ou synchronisez le provider mock.</td></tr> : null}
+              {invoices.length === 0 ? <tr><td colSpan={10} className="sub">Aucune facture électronique entrante. Déposez un XML/Factur-X dans Pièces ou connectez une Plateforme Agréée.</td></tr> : null}
             </tbody>
           </table>
         </TableShell>
@@ -123,12 +124,12 @@ function formatLabel(value: string) {
   return value;
 }
 
-function sourceLabel(invoice: { source: string; providerLabel?: string | null }) {
+function sourceLabel(invoice: { source: string; providerLabel?: string | null }, internalTestMode: boolean) {
   if (invoice.source === "UPLOAD") return "Upload manuel";
   const providerLabel = invoice.providerLabel?.toLowerCase() ?? "";
   if (providerLabel.includes("qonto")) return "Qonto PA";
-  if (providerLabel.includes("sandbox")) return "Sandbox Qitus";
-  if (providerLabel.includes("mock")) return "Provider mock";
+  if (internalTestMode && (providerLabel.includes("sandbox") || providerLabel.includes("mock"))) return "Test interne";
+  if (providerLabel.includes("sandbox") || providerLabel.includes("mock")) return "Facturation électronique";
   return invoice.providerLabel ? `PA ${invoice.providerLabel}` : "Provider PA";
 }
 
