@@ -27,13 +27,13 @@ export default function Rapprochements() {
   ];
   return (
     <AppShell active="rapprochements">
-      <Main title="Rapprochements" subtitle="Banque, Stripe, tiers et comptes d'attente" action={<Link className="btn btn-p" to="/rapprochements/revue">Revue des issues</Link>}>
+      <Main title="Rapprochements" subtitle="Banque, Stripe, tiers et comptes d'attente" action={<Link className="btn btn-p" to="/rapprochements/revue">Revue des points</Link>}>
         <div className={`alert ${readiness.status === "blocked" ? "orange" : "blue"}`}>
           <strong>{readiness.status === "blocked" ? "Rapprochements à traiter" : "Rapprochements prêts"}</strong>
           <span>{readiness.issues.blocking} blocage(s), {readiness.issues.warning} avertissement(s), {freshness.staleCount} à relancer</span>
         </div>
         <div className="kpi-grid">
-          <KpiCard label="Blocages" value={String(readiness.issues.blocking)} hint="Issues ouvertes bloquantes" />
+          <KpiCard label="Blocages" value={String(readiness.issues.blocking)} hint="Points ouverts bloquants" />
           <KpiCard label="Avertissements" value={String(readiness.issues.warning)} hint="À documenter" />
           <KpiCard label="Progression banque" value={`${readiness.bank.progress}%`} hint={reconciliationRunStatusLabel(readiness.bank.status)} />
           <KpiCard label="Fraîcheur" value={freshness.staleCount === 0 ? "OK" : String(freshness.staleCount)} hint={freshness.staleCount === 0 ? "Rapprochements à jour" : "Rapprochements à relancer"} />

@@ -49,7 +49,7 @@ export default function Controle() {
         <div className="kpi-grid">
           <KpiCard label="Statut" value={shortStatusLabel(review.status)} hint="Pré-clôture" />
           <KpiCard label="Blocages" value={String(review.blockingCount)} hint="À résoudre avant génération" />
-          <KpiCard label="Ouverts" value={String(issueState.open)} hint="Issues suivables" />
+          <KpiCard label="Points ouverts" value={String(issueState.open)} hint="Points suivis" />
           <KpiCard label="OD proposées" value={String(adjustmentState.draft)} hint={`${adjustmentState.approved} validée${adjustmentState.approved > 1 ? "s" : ""}`} />
           <KpiCard label="Documents" value={documentFreshness.staleCount > 0 ? "À régénérer" : "À jour"} hint={`${documentFreshness.staleCount} obsolète${documentFreshness.staleCount > 1 ? "s" : ""}`} />
           <KpiCard label="Pièces" value={evidenceReview.requiredMissing > 0 ? "À compléter" : "OK"} hint={evidenceCoverageHint({ entriesWithoutEvidence: evidenceReview.requiredMissing, orphanAttachments: evidenceReview.orphanAttachments })} />

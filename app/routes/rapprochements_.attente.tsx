@@ -41,12 +41,12 @@ export default function RapprochementAttente() {
         <div className={`alert ${freshness.status === "stale" ? "orange" : "blue"}`}><strong>{freshness.label}</strong><span>{freshness.staleReasons[0] ?? "Comptes d'attente actualisés."}</span></div>
         <div className="kpi-grid">
           <div className="kpi"><div className="kpi-label">Statut</div><span className="kpi-val">{reconciliationRunStatusLabel(summary.status)}</span></div>
-          <div className="kpi"><div className="kpi-label">Ouverts</div><span className="kpi-val">{summary.openIssues}</span></div>
+          <div className="kpi"><div className="kpi-label">Points ouverts</div><span className="kpi-val">{summary.openIssues}</span></div>
           <div className="kpi"><div className="kpi-label">Résolus</div><span className="kpi-val">{summary.resolvedIssues}</span></div>
           <div className="kpi"><div className="kpi-label">Ignorés</div><span className="kpi-val">{summary.ignoredIssues}</span></div>
         </div>
         <table className="tbl">
-          <thead><tr><th>Issue</th><th>Sévérité</th><th>Statut</th><th>Note</th><th>Action</th></tr></thead>
+          <thead><tr><th>Point</th><th>Sévérité</th><th>Statut</th><th>Note</th><th>Action</th></tr></thead>
           <tbody>
             {items.map((item) => (
               <tr key={item.id}>

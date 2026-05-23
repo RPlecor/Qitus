@@ -51,7 +51,7 @@ export default function RapprochementBanque() {
         <div className="kpi-grid">
           <div className="kpi"><div className="kpi-label">Statut ligne à ligne</div><span className="kpi-val">{reconciliationRunStatusLabel(reconciliation.summary.status)}</span></div>
           <div className="kpi"><div className="kpi-label">Matchés</div><span className="kpi-val">{reconciliation.summary.matched}</span></div>
-          <div className="kpi"><div className="kpi-label">Issues ouvertes</div><span className="kpi-val">{reconciliation.summary.openIssues}</span></div>
+          <div className="kpi"><div className="kpi-label">Points ouverts</div><span className="kpi-val">{reconciliation.summary.openIssues}</span></div>
           <div className="kpi"><div className="kpi-label">Solde relevé</div><span className="kpi-val">{formatEuro(reconciliation.balance.statementBalance)}</span></div>
         </div>
         <div className="card">

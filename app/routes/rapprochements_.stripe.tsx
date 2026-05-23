@@ -68,7 +68,7 @@ export default function RapprochementStripe() {
         <div className="kpi-grid">
           <div className="kpi"><div className="kpi-label">Statut</div><span className="kpi-val">{reconciliationRunStatusLabel(summary.status)}</span></div>
           <div className="kpi"><div className="kpi-label">Payouts matchés</div><span className="kpi-val">{summary.matched}</span></div>
-          <div className="kpi"><div className="kpi-label">Issues ouvertes</div><span className="kpi-val">{summary.openIssues}</span></div>
+          <div className="kpi"><div className="kpi-label">Points ouverts</div><span className="kpi-val">{summary.openIssues}</span></div>
           <div className="kpi"><div className="kpi-label">Progression</div><span className="kpi-val">{summary.progress}%</span></div>
         </div>
         <section className="card">
