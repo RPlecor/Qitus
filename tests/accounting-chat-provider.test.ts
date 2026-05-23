@@ -24,12 +24,24 @@ describe("AccountingChatProvider", () => {
   });
 
   it("blocks mutation-like messages before provider execution", () => {
-    const decision = new ChatReadOnlyPolicy().evaluateMessage("Génère le FEC maintenant", [
+    const policy = new ChatReadOnlyPolicy();
+    const decision = policy.evaluateMessage("Génère le FEC maintenant", [
       { code: "documents", label: "Documents", href: "/documents", reason: "Documents" },
     ]);
+    const reply = policy.buildBlockedReply(decision);
 
     expect(decision).toMatchObject({ allowed: false, matchedIntent: "generate_document" });
-    expect(new ChatReadOnlyPolicy().buildBlockedReply(decision).content).toContain("lecture seule");
+    expect(reply.content).toContain("Je ne peux pas lancer cette action depuis le chat");
+    expect(reply.content).toContain("Ouvrez Documents");
+    expect(reply.content).not.toContain("Écrans utiles");
+  });
+
+  it("does not block help questions that contain action words", () => {
+    const decision = new ChatReadOnlyPolicy().evaluateMessage("Où importer un CSV ?", [
+      { code: "imports", label: "Imports", href: "/imports", reason: "Imports" },
+    ]);
+
+    expect(decision).toMatchObject({ allowed: true, intent: "navigation_help" });
   });
 });
 

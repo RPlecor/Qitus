@@ -30,7 +30,9 @@ describe("Chat P0 Qitus", () => {
 
     expect(plan.requiresProvider).toBe(false);
     expect(provider.reply).not.toHaveBeenCalled();
-    expect(reply.content).toContain("lecture seule");
+    expect(reply.content).toContain("Je ne peux pas lancer cette action depuis le chat");
+    expect(reply.content).toContain("Ouvrez Documents");
+    expect(reply.content).not.toContain("Écrans utiles");
   });
 
   it("calls the provider only with Qitus knowledge sources", async () => {
@@ -109,6 +111,22 @@ describe("Chat P0 Qitus", () => {
       { label: "Ouvrir Justificatifs", href: "/pieces", kind: "primary", source: "reference" },
     ]));
   });
+
+  it("answers CSV import orientation without treating it as a mutation", async () => {
+    const center = new ChatResolutionCenter(new FakeChatAdapter());
+    const ctx = context();
+    const plan = center.buildPlan("Où importer un CSV ?", ctx);
+    const reply = await center.resolve(plan, [{ role: "user", content: "Où importer un CSV ?" }], ctx);
+
+    expect(plan.requiresProvider).toBe(true);
+    expect(reply.content).toContain("Pour importer un relevé CSV");
+    expect(reply.content).toContain("ouvrez Imports");
+    expect(reply.content).not.toContain("lecture seule");
+    expect(reply.content).not.toContain("Écrans utiles");
+    expect(reply.metadata?.actions).toEqual(expect.arrayContaining([
+      { label: "Ouvrir Imports", href: "/imports", kind: "primary", source: "reference" },
+    ]));
+  });
 });
 
 function providerSpy(): AccountingChatProvider {
@@ -129,6 +147,10 @@ function context(): AccountingChatContext {
     fiscalYear: "2025-01-01 → 2025-12-31",
     references: [
       { code: "dashboard", label: "Tableau de bord", href: "/dashboard", reason: "Test" },
+      { code: "imports", label: "Imports", href: "/imports", reason: "Test" },
+      { code: "transactions", label: "Transactions", href: "/transactions", reason: "Test" },
+      { code: "pieces", label: "Justificatifs", href: "/pieces", reason: "Test" },
+      { code: "tva", label: "TVA", href: "/tva", reason: "Test" },
       { code: "controle", label: "Contrôle", href: "/controle", reason: "Test" },
       { code: "documents", label: "Documents", href: "/documents", reason: "Test" },
       { code: "connecteurs", label: "Connecteurs", href: "/connecteurs", reason: "Test" },

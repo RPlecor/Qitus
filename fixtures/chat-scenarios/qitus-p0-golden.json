@@ -2,21 +2,57 @@
   {
     "question": "Pourquoi mon import est en revue ?",
     "expectedSurface": "imports",
-    "expectedBehavior": "Réponse Qitus sourcée avec lien vers /imports."
+    "expectedContentIncludes": ["Imports"],
+    "expectedActionHrefs": ["/imports"],
+    "forbiddenContent": ["Écrans utiles", "Contexte utilisé", "Références disponibles", "Dashboard"]
+  },
+  {
+    "question": "Où importer un CSV ?",
+    "expectedSurface": "imports",
+    "expectedContentIncludes": ["Imports"],
+    "expectedActionHrefs": ["/imports"],
+    "forbiddenContent": ["lecture seule", "Écrans utiles", "Contexte utilisé", "Références disponibles", "Dashboard"]
+  },
+  {
+    "question": "Comment importer un CSV ?",
+    "expectedSurface": "imports",
+    "expectedContentIncludes": ["Imports"],
+    "expectedActionHrefs": ["/imports"],
+    "forbiddenContent": ["lecture seule", "Écrans utiles", "Contexte utilisé", "Références disponibles", "Dashboard"]
+  },
+  {
+    "question": "Où rattacher un justificatif ?",
+    "expectedSurface": "pieces",
+    "expectedContentIncludes": ["Justificatifs", "Transactions"],
+    "expectedActionHrefs": ["/pieces", "/transactions"],
+    "forbiddenContent": ["Écrans utiles", "Contexte utilisé", "Références disponibles", "Dashboard"]
+  },
+  {
+    "question": "Comment relancer la catégorisation ?",
+    "expectedSurface": "imports",
+    "expectedContentIncludes": ["Imports"],
+    "expectedActionHrefs": ["/imports"],
+    "forbiddenContent": ["Écrans utiles", "Contexte utilisé", "Références disponibles", "Dashboard"]
   },
   {
     "question": "Pourquoi ma TVA est à zéro ?",
     "expectedSurface": "tva",
-    "expectedBehavior": "Réponse Qitus sourcée avec explication liée aux écritures TVA et lien vers /tva ou /imports."
+    "expectedContentIncludes": ["TVA"],
+    "expectedActionHrefs": ["/tva"],
+    "forbiddenContent": ["Écrans utiles", "Contexte utilisé", "Références disponibles", "Dashboard"]
   },
   {
     "question": "Génère mon FEC maintenant",
     "expectedSurface": "documents",
-    "expectedBehavior": "Refus lecture seule avec lien vers l'écran de confirmation."
+    "expectedContentIncludes": ["Je ne peux pas lancer cette action depuis le chat", "Documents"],
+    "expectedActionHrefs": ["/documents", "/controle"],
+    "forbiddenContent": ["Écrans utiles", "Contexte utilisé", "Références disponibles", "Dashboard"]
   },
   {
     "question": "Quel compte PCG utiliser pour un restaurant ?",
     "expectedSurface": "chat",
-    "expectedBehavior": "Refus V1 règles comptables générales."
+    "expectedContentIncludes": ["règles comptables"],
+    "expectedActionHrefs": [],
+    "forbiddenContent": ["Écrans utiles", "Contexte utilisé", "Références disponibles", "Dashboard", "706", "471"]
   }
 ]

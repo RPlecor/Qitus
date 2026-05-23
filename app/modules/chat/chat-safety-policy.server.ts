@@ -1,35 +1,30 @@
 import type { AccountingChatReply } from "./accounting-chat-provider.server";
 import type { ChatReference } from "./chat-answer-grounding.server";
 import { ChatReadOnlyPolicy, type ChatPolicyDecision } from "./chat-read-only-policy.server";
+import { ChatIntentPolicy } from "./chat-intent-policy.server";
 
 export type ChatScopeDecision = ChatPolicyDecision & {
   scope: "qitus_only";
   refusalKind?: "mutation" | "accounting_rules" | "out_of_scope";
 };
 
-const accountingAdvicePatterns = [
-  /\b(quel|quelle|quels|quelles)\s+compte(s)?\s+(pcg|comptable)?\s+(utiliser|choisir|mettre|prendre)\b/i,
-  /\b(taux\s+de\s+tva|tva\s+d[ée]ductible|charge\s+d[ée]ductible|amortir|amortissement)\b/i,
-  /\b(bofip|cgi|doctrine fiscale|r[èe]gle comptable|plan comptable|pcg)\b/i,
-  /\b(comment\s+(d[ée]clarer|comptabiliser|imputer))\b/i,
-];
-
 export class ChatSafetyPolicy {
-  constructor(private readonly readOnlyPolicy = new ChatReadOnlyPolicy()) {}
+  constructor(
+    private readonly readOnlyPolicy = new ChatReadOnlyPolicy(),
+    private readonly intentPolicy = new ChatIntentPolicy()
+  ) {}
 
   evaluateMessage(message: string, references: ChatReference[] = []): ChatScopeDecision {
-    const readOnly = this.readOnlyPolicy.evaluateMessage(message, references);
-    if (!readOnly.allowed) return { ...readOnly, scope: "qitus_only", refusalKind: "mutation" };
-    if (accountingAdvicePatterns.some((pattern) => pattern.test(message))) {
+    const intent = this.intentPolicy.evaluateMessage(message, references);
+    if (intent.intent === "accounting_rules_v2") {
       return {
-        allowed: false,
-        reason: "Le chat Qitus V1 répond aux questions d’utilisation de Qitus. Les questions de règles comptables générales seront couvertes en V2.",
-        matchedIntent: "accounting_rules_v2",
-        suggestedReferences: references.filter((reference) => reference.code === "chat" || reference.code === "dashboard"),
+        ...intent,
         scope: "qitus_only",
         refusalKind: "accounting_rules",
       };
     }
+    const readOnly = this.readOnlyPolicy.evaluateMessage(message, references);
+    if (!readOnly.allowed) return { ...readOnly, scope: "qitus_only", refusalKind: "mutation" };
     return { ...readOnly, scope: "qitus_only" };
   }
 
