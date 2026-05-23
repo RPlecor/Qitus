@@ -5,6 +5,7 @@ import { requireCompanyWorkspace } from "~/modules/company-workspace/company-wor
 import { ConnectorSyncCenter } from "~/modules/reconciliations/connector-sync-center.server";
 import { ReconciliationFreshnessCenter } from "~/modules/reconciliations/reconciliation-freshness-center.server";
 import { ReconciliationIssueWorkflow } from "~/modules/reconciliations/reconciliation-issue-workflow.server";
+import { connectorMessageLabel, connectorModeLabel, connectorProviderLabel, connectorSourceLabel, reconciliationRunStatusLabel } from "~/modules/reconciliations/reconciliation-labels";
 
 export async function loader(args: LoaderFunctionArgs) {
   const workspace = await requireCompanyWorkspace(args);
@@ -34,16 +35,16 @@ export default function Rapprochements() {
         <div className="kpi-grid">
           <KpiCard label="Blocages" value={String(readiness.issues.blocking)} hint="Issues ouvertes bloquantes" />
           <KpiCard label="Avertissements" value={String(readiness.issues.warning)} hint="À documenter" />
-          <KpiCard label="Progression banque" value={`${readiness.bank.progress}%`} hint={readiness.bank.status} />
+          <KpiCard label="Progression banque" value={`${readiness.bank.progress}%`} hint={reconciliationRunStatusLabel(readiness.bank.status)} />
           <KpiCard label="Fraîcheur" value={freshness.staleCount === 0 ? "OK" : String(freshness.staleCount)} hint={freshness.staleCount === 0 ? "Rapprochements à jour" : "Rapprochements à relancer"} />
         </div>
         <section className="card">
-          <div className="sec-head"><h2>Connecteurs</h2><span>{connectors.mode}</span></div>
+          <div className="sec-head"><h2>Connecteurs</h2><span>{connectorModeLabel(connectors.mode)}</span></div>
           <TableShell>
           <table className="tbl">
             <tbody>
               {connectors.connectors.map((connector) => (
-                <tr key={connector.provider}><td>{connector.provider.toUpperCase()}</td><td>{connector.source}</td><td>{connector.configured ? "Configuré" : "Non configuré"}</td><td>{connector.message}</td></tr>
+                <tr key={connector.provider}><td>{connectorProviderLabel(connector.provider)}</td><td>{connectorSourceLabel(connector.source)}</td><td>{connector.configured ? "Configuré" : "Non configuré"}</td><td>{connectorMessageLabel(connector)}</td></tr>
               ))}
             </tbody>
           </table>

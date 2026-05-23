@@ -6,6 +6,7 @@ import { assertFiscalYearMutable } from "~/modules/annual-closing/annual-closing
 import { requireCompanyWorkspace } from "~/modules/company-workspace/company-workspace.server";
 import { ConnectorSyncCenter } from "~/modules/reconciliations/connector-sync-center.server";
 import { ReconciliationFreshnessCenter } from "~/modules/reconciliations/reconciliation-freshness-center.server";
+import { connectorMessageLabel, reconciliationMatchStatusLabel, reconciliationRunStatusLabel, stripeEventTypeLabel } from "~/modules/reconciliations/reconciliation-labels";
 import { StripeReconciliationCenter } from "~/modules/reconciliations/stripe-reconciliation-center.server";
 import { ExpectedRouteError, jsonOrRedirectError } from "~/modules/route-errors.server";
 import { getRuntimeConfig } from "~/modules/runtime-config.server";
@@ -56,7 +57,7 @@ export default function RapprochementStripe() {
   return (
     <AppShell active="rapprochements">
       <Main title="Rapprochement Stripe" subtitle={`${summary.payouts} payout(s), ${summary.events} événement(s)`}>
-        <div className={`alert ${freshness.status === "stale" ? "orange" : "blue"}`}><strong>{freshness.label}</strong><span>{freshness.staleReasons[0] ?? stripeConnector?.message ?? "Fixture locale disponible."}</span></div>
+        <div className={`alert ${freshness.status === "stale" ? "orange" : "blue"}`}><strong>{freshness.label}</strong><span>{freshness.staleReasons[0] ?? (stripeConnector ? connectorMessageLabel(stripeConnector) : "Données Stripe de test disponibles en mode interne.")}</span></div>
         <div className="card">
           <div className="row-actions">
             {internalTestMode ? <Form method="post"><input type="hidden" name="intent" value="fixture" /><button className="btn" type="submit">Tester un payout Stripe</button></Form> : null}
@@ -65,7 +66,7 @@ export default function RapprochementStripe() {
           </div>
         </div>
         <div className="kpi-grid">
-          <div className="kpi"><div className="kpi-label">Statut</div><span className="kpi-val">{summary.status}</span></div>
+          <div className="kpi"><div className="kpi-label">Statut</div><span className="kpi-val">{reconciliationRunStatusLabel(summary.status)}</span></div>
           <div className="kpi"><div className="kpi-label">Payouts matchés</div><span className="kpi-val">{summary.matched}</span></div>
           <div className="kpi"><div className="kpi-label">Issues ouvertes</div><span className="kpi-val">{summary.openIssues}</span></div>
           <div className="kpi"><div className="kpi-label">Progression</div><span className="kpi-val">{summary.progress}%</span></div>
@@ -75,7 +76,7 @@ export default function RapprochementStripe() {
           <table className="tbl">
             <thead><tr><th>Payout</th><th>Banque</th><th>Statut</th><th>Écart</th></tr></thead>
             <tbody>
-              {matches.map((match) => <tr key={match.id}><td>{short(match.leftEntityId)}</td><td>{match.rightEntityId ? short(match.rightEntityId) : "—"}</td><td>{match.status}</td><td>{formatEuro(Number(match.amountDifference))}</td></tr>)}
+              {matches.map((match) => <tr key={match.id}><td>{short(match.leftEntityId)}</td><td>{match.rightEntityId ? short(match.rightEntityId) : "—"}</td><td>{reconciliationMatchStatusLabel(match.status)}</td><td>{formatEuro(Number(match.amountDifference))}</td></tr>)}
               {matches.length === 0 ? <tr><td colSpan={4} className="sub">Aucun match Stripe.</td></tr> : null}
             </tbody>
           </table>
@@ -85,7 +86,7 @@ export default function RapprochementStripe() {
           <table className="tbl">
             <thead><tr><th>Date</th><th>Type</th><th>Brut</th><th>Frais</th><th>Net</th></tr></thead>
             <tbody>
-              {events.slice(0, 25).map((event) => <tr key={event.id}><td>{formatDate(event.date)}</td><td>{event.eventType}</td><td>{formatEuro(Number(event.grossAmount))}</td><td>{formatEuro(Number(event.feeAmount))}</td><td>{formatEuro(Number(event.netAmount))}</td></tr>)}
+              {events.slice(0, 25).map((event) => <tr key={event.id}><td>{formatDate(event.date)}</td><td>{stripeEventTypeLabel(event.eventType)}</td><td>{formatEuro(Number(event.grossAmount))}</td><td>{formatEuro(Number(event.feeAmount))}</td><td>{formatEuro(Number(event.netAmount))}</td></tr>)}
               {events.length === 0 ? <tr><td colSpan={5} className="sub">Aucun événement Stripe importé.</td></tr> : null}
             </tbody>
           </table>

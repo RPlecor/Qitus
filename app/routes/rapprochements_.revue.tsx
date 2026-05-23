@@ -2,6 +2,7 @@ import { json, type LoaderFunctionArgs } from "@remix-run/node";
 import { Form, Link, useLoaderData } from "@remix-run/react";
 import { AppShell, Main } from "~/components/ui";
 import { requireCompanyWorkspace } from "~/modules/company-workspace/company-workspace.server";
+import { reconciliationIssueCodeLabel, reconciliationIssueStatusLabel, reconciliationKindLabel, reconciliationSeverityLabel } from "~/modules/reconciliations/reconciliation-labels";
 import { ReconciliationReviewWorkflow } from "~/modules/reconciliations/reconciliation-review-workflow.server";
 
 export async function loader(args: LoaderFunctionArgs) {
@@ -34,10 +35,10 @@ export default function RapprochementRevue() {
           <tbody>
             {queue.issues.map((issue) => (
               <tr key={issue.id}>
-                <td><span className="mono">{issue.issueKey}</span><div className="sub">{issue.code}</div></td>
-                <td>{issue.run.kind}</td>
-                <td>{issue.severity}</td>
-                <td>{issue.status}</td>
+                <td>{reconciliationIssueCodeLabel(issue.code)}<div className="sub">{issue.entityType === "account" ? `Compte ${issue.entityId}` : "Point de rapprochement"}</div></td>
+                <td>{reconciliationKindLabel(issue.run.kind)}</td>
+                <td>{reconciliationSeverityLabel(issue.severity)}</td>
+                <td>{reconciliationIssueStatusLabel(issue.status)}</td>
                 <td>{issue.note}</td>
                 <td>
                   <div className="row-actions">

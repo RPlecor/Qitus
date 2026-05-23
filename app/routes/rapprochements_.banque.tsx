@@ -6,6 +6,7 @@ import { assertFiscalYearMutable } from "~/modules/annual-closing/annual-closing
 import { requireCompanyWorkspace } from "~/modules/company-workspace/company-workspace.server";
 import { BankLineReconciliationCenter } from "~/modules/reconciliations/bank-line-reconciliation-center.server";
 import { ReconciliationFreshnessCenter } from "~/modules/reconciliations/reconciliation-freshness-center.server";
+import { reconciliationEntityTypeLabel, reconciliationMatchStatusLabel, reconciliationRunStatusLabel } from "~/modules/reconciliations/reconciliation-labels";
 import { jsonOrRedirectError } from "~/modules/route-errors.server";
 
 export async function loader(args: LoaderFunctionArgs) {
@@ -48,7 +49,7 @@ export default function RapprochementBanque() {
       <Main title="Rapprochement bancaire" subtitle={`${reconciliation.summary.progress}% traité`}>
         <div className={`alert ${freshness.status === "stale" ? "orange" : "blue"}`}><strong>{freshness.label}</strong><span>{freshness.staleReasons[0] ?? "Rapprochement bancaire exploitable."}</span></div>
         <div className="kpi-grid">
-          <div className="kpi"><div className="kpi-label">Statut ligne à ligne</div><span className="kpi-val">{reconciliation.summary.status}</span></div>
+          <div className="kpi"><div className="kpi-label">Statut ligne à ligne</div><span className="kpi-val">{reconciliationRunStatusLabel(reconciliation.summary.status)}</span></div>
           <div className="kpi"><div className="kpi-label">Matchés</div><span className="kpi-val">{reconciliation.summary.matched}</span></div>
           <div className="kpi"><div className="kpi-label">Issues ouvertes</div><span className="kpi-val">{reconciliation.summary.openIssues}</span></div>
           <div className="kpi"><div className="kpi-label">Solde relevé</div><span className="kpi-val">{formatEuro(reconciliation.balance.statementBalance)}</span></div>
@@ -71,9 +72,9 @@ export default function RapprochementBanque() {
           <tbody>
             {reconciliation.matches.map((match) => (
               <tr key={match.id}>
-                <td>{match.leftEntityType} <span className="mono">{short(match.leftEntityId)}</span></td>
-                <td>{match.rightEntityType ?? "—"} {match.rightEntityId ? <span className="mono">{short(match.rightEntityId)}</span> : null}</td>
-                <td>{match.status}</td>
+                <td>{reconciliationEntityTypeLabel(match.leftEntityType)} <span className="mono">{short(match.leftEntityId)}</span></td>
+                <td>{match.rightEntityType ? reconciliationEntityTypeLabel(match.rightEntityType) : "—"} {match.rightEntityId ? <span className="mono">{short(match.rightEntityId)}</span> : null}</td>
+                <td>{reconciliationMatchStatusLabel(match.status)}</td>
                 <td>{formatEuro(Number(match.amountDifference))}</td>
                 <td>{match.note}</td>
                 <td><MatchActions matchId={match.id} /></td>

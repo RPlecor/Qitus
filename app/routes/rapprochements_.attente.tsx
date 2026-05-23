@@ -5,6 +5,7 @@ import { ActivityLogCenter } from "~/modules/activity-log/activity-log-center.se
 import { assertFiscalYearMutable } from "~/modules/annual-closing/annual-closing-center.server";
 import { requireCompanyWorkspace } from "~/modules/company-workspace/company-workspace.server";
 import { ReconciliationFreshnessCenter } from "~/modules/reconciliations/reconciliation-freshness-center.server";
+import { reconciliationIssueCodeLabel, reconciliationIssueStatusLabel, reconciliationRunStatusLabel, reconciliationSeverityLabel } from "~/modules/reconciliations/reconciliation-labels";
 import { SuspenseAccountCenter } from "~/modules/reconciliations/suspense-account-center.server";
 import { jsonOrRedirectError } from "~/modules/route-errors.server";
 
@@ -39,7 +40,7 @@ export default function RapprochementAttente() {
       <Main title="Comptes d'attente" subtitle="471, 467, 511 et 580">
         <div className={`alert ${freshness.status === "stale" ? "orange" : "blue"}`}><strong>{freshness.label}</strong><span>{freshness.staleReasons[0] ?? "Comptes d'attente actualisés."}</span></div>
         <div className="kpi-grid">
-          <div className="kpi"><div className="kpi-label">Statut</div><span className="kpi-val">{summary.status}</span></div>
+          <div className="kpi"><div className="kpi-label">Statut</div><span className="kpi-val">{reconciliationRunStatusLabel(summary.status)}</span></div>
           <div className="kpi"><div className="kpi-label">Ouverts</div><span className="kpi-val">{summary.openIssues}</span></div>
           <div className="kpi"><div className="kpi-label">Résolus</div><span className="kpi-val">{summary.resolvedIssues}</span></div>
           <div className="kpi"><div className="kpi-label">Ignorés</div><span className="kpi-val">{summary.ignoredIssues}</span></div>
@@ -49,9 +50,9 @@ export default function RapprochementAttente() {
           <tbody>
             {items.map((item) => (
               <tr key={item.id}>
-                <td className="mono">{item.issueKey}</td>
-                <td>{item.severity}</td>
-                <td>{item.status}</td>
+                <td>{reconciliationIssueCodeLabel(item.code)}<div className="sub">{item.entityType === "account" ? `Compte ${item.entityId}` : "Point à traiter"}</div></td>
+                <td>{reconciliationSeverityLabel(item.severity)}</td>
+                <td>{reconciliationIssueStatusLabel(item.status)}</td>
                 <td>{item.note}</td>
                 <td>
                   <Form method="post" className="row-actions">
