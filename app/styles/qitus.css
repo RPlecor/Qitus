@@ -645,6 +645,39 @@ p { margin: 0; }
   flex-shrink: 0;
 }
 
+.guidance-alert {
+  align-items: flex-start;
+}
+
+.guidance-copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.guidance-copy span {
+  overflow-wrap: anywhere;
+}
+
+.guidance-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.guidance-actions form {
+  margin: 0;
+}
+
+.guidance-list {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
 /* ── Dashboard notices (grouped alert list) ── */
 .dash-notices {
   border: 1px solid var(--sand-200);

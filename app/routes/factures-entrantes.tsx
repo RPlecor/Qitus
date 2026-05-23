@@ -87,7 +87,7 @@ export default function FacturesEntrantes() {
                   <td className="r mono">{invoice.amountHt ? formatEuro(invoice.amountHt) : "—"}</td>
                   <td className="r mono">{invoice.amountVat ? formatEuro(invoice.amountVat) : "—"}</td>
                   <td className="r mono">{invoice.amountTtc ? formatEuro(invoice.amountTtc) : "—"}</td>
-                  <td><Link className="btn btn-sm" to={`/factures-entrantes/${invoice.id}`}>Ouvrir</Link></td>
+                  <td><Link className="btn btn-sm" to={`/factures-entrantes/${invoice.id}`}>Traiter la facture</Link></td>
                 </tr>
               ))}
               {invoices.length === 0 ? <tr><td colSpan={10} className="sub">Aucune facture électronique entrante. Déposez un XML/Factur-X dans Pièces ou connectez une Plateforme Agréée.</td></tr> : null}

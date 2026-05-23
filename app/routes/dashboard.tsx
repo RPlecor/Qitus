@@ -1,6 +1,7 @@
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
 import { Link, useFetcher, useLoaderData } from "@remix-run/react";
-import { AppShell, ButtonLink, KpiCard, Main, StatusBadge, TableShell } from "~/components/ui";
+import { AppShell, ButtonLink, GuidanceList, KpiCard, Main, StatusBadge, TableShell } from "~/components/ui";
+import type { ActionableGuidance } from "~/modules/actionable-guidance";
 import { requireCompanyWorkspace } from "~/modules/company-workspace/company-workspace.server";
 import { DashboardOverview } from "~/modules/dashboard/dashboard-overview.server";
 import { OperationalDashboardConsistency } from "~/modules/dashboard/operational-dashboard-consistency.server";
@@ -27,6 +28,20 @@ export default function Dashboard() {
   const { companyName, fiscalYearLabel, demoMessage, overview, consistency } = useLoaderData<typeof loader>();
   const automationFetcher = useFetcher<{ completed: number; failed: number; skipped: number }>();
   const issueCount = consistency.checks.filter((check) => !check.ok).length;
+  const consistencyGuidance: ActionableGuidance = issueCount > 0 ? {
+    title: "Cohérence opérationnelle à vérifier",
+    message: `${consistency.label} — ${issueCount} point${issueCount > 1 ? "s" : ""} à revoir.`,
+    tone: "warning",
+    source: "dashboard-consistency",
+    isActionRequired: true,
+    primaryAction: { label: "Voir l'activité", href: "/activity" },
+  } : {
+    title: consistency.label,
+    message: "Les contrôles opérationnels du tableau de bord sont cohérents.",
+    tone: "success",
+    source: "dashboard-consistency",
+    isActionRequired: false,
+  };
 
   return (
     <AppShell active="dashboard">
@@ -37,28 +52,7 @@ export default function Dashboard() {
       >
         {demoMessage ? <div className="alert blue">{demoMessage}</div> : null}
 
-        {/* ── Alertes — groupées dans un panel compact ── */}
-        {(overview.alerts.length > 0 || issueCount > 0) ? (
-          <div className="dash-notices">
-            {issueCount > 0 ? (
-              <div className="notice-item notice-warn">
-                <span className="notice-dot warn" />
-                <span>{consistency.label} — <strong>{issueCount} point{issueCount > 1 ? "s" : ""} à revoir</strong></span>
-              </div>
-            ) : (
-              <div className="notice-item notice-ok">
-                <span className="notice-dot ok" />
-                <span>{consistency.label}</span>
-              </div>
-            )}
-            {overview.alerts.map((alert) => (
-              <div key={`${alert.type}-${alert.message}`} className={`notice-item notice-${alert.tone}`}>
-                <span className={`notice-dot ${alert.tone}`} />
-                <span>{alert.message}</span>
-              </div>
-            ))}
-          </div>
-        ) : null}
+        <GuidanceList items={[consistencyGuidance, ...overview.alerts]} />
 
         {/* ── KPI financiers — première ligne ── */}
         <div className="dash-section-label">Financier</div>

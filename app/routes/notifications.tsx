@@ -55,7 +55,7 @@ export default function Notifications() {
                   </td>
                   <td className="actions-cell">
                     <div className="row-actions row-actions-nowrap">
-                      {notification.href ? <Link className="btn btn-sm" to={notification.href}>Ouvrir</Link> : null}
+                      {notification.href ? <Link className="btn btn-sm" to={notification.href}>{notification.primaryActionLabel ?? "Ouvrir l'action"}</Link> : null}
                       {!notification.read ? (
                         <Form method="post" action={`/api/notifications/${notification.id}/read`}>
                           <button className="btn btn-sm" type="submit">Lu</button>

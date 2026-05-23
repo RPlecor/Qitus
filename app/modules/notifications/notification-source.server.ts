@@ -7,6 +7,7 @@ export type NotificationSpec = {
   title: string;
   body: string;
   href?: string;
+  primaryActionLabel?: string;
   dedupeKey: string;
   expiresAt?: Date | null;
   metadata?: Record<string, unknown>;

@@ -112,7 +112,7 @@ export default function TvaPage() {
                   <td>{vatDeclarationStatusLabel(declaration.status)}</td>
                   <td>{freshnessLabel(declaration.freshness?.statusLabel ?? (declaration.active ? "Active" : "Superseded"))}</td>
                   <td>{formatEuro(Number((declaration.amounts as { net?: number }).net ?? 0))}</td>
-                  <td><Link className="btn btn-sm" to={`/tva/${declaration.id}`}>Ouvrir</Link></td>
+                  <td><Link className="btn btn-sm" to={`/tva/${declaration.id}`}>Voir la déclaration</Link></td>
                 </tr>
               ))}
               {visibleDeclarations.length === 0 ? <tr><td colSpan={6} className="sub">Aucune déclaration TVA générée.</td></tr> : null}

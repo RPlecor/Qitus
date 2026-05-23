@@ -93,7 +93,7 @@ export default function AccountingRulesPage() {
                     <td>{snapshot.title}</td>
                     <td className="mono">{new Date(snapshot.retrievedAt).toLocaleString("fr-FR")}</td>
                     <td>{snapshot.changes.length}</td>
-                    <td><a className="btn btn-sm" href={snapshot.sourceUrl} target="_blank" rel="noreferrer">Ouvrir</a></td>
+                    <td><a className="btn btn-sm" href={snapshot.sourceUrl} target="_blank" rel="noreferrer">Voir la source</a></td>
                   </tr>
                 ))}
                 {snapshots.length === 0 ? <tr><td colSpan={5} className="sub">Aucune source synchronisée.</td></tr> : null}

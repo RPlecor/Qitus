@@ -1,4 +1,5 @@
 import type { DocumentType } from "@prisma/client";
+import { assertActionableGuidance, type ActionableGuidance, type ActionableGuidanceTone } from "../actionable-guidance";
 import { AccountingReviewCenter, type AccountingReview } from "../accounting-review/accounting-review-center.server";
 import { AccountingCoverageCenter, type AccountingCoverageOverview } from "../accounting-coverage/accounting-coverage-center.server";
 import { AutomationOpportunityCenter, summarizeAutomationOpportunities, type AutomationOpportunity } from "../automation/automation-opportunity-center.server";
@@ -13,9 +14,7 @@ import { computeDashboardKpis, type DashboardKpis } from "./dashboard";
 
 export type DashboardAlert = {
   type: "review" | "documents" | "imports" | "accounting" | "closing_adjustments" | "coverage";
-  tone: "orange" | "blue" | "red";
-  message: string;
-};
+} & ActionableGuidance;
 
 export type DashboardTransaction = {
   id: string;
@@ -199,35 +198,89 @@ export function buildDashboardAlerts(
 ): DashboardAlert[] {
   const alerts: DashboardAlert[] = [];
   if (importCount === 0) {
-    alerts.push({ type: "imports", tone: "blue", message: "Aucun import bancaire n'a encore été lancé." });
+    alerts.push(dashboardAlert({
+      type: "imports",
+      tone: "info",
+      title: "Aucun import bancaire",
+      message: "Importez un relevé bancaire pour démarrer le dossier.",
+      primaryAction: { label: "Importer un relevé", href: "/imports" },
+    }));
   }
   if (reviewCount > 0) {
-    alerts.push({ type: "review", tone: "orange", message: `${reviewCount} transaction${reviewCount > 1 ? "s" : ""} à vérifier avant génération complète des écritures.` });
+    alerts.push(dashboardAlert({
+      type: "review",
+      tone: "warning",
+      title: "Transactions à vérifier",
+      message: `${reviewCount} transaction${reviewCount > 1 ? "s" : ""} à vérifier avant génération complète des écritures.`,
+      primaryAction: { label: "Corriger les transactions", href: "/transactions?status=review" },
+    }));
   }
   if (!documentTypes.includes("FEC")) {
-    alerts.push({ type: "documents", tone: "blue", message: "Le FEC n'a pas encore été généré pour cet exercice." });
+    alerts.push(dashboardAlert({
+      type: "documents",
+      tone: "info",
+      title: "FEC non généré",
+      message: "Le FEC n'a pas encore été généré pour cet exercice.",
+      primaryAction: { label: "Générer le FEC", href: "/documents" },
+    }));
   }
   if ((options.staleDocuments ?? 0) > 0) {
-    alerts.push({ type: "documents", tone: "orange", message: `${options.staleDocuments} document${options.staleDocuments! > 1 ? "s" : ""} à régénérer après les dernières écritures.` });
+    alerts.push(dashboardAlert({
+      type: "documents",
+      tone: "warning",
+      title: "Documents à régénérer",
+      message: `${options.staleDocuments} document${options.staleDocuments! > 1 ? "s" : ""} sont obsolètes après les dernières écritures.`,
+      primaryAction: { label: "Ouvrir les documents", href: "/documents" },
+    }));
   }
   if ((options.draftAdjustments ?? 0) > 0) {
-    alerts.push({ type: "closing_adjustments", tone: "orange", message: `${options.draftAdjustments} OD brouillon${options.draftAdjustments! > 1 ? "s" : ""} à relire dans Contrôle.` });
+    alerts.push(dashboardAlert({
+      type: "closing_adjustments",
+      tone: "warning",
+      title: "OD brouillon à relire",
+      message: `${options.draftAdjustments} OD brouillon${options.draftAdjustments! > 1 ? "s" : ""} attend${options.draftAdjustments! > 1 ? "ent" : ""} une décision.`,
+      primaryAction: { label: "Relire les OD", href: "/cloture/od" },
+    }));
   }
   if (accountingReview && accountingReview.warningCount > 0 && accountingReview.blockingCount === 0) {
-    alerts.push({
+    alerts.push(dashboardAlert({
       type: "accounting",
-      tone: "orange",
+      tone: "warning",
+      title: "Pré-clôture à revoir",
       message: `${accountingReview.warningCount} point${accountingReview.warningCount > 1 ? "s" : ""} de pré-clôture à revoir dans Contrôle.`,
-    });
+      primaryAction: { label: "Ouvrir le contrôle", href: "/controle" },
+    }));
   }
   if (options.coverage && options.coverage.status !== "beta_ready") {
-    alerts.push({
+    alerts.push(dashboardAlert({
       type: "coverage",
-      tone: options.coverage.highRisk > 0 ? "red" : "orange",
+      tone: options.coverage.highRisk > 0 ? "blocking" : "warning",
+      title: "Couverture EC à compléter",
       message: `${options.coverage.label} : score ${options.coverage.score}/100.`,
-    });
+      primaryAction: { label: "Ouvrir la couverture", href: "/couverture" },
+    }));
   }
   return alerts;
+}
+
+function dashboardAlert(input: {
+  type: DashboardAlert["type"];
+  tone: ActionableGuidanceTone;
+  title: string;
+  message: string;
+  primaryAction: NonNullable<ActionableGuidance["primaryAction"]>;
+}): DashboardAlert {
+  return {
+    type: input.type,
+    ...assertActionableGuidance({
+      title: input.title,
+      message: input.message,
+      tone: input.tone,
+      primaryAction: input.primaryAction,
+      source: "dashboard",
+      isActionRequired: true,
+    }),
+  };
 }
 
 function displayAccount(amount: number, categorization: { accountDebit: string | null; accountCredit: string | null } | null) {

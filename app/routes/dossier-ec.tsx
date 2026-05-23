@@ -139,7 +139,7 @@ export default function ExpertDossierPage() {
                   <td><StatusPill label={riskLabel(section.risk)} tone={section.risk === "high" ? "error" : section.risk === "medium" ? "warn" : "ok"} /></td>
                   <td>{section.summary}<div className="sub">{section.evidence.slice(0, 2).join(" · ")}</div></td>
                   <td className="sub">{section.gaps.slice(0, 3).join(" · ") || "—"}</td>
-                  <td><Link className="btn btn-sm" to={section.href}>Ouvrir</Link></td>
+                  <td><Link className="btn btn-sm" to={section.href}>Voir la section</Link></td>
                 </tr>
               ))}
             </tbody>

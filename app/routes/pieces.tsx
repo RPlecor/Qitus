@@ -98,7 +98,7 @@ export default function Pieces() {
                 <td>{attachment.invoiceDate ?? "—"}</td>
                 <td>{attachment.amountTtc ? formatEuro(attachment.amountTtc) : "—"}</td>
                 <td>{attachment.linksCount}</td>
-                <td><Link className="btn btn-sm" to={`/pieces/${attachment.id}`}>Ouvrir</Link></td>
+                <td><Link className="btn btn-sm" to={`/pieces/${attachment.id}`}>Voir la pièce</Link></td>
               </tr>
             ))}
             {attachments.length === 0 ? <tr><td colSpan={8} className="sub">Aucune pièce déposée.</td></tr> : null}

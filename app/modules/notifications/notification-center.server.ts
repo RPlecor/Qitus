@@ -28,6 +28,7 @@ export type NotificationListItem = {
   title: string;
   body: string;
   href: string | null;
+  primaryActionLabel: string | null;
   read: boolean;
   dismissed: boolean;
   createdAt: string;
@@ -134,7 +135,7 @@ export class NotificationCenter {
         href: spec.href,
         dedupeKey: spec.dedupeKey,
         expiresAt: spec.expiresAt,
-        metadataJson: spec.metadata as Prisma.InputJsonValue | undefined,
+        metadataJson: notificationMetadata(spec),
       },
       update: {
         type: spec.type,
@@ -143,7 +144,7 @@ export class NotificationCenter {
         body: spec.body,
         href: spec.href,
         expiresAt: spec.expiresAt ?? null,
-        metadataJson: spec.metadata as Prisma.InputJsonValue | undefined,
+        metadataJson: notificationMetadata(spec),
       },
     });
   }
@@ -165,11 +166,44 @@ function summarizeNotification(row: Notification): NotificationListItem {
     title: row.title,
     body: row.body,
     href: row.href,
+    primaryActionLabel: notificationPrimaryActionLabel(row.href, row.metadataJson),
     read: Boolean(row.readAt),
     dismissed: Boolean(row.dismissedAt),
     createdAt: row.createdAt.toISOString(),
     metadata: row.metadataJson,
   };
+}
+
+function notificationMetadata(spec: NotificationSpec): Prisma.InputJsonValue | undefined {
+  if (!spec.metadata && !spec.primaryActionLabel) return undefined;
+  return {
+    ...(spec.metadata ?? {}),
+    ...(spec.primaryActionLabel ? { primaryActionLabel: spec.primaryActionLabel } : {}),
+  } as Prisma.InputJsonValue;
+}
+
+export function notificationPrimaryActionLabel(href: string | null, metadata: unknown) {
+  if (!href) return null;
+  if (isRecord(metadata) && typeof metadata.primaryActionLabel === "string" && metadata.primaryActionLabel.trim()) {
+    return metadata.primaryActionLabel;
+  }
+  if (href.startsWith("/transactions")) return "Corriger les transactions";
+  if (href.startsWith("/imports/") && href.endsWith("/mapping")) return "Associer les colonnes";
+  if (href.startsWith("/imports")) return "Ouvrir les imports";
+  if (href.startsWith("/documents")) return "Ouvrir les documents";
+  if (href.startsWith("/controle")) return "Ouvrir le contrôle";
+  if (href.startsWith("/tva")) return "Ouvrir la TVA";
+  if (href.startsWith("/rapprochements")) return "Relancer le rapprochement";
+  if (href.startsWith("/cloture/od")) return "Relire les OD";
+  if (href.startsWith("/pieces")) return "Rattacher une pièce";
+  if (href.startsWith("/couverture")) return "Ouvrir la couverture";
+  if (href.startsWith("/factures-entrantes")) return "Traiter les factures";
+  if (href.startsWith("/abonnement")) return "Ouvrir l'abonnement";
+  return "Ouvrir l'action";
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function parseNotificationType(value?: string | null): NotificationType | undefined {

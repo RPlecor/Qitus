@@ -1,6 +1,7 @@
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
 import { Form, useLoaderData } from "@remix-run/react";
-import { AppShell, Main, TableShell } from "~/components/ui";
+import { AppShell, GuidanceAlert, Main, TableShell } from "~/components/ui";
+import type { ActionableGuidance } from "~/modules/actionable-guidance";
 import { AccountingReviewCenter } from "~/modules/accounting-review/accounting-review-center.server";
 import { requireCompanyWorkspace } from "~/modules/company-workspace/company-workspace.server";
 import { DocumentCatalog } from "~/modules/documents/document-catalog.server";
@@ -22,24 +23,14 @@ export async function loader(args: LoaderFunctionArgs) {
 export default function Documents() {
   const { documents, error, review, freshness, generationAudit } = useLoaderData<typeof loader>();
   const hasFec = documents.some((document) => document.type === "FEC");
+  const reviewGuidance = buildReviewGuidance(review.blockingCount, review.warningCount);
+  const freshnessGuidance = buildFreshnessGuidance(freshness.staleCount, review.blockingCount);
   return (
     <AppShell active="documents">
       <Main title="Documents" subtitle="Générés par Qitus">
         {error ? <div className="alert red">{error}</div> : null}
-        {review.blockingCount > 0 ? (
-          <div className="alert red">
-            Génération bloquée par {review.blockingCount} contrôle{review.blockingCount > 1 ? "s" : ""}. Va dans Contrôle avant de générer.
-          </div>
-        ) : review.warningCount > 0 ? (
-          <div className="alert orange">
-            Génération possible avec {review.warningCount} point{review.warningCount > 1 ? "s" : ""} de pré-clôture à revoir.
-          </div>
-        ) : null}
-        {freshness.staleCount > 0 ? (
-          <div className="alert orange">
-            {freshness.staleCount} document{freshness.staleCount > 1 ? "s" : ""} à régénérer après les dernières écritures ou OD.
-          </div>
-        ) : null}
+        {reviewGuidance ? <GuidanceAlert guidance={reviewGuidance} /> : null}
+        {freshnessGuidance ? <GuidanceAlert guidance={freshnessGuidance} /> : null}
         <div className="doc-grid">
           <div className="card doc-card">
             <h3>FEC</h3>
@@ -102,6 +93,44 @@ export default function Documents() {
       </Main>
     </AppShell>
   );
+}
+
+function buildReviewGuidance(blockingCount: number, warningCount: number): ActionableGuidance | null {
+  if (blockingCount > 0) {
+    return {
+      title: "Génération bloquée",
+      message: `Génération bloquée par ${blockingCount} contrôle${blockingCount > 1 ? "s" : ""}.`,
+      tone: "blocking",
+      source: "documents",
+      isActionRequired: true,
+      primaryAction: { label: "Ouvrir le contrôle", href: "/controle" },
+    };
+  }
+  if (warningCount > 0) {
+    return {
+      title: "Pré-clôture à vérifier",
+      message: `Génération possible avec ${warningCount} point${warningCount > 1 ? "s" : ""} de pré-clôture à revoir.`,
+      tone: "warning",
+      source: "documents",
+      isActionRequired: true,
+      primaryAction: { label: "Ouvrir le contrôle", href: "/controle" },
+    };
+  }
+  return null;
+}
+
+function buildFreshnessGuidance(staleCount: number, blockingCount: number): ActionableGuidance | null {
+  if (staleCount <= 0) return null;
+  return {
+    title: "Documents obsolètes",
+    message: `${staleCount} document${staleCount > 1 ? "s sont" : " est"} obsolète${staleCount > 1 ? "s" : ""} après les dernières écritures ou OD.`,
+    tone: "warning",
+    source: "documents",
+    isActionRequired: true,
+    primaryAction: blockingCount > 0
+      ? { label: "Résoudre les contrôles bloquants", href: "/controle" }
+      : { label: "Régénérer les documents", href: "/documents" },
+  };
 }
 
 function formatDate(value: string) {

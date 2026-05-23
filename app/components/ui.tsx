@@ -1,5 +1,6 @@
-import { Link, NavLink, useRouteLoaderData } from "@remix-run/react";
+import { Form, Link, NavLink, useRouteLoaderData } from "@remix-run/react";
 import type { ReactNode } from "react";
+import { alertClassForGuidanceTone, type ActionableGuidance, type ActionableGuidanceAction } from "~/modules/actionable-guidance";
 import {
   LayoutDashboard,
   Bell,
@@ -211,6 +212,44 @@ export function ButtonLink({
       {children}
     </Link>
   );
+}
+
+export function GuidanceAlert({ guidance }: { guidance: ActionableGuidance }) {
+  return (
+    <div className={`alert guidance-alert ${alertClassForGuidanceTone(guidance.tone)}`}>
+      <div className="guidance-copy">
+        <strong>{guidance.title}</strong>
+        <span>{guidance.message}</span>
+      </div>
+      <div className="guidance-actions">
+        {guidance.primaryAction ? <GuidanceAction action={guidance.primaryAction} primary /> : null}
+        {guidance.secondaryAction ? <GuidanceAction action={guidance.secondaryAction} /> : null}
+      </div>
+    </div>
+  );
+}
+
+export function GuidanceList({ items }: { items: ActionableGuidance[] }) {
+  if (items.length === 0) return null;
+  return (
+    <div className="guidance-list">
+      {items.map((item) => (
+        <GuidanceAlert key={`${item.source}:${item.title}:${item.message}`} guidance={item} />
+      ))}
+    </div>
+  );
+}
+
+function GuidanceAction({ action, primary = false }: { action: ActionableGuidanceAction; primary?: boolean }) {
+  const className = `btn btn-sm ${primary ? "btn-p" : ""}`;
+  if (action.method === "post") {
+    return (
+      <Form method="post" action={action.href}>
+        <button className={className} type="submit">{action.label}</button>
+      </Form>
+    );
+  }
+  return <Link className={className} to={action.href}>{action.label}</Link>;
 }
 
 export function TableShell({ children }: { children: ReactNode }) {

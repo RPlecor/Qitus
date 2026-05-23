@@ -113,7 +113,7 @@ export default function TransactionReview() {
             {attachmentLinks.map((link) => (
               <li key={link.id}>
                 <span>{link.attachment.filename} · {relationLabel(link.relationType)}</span>
-                <Link className="btn btn-sm" to={`/pieces/${link.attachment.id}`}>Ouvrir</Link>
+                <Link className="btn btn-sm" to={`/pieces/${link.attachment.id}`}>Voir la pièce</Link>
               </li>
             ))}
             {attachmentLinks.length === 0 ? <li>Aucune pièce rattachée à cette transaction.</li> : null}
