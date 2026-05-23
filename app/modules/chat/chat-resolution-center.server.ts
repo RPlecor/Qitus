@@ -1,4 +1,5 @@
 import type { AccountingChatContext, AccountingChatMessage, AccountingChatProvider, AccountingChatReply } from "./accounting-chat-provider.server";
+import { ChatReplyGuidanceCenter } from "./chat-reply-guidance-center.server";
 import { ChatSafetyPolicy, type ChatScopeDecision } from "./chat-safety-policy.server";
 import { QitusKnowledgeCenter, type QitusKnowledgeSource } from "./qitus-knowledge-center.server";
 
@@ -13,7 +14,8 @@ export class ChatResolutionCenter {
   constructor(
     private readonly provider: AccountingChatProvider,
     private readonly safety = new ChatSafetyPolicy(),
-    private readonly knowledge = new QitusKnowledgeCenter()
+    private readonly knowledge = new QitusKnowledgeCenter(),
+    private readonly guidance = new ChatReplyGuidanceCenter()
   ) {}
 
   buildPlan(message: string, context: AccountingChatContext): ChatResolutionPlan {
@@ -47,13 +49,19 @@ export class ChatResolutionCenter {
   }
 
   async resolve(plan: ChatResolutionPlan, history: AccountingChatMessage[], context: AccountingChatContext): Promise<AccountingChatReply> {
-    if (plan.fallbackReply) return plan.fallbackReply;
+    if (plan.fallbackReply) {
+      return this.guidance.normalizeReply({
+        reply: plan.fallbackReply,
+        knowledgeSources: plan.knowledgeSources,
+        references: context.references,
+      });
+    }
     const providerContext: AccountingChatContext = {
       ...context,
       knowledgeSources: plan.knowledgeSources,
     };
     const reply = await this.provider.reply(history, providerContext);
-    return this.safety.sanitizeAssistantReply({
+    const safeReply = this.safety.sanitizeAssistantReply({
       ...reply,
       metadata: {
         ...reply.metadata,
@@ -61,5 +69,10 @@ export class ChatResolutionCenter {
         knowledgeSources: plan.knowledgeSources,
       },
     }, context.references);
+    return this.guidance.normalizeReply({
+      reply: safeReply,
+      knowledgeSources: plan.knowledgeSources,
+      references: context.references,
+    });
   }
 }

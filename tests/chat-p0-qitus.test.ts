@@ -45,6 +45,25 @@ describe("Chat P0 Qitus", () => {
     expect(reply.metadata?.knowledgeSources).toEqual(plan.knowledgeSources);
   });
 
+  it("normalizes provider markdown into clean content and actions", async () => {
+    const provider: AccountingChatProvider = {
+      reply: vi.fn(async () => ({
+        content: "Pour configurer Qonto, ouvrez **[Connecteurs](/connecteurs)**.",
+        provider: "test",
+        model: "test",
+      })),
+    };
+    const center = new ChatResolutionCenter(provider);
+    const ctx = context();
+    const plan = center.buildPlan("Comment configurer Qonto bancaire ?", ctx);
+    const reply = await center.resolve(plan, [{ role: "user", content: "Comment configurer Qonto bancaire ?" }], ctx);
+
+    expect(reply.content).toBe("Pour configurer Qonto, ouvrez Connecteurs.");
+    expect(reply.metadata?.actions).toEqual([
+      { label: "Ouvrir Connecteurs", href: "/connecteurs", kind: "primary", source: "markdown" },
+    ]);
+  });
+
   it("redacts sensitive values before provider prompts", () => {
     const redacted = redactChatProviderInput({
       email: "rene@example.com",
@@ -92,6 +111,7 @@ function context(): AccountingChatContext {
       { code: "dashboard", label: "Tableau de bord", href: "/dashboard", reason: "Test" },
       { code: "controle", label: "Contrôle", href: "/controle", reason: "Test" },
       { code: "documents", label: "Documents", href: "/documents", reason: "Test" },
+      { code: "connecteurs", label: "Connecteurs", href: "/connecteurs", reason: "Test" },
     ],
     dashboard: {},
     accountingReview: {},

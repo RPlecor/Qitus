@@ -4,6 +4,7 @@ import { AppShell, KpiCard, Main } from "~/components/ui";
 import { UsageMeter } from "~/modules/billing/usage-meter.server";
 import { AccountingChatCenter } from "~/modules/chat/accounting-chat-center.server";
 import { ChatContextBuilder } from "~/modules/chat/chat-context-builder.server";
+import type { ChatReplyAction } from "~/modules/chat/chat-reply-guidance-center.server";
 import { requireCompanyWorkspace } from "~/modules/company-workspace/company-workspace.server";
 import { chatProviderLabel } from "~/modules/ui-labels";
 
@@ -64,6 +65,7 @@ export default function Chat() {
                 <div key={message.id} className={`chat-message ${message.role === "USER" ? "user" : "assistant"}`}>
                   <strong>{message.role === "USER" ? "Vous" : "Qitus"}</strong>
                   <p>{message.content}</p>
+                  {message.role !== "USER" ? <ChatMessageActions metadata={message.metadata} /> : null}
                 </div>
               ))}
               {!selected ? (
@@ -85,5 +87,36 @@ export default function Chat() {
         </div>
       </Main>
     </AppShell>
+  );
+}
+
+function ChatMessageActions({ metadata }: { metadata: unknown }) {
+  const actions = extractActions(metadata);
+  if (actions.length === 0) return null;
+  return (
+    <div className="chat-message-actions">
+      {actions.map((action) => (
+        <Link key={`${action.href}-${action.label}`} to={action.href} className={action.kind === "primary" ? "primary" : ""}>
+          {action.label}
+        </Link>
+      ))}
+    </div>
+  );
+}
+
+function extractActions(metadata: unknown): ChatReplyAction[] {
+  if (!metadata || typeof metadata !== "object" || !("actions" in metadata) || !Array.isArray(metadata.actions)) return [];
+  return metadata.actions.filter(isChatReplyAction);
+}
+
+function isChatReplyAction(value: unknown): value is ChatReplyAction {
+  return Boolean(
+    value
+      && typeof value === "object"
+      && "label" in value
+      && typeof value.label === "string"
+      && "href" in value
+      && typeof value.href === "string"
+      && value.href.startsWith("/")
   );
 }

@@ -1,6 +1,7 @@
 import { Link, useLocation } from "@remix-run/react";
 import { MessageCircle, Plus, Send, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
+import type { ChatReplyAction } from "~/modules/chat/chat-reply-guidance-center.server";
 import type { QitusKnowledgeSource } from "~/modules/chat/qitus-knowledge-center.server";
 
 type WidgetMessage = {
@@ -212,12 +213,22 @@ export function ChatWidget() {
 
 function ChatWidgetMessage({ message }: { message: WidgetMessage }) {
   const isUser = message.role === "USER";
+  const actions = extractActions(message.metadata);
   const sources = extractSources(message.metadata);
   return (
     <article className={`chat-widget-message ${isUser ? "user" : "assistant"}`}>
       {!isUser ? <span className="chat-widget-message-avatar"><MessageCircle aria-hidden size={14} /></span> : null}
       <div className="chat-widget-message-body">
         <div className="chat-widget-message-bubble">{message.content}</div>
+        {!isUser && actions.length > 0 ? (
+          <div className="chat-widget-actions">
+            {actions.map((action) => (
+              <Link key={`${action.href}-${action.label}`} to={action.href} className={action.kind === "primary" ? "primary" : ""}>
+                {action.label}
+              </Link>
+            ))}
+          </div>
+        ) : null}
         <time>{formatTime(message.createdAt)}</time>
         {!isUser && sources.length > 0 ? (
           <div className="chat-widget-sources">
@@ -253,8 +264,25 @@ function extractSources(metadata: unknown): QitusKnowledgeSource[] {
   return Array.isArray(value) ? value.filter(isKnowledgeSource) : [];
 }
 
+function extractActions(metadata: unknown): ChatReplyAction[] {
+  if (!metadata || typeof metadata !== "object" || !("actions" in metadata) || !Array.isArray(metadata.actions)) return [];
+  return metadata.actions.filter(isChatReplyAction);
+}
+
 function isKnowledgeSource(value: unknown): value is QitusKnowledgeSource {
   return Boolean(value && typeof value === "object" && "sourceId" in value && "title" in value);
+}
+
+function isChatReplyAction(value: unknown): value is ChatReplyAction {
+  return Boolean(
+    value
+      && typeof value === "object"
+      && "label" in value
+      && typeof value.label === "string"
+      && "href" in value
+      && typeof value.href === "string"
+      && value.href.startsWith("/")
+  );
 }
 
 function formatTime(value: string) {

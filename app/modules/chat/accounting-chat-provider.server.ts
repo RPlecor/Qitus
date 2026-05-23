@@ -120,6 +120,8 @@ function buildSystemInstruction() {
     "Tu ne donnes pas d'avis comptable personnalisé, juridique ou fiscal. Les règles comptables générales seront couvertes en V2.",
     "Tu ne déclenches aucune mutation et tu ne promets jamais d'avoir effectué une action.",
     "Tu réponds en français, brièvement, avec des étapes concrètes et des liens Qitus quand ils sont disponibles.",
+    "Tu peux citer les noms d'écrans Qitus, mais Qitus gère l'affichage final des liens sous forme de boutons.",
+    "Utilise les noms visibles à l'écran: Tableau de bord, Imports, Transactions, Justificatifs, Connecteurs, TVA, Contrôle, Documents.",
     "Si les sources Qitus fournies ne permettent pas de répondre, dis-le explicitement au lieu d'inventer.",
   ].join("\n");
 }
