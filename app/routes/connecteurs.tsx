@@ -115,10 +115,10 @@ export default function Connecteurs() {
         </section>
 
         <section className="card">
-          <div className="sec-head"><h2>Dernières synchronisations bancaires</h2><StatusPill label="Secrets masqués" tone="info" /></div>
+          <div className="sec-head"><h2>Dernières mises à jour bancaires</h2><StatusPill label="Données sensibles masquées" tone="info" /></div>
           <TableShell>
             <table className="tbl">
-              <thead><tr><th>Date</th><th>Statut</th><th>Fetch</th><th>Importées</th><th>Erreur</th></tr></thead>
+              <thead><tr><th>Date</th><th>Statut</th><th>Lues</th><th>Importées</th><th>Message</th></tr></thead>
               <tbody>
                 {syncHistory.map((sync) => (
                   <tr key={sync.id}>
@@ -129,7 +129,7 @@ export default function Connecteurs() {
                     <td>{sync.errorMessage ?? "—"}</td>
                   </tr>
                 ))}
-                {syncHistory.length === 0 ? <tr><td colSpan={5} className="sub">Aucune synchronisation lancée.</td></tr> : null}
+                {syncHistory.length === 0 ? <tr><td colSpan={5} className="sub">Aucune mise à jour bancaire lancée.</td></tr> : null}
               </tbody>
             </table>
           </TableShell>
@@ -173,7 +173,7 @@ function shortDate(value: string) {
 
 function noticeLabel(value: string) {
   if (value === "connected") return "connexion créée";
-  if (value === "synced") return "synchronisation terminée";
+  if (value === "synced") return "mise à jour terminée";
   if (value === "disconnected") return "connexion révoquée";
   if (value === "reconnected") return "connexion renouvelée";
   return value;

@@ -10,7 +10,7 @@ export async function action(args: ActionFunctionArgs) {
     await assertFiscalYearMutable(workspace);
     const workpaper = await new ClosingWorkpaperWorkflow().markReady(workspace, String(args.params.workpaperKey));
     if (args.request.headers.get("accept")?.includes("application/json")) return json({ workpaper });
-    return redirect(`/cloture/workpapers/${encodeURIComponent(workpaper.kind)}?success=${encodeURIComponent("Workpaper prêt")}`);
+    return redirect(`/cloture/workpapers/${encodeURIComponent(workpaper.kind)}?success=${encodeURIComponent("Feuille de travail prête")}`);
   } catch (error) {
     return jsonOrRedirectError(args.request, error, "/cloture/od");
   }

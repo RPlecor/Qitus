@@ -67,7 +67,7 @@ export default function Dashboard() {
         <div className="dash-section-label">Opérationnel</div>
         <div className="kpi-grid">
           <KpiCard label="À vérifier" value={String(overview.transactionState.reviewCount)} hint="Transactions en revue" />
-          <KpiCard label="Documents" value={overview.documentFreshness?.staleCount ? "À régénérer" : "À jour"} hint={`${overview.documentFreshness?.staleCount ?? 0} obsolète`} />
+          <KpiCard label="Documents" value={overview.documentFreshness?.staleCount ? "À régénérer" : "À jour"} hint={`${overview.documentFreshness?.staleCount ?? 0} à mettre à jour`} />
           <KpiCard label="OD brouillon" value={String(overview.closingAdjustments?.draft ?? 0)} hint={`${overview.closingAdjustments?.approved ?? 0} validée`} />
           <KpiCard label="Couverture EC" value={overview.coverage ? `${overview.coverage.score}%` : "—"} hint={overview.coverage?.label ?? "Non calculée"} />
         </div>

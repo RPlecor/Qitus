@@ -11,7 +11,7 @@ export async function action(args: ActionFunctionArgs) {
     await assertFiscalYearMutable(workspace);
     const workpaper = await new ClosingWorkpaperWorkflow().markDraft(workspace, String(args.params.workpaperKey), String(form.get("reason") || ""));
     if (args.request.headers.get("accept")?.includes("application/json")) return json({ workpaper });
-    return redirect(`/cloture/workpapers/${encodeURIComponent(workpaper.kind)}?success=${encodeURIComponent("Workpaper remis en brouillon")}`);
+    return redirect(`/cloture/workpapers/${encodeURIComponent(workpaper.kind)}?success=${encodeURIComponent("Feuille de travail remise en brouillon")}`);
   } catch (error) {
     return jsonOrRedirectError(args.request, error, "/cloture/od");
   }

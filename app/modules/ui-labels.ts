@@ -1,3 +1,5 @@
+import { attachmentStatusLabel, documentFreshnessStatusLabel, sanitizeUserFacingText } from "./product-language/product-language";
+
 export function documentTypeLabel(type: string | null | undefined) {
   switch (type) {
     case "FEC":
@@ -13,7 +15,7 @@ export function documentTypeLabel(type: string | null | undefined) {
     case "LIASSE_FISCALE":
       return "Liasse fiscale";
     case "EVIDENCE_BUNDLE":
-      return "Paquet de preuve";
+      return "Dossier de preuves";
     case "TVA_DECLARATION":
       return "Déclaration TVA";
     default:
@@ -33,7 +35,7 @@ export function documentFormatLabel(format: string | null | undefined) {
     case "pdf":
       return "PDF";
     case "json":
-      return "JSON";
+      return "Données";
     default:
       return format ? format.toUpperCase() : "—";
   }
@@ -85,7 +87,7 @@ export function storageArtifactKindLabel(kind: string | null | undefined) {
     case "attachment":
       return "Pièce";
     default:
-      return "Artefact";
+      return "Fichier";
   }
 }
 
@@ -204,7 +206,7 @@ export function dossierSectionStatusLabel(status: string | null | undefined) {
     case "blocked":
       return "Bloqué";
     case "stale":
-      return "Obsolète";
+      return "À mettre à jour";
     default:
       return "À vérifier";
   }
@@ -275,7 +277,7 @@ export function eInvoiceStatusLabel(status: string | null | undefined) {
     case "RECEIVED":
       return "Reçue";
     case "PARSED":
-      return "Analysée";
+      return "Lue";
     case "MATCHED":
       return "Rapprochée";
     case "ACCOUNTING_DRAFT":
@@ -321,7 +323,7 @@ export function eInvoiceFormatLabel(format: string | null | undefined) {
 export function eInvoiceSourceLabel(source: string | null | undefined) {
   switch (source) {
     case "UPLOAD":
-      return "Upload manuel";
+      return "Dépôt manuel";
     case "PROVIDER":
       return "Plateforme agréée";
     default:
@@ -360,18 +362,8 @@ export function vatDeclarationStatusLabel(status: string | null | undefined) {
 }
 
 export function freshnessLabel(value: string | null | undefined) {
-  switch (value) {
-    case "Superseded":
-      return "Remplacée";
-    case "Active":
-      return "Active";
-    case "Obsolète":
-    case "À jour":
-    case "À régénérer":
-      return value;
-    default:
-      return value ?? "À jour";
-  }
+  if (!value) return "À jour";
+  return documentFreshnessStatusLabel(value);
 }
 
 export function entityTypeLabel(value: string | null | undefined) {
@@ -392,14 +384,18 @@ export function entityTypeLabel(value: string | null | undefined) {
 export function chatProviderLabel(value: string | null | undefined) {
   switch (value) {
     case "fake":
-      return "mode test";
+      return "mode de test";
     case "codex":
       return "Codex";
     case "disabled":
       return "désactivé";
     default:
-      return value ?? "non configuré";
+      return value ? sanitizeUserFacingText(value) : "non configuré";
   }
+}
+
+export function attachmentStatusLabelForUser(status: string | null | undefined) {
+  return attachmentStatusLabel(status ?? "UPLOADED");
 }
 
 export function fiscalYearStatusLabel(status: string | null | undefined) {

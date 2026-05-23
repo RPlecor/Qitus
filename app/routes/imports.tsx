@@ -5,6 +5,7 @@ import { AppShell, Main, StatusBadge, TableShell } from "~/components/ui";
 import { requireCompanyWorkspace } from "~/modules/company-workspace/company-workspace.server";
 import { ImportCleanupCenter } from "~/modules/import-orchestrator/import-cleanup-center.server";
 import { ImportHistory } from "~/modules/import-orchestrator/import-history.server";
+import { importStepLabel } from "~/modules/product-language/product-language";
 
 export async function loader(args: LoaderFunctionArgs) {
   const workspace = await requireCompanyWorkspace(args);
@@ -78,7 +79,7 @@ export default function Imports() {
                 <td>
                   <div className="row-actions">
                     {importRow.actions.needsMapping ? <Link className="btn btn-sm" to={`/imports/${importRow.id}/mapping`}>Associer les colonnes</Link> : null}
-                    {importRow.actions.canRetry ? <Form method="post" action={`/api/imports/${importRow.id}/retry`}><button className="btn btn-sm" type="submit">Réessayer</button></Form> : null}
+                    {importRow.actions.canRetry ? <Form method="post" action={`/api/imports/${importRow.id}/retry`}><button className="btn btn-sm" type="submit">Relancer</button></Form> : null}
                     {importRow.actions.canRetryCategorization ? <Form method="post" action={`/api/imports/${importRow.id}/retry-categorization`}><button className="btn btn-sm" type="submit">Relancer la catégorisation</button></Form> : null}
                     <details className="danger-details">
                       <summary className="btn btn-sm btn-danger">Supprimer</summary>
@@ -122,16 +123,7 @@ function toBadgeStatus(statusKind: "done" | "warn" | "error" | "pending") {
 }
 
 function stepLabel(step: string | null) {
-  const labels: Record<string, string> = {
-    queued: "En attente",
-    "detect-and-parse": "Détection CSV",
-    "await-mapping": "Colonnes à associer",
-    "create-transactions": "Transactions",
-    categorize: "Catégorisation",
-    "write-ledger": "Écritures",
-    complete: "Terminé",
-  };
-  return step ? labels[step] ?? step : "—";
+  return step ? importStepLabel(step) : "—";
 }
 
 function ImportUploadZone() {
@@ -152,7 +144,7 @@ function ImportUploadZone() {
           <line x1="12" y1="3" x2="12" y2="15" />
         </svg>
         <div className="upload-label">Glissez un relevé CSV ou <span>parcourir</span></div>
-        <div className="upload-hint">Qonto, BNP Paribas, Société Générale, Boursorama ou mapping manuel</div>
+        <div className="upload-hint">Qonto, BNP Paribas, Société Générale, Boursorama ou association manuelle des colonnes</div>
         {fileName ? <div className="upload-selected">📎 {fileName}</div> : null}
         <input
           type="file"
@@ -173,6 +165,6 @@ function ImportUploadZone() {
 
 function formatDuration(value: number | null) {
   if (value == null) return "—";
-  if (value < 1000) return `${value} ms`;
+  if (value < 1000) return "< 1 s";
   return `${Math.round(value / 100) / 10} s`;
 }

@@ -54,7 +54,7 @@ describe("DashboardOverview", () => {
       expect.objectContaining({
         type: "documents",
         tone: "warning",
-        message: "2 documents sont obsolètes après les dernières écritures.",
+        message: "2 documents sont à mettre à jour après les dernières écritures.",
         primaryAction: { label: "Ouvrir les documents", href: "/documents" },
       }),
       expect.objectContaining({

@@ -31,26 +31,26 @@ export default function Activity() {
 
   return (
     <AppShell active="activity">
-      <Main title="Activité" subtitle="Journal des événements" action={<Link className="btn" to={exportUrl}>Exporter CSV</Link>}>
+      <Main title="Activité" subtitle="Historique des actions Qitus" action={<Link className="btn" to={exportUrl}>Exporter CSV</Link>}>
         <div className="sec-head">
           <h2>Historique</h2>
           <div>
             <Link className="btn btn-sm" to="/activity">Tout</Link>{" "}
             <Link className="btn btn-sm" to="/activity?type=document">Documents</Link>{" "}
             <Link className="btn btn-sm" to="/activity?type=import">Imports</Link>{" "}
-            <Link className="btn btn-sm" to="/api/activity-log/audit">Audit JSON</Link>
+            <Link className="btn btn-sm" to="/api/activity-log/audit">Exporter l'audit</Link>
           </div>
         </div>
         <Form className="card filter-bar" method="get">
           <div className="field"><label>Type</label><input name="type" defaultValue={filters.type ?? ""} placeholder="document, import..." /></div>
-          <div className="field"><label>Action</label><input name="action" defaultValue={filters.action ?? ""} placeholder="document.generated" /></div>
+          <div className="field"><label>Action</label><input name="action" defaultValue={filters.action ?? ""} placeholder="document généré" /></div>
           <div className="field"><label>Depuis</label><input type="date" name="from" defaultValue={filters.from ?? ""} /></div>
           <div className="field"><label>Jusqu'à</label><input type="date" name="to" defaultValue={filters.to ?? ""} /></div>
           <button className="btn" type="submit">Filtrer</button>
         </Form>
         <TableShell>
           <table className="tbl">
-            <thead><tr><th>Date</th><th>Action</th><th>Type</th><th>Exercice</th><th>Détail</th><th>Données techniques</th></tr></thead>
+            <thead><tr><th>Date</th><th>Action</th><th>Type</th><th>Exercice</th><th>Détail</th><th>Complément</th></tr></thead>
             <tbody>
               {activity.map((item) => (
                 <tr key={item.id}>

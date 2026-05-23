@@ -22,7 +22,7 @@ export async function action(args: ActionFunctionArgs) {
       extractedText: stringValue(form.get("extractedText")),
     });
     if (args.request.headers.get("accept")?.includes("application/json")) return json({ extraction });
-    return redirect(`${returnTo}?success=${encodeURIComponent("Métadonnées enregistrées")}`);
+    return redirect(`${returnTo}?success=${encodeURIComponent("Informations de pièce enregistrées")}`);
   } catch (error) {
     return jsonOrRedirectError(args.request, error, returnTo);
   }

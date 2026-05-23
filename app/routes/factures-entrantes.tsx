@@ -30,7 +30,7 @@ export default function FacturesEntrantes() {
         </div>
         <div className="kpi-grid">
           <KpiCard label="Factures" value={String(invoices.length)} hint="Exercice actif" />
-          <KpiCard label="À traiter" value={String(pending)} hint="Parsing, matching ou brouillon" />
+          <KpiCard label="À traiter" value={String(pending)} hint="Lecture, rapprochement ou brouillon" />
           <KpiCard label="Comptabilisées" value={String(invoices.filter((invoice) => invoice.status === "ACCOUNTED").length)} />
           <KpiCard label="Réception PA" value={provider.readiness.receptionCompliant ? "Conforme" : "À configurer"} hint={provider.configured ? "Configuré" : "Désactivé"} />
         </div>
@@ -46,7 +46,7 @@ export default function FacturesEntrantes() {
                 <button className="btn" type="submit" disabled={provider.mode === "disabled"}>Connecter / rattacher PA</button>
               </Form>
               <Form method="post" action="/api/e-invoice-providers/sync">
-                <button className="btn btn-p" type="submit" disabled={provider.mode === "disabled"}>Synchroniser</button>
+                <button className="btn btn-p" type="submit" disabled={provider.mode === "disabled"}>Mettre à jour</button>
               </Form>
             </div>
           </div>
@@ -61,7 +61,7 @@ export default function FacturesEntrantes() {
             <label>Statut</label>
             <select name="status" defaultValue={query.status ?? ""}>
               <option value="">Toutes actives</option>
-              <option value="PARSED">Parsées</option>
+              <option value="PARSED">Lues</option>
               <option value="MATCHED">Rapprochées</option>
               <option value="ACCOUNTING_DRAFT">Brouillon prêt</option>
               <option value="ACCOUNTED">Comptabilisées</option>
@@ -108,7 +108,7 @@ function statusTone(status: string): "ok" | "done" | "warn" | "error" | "neutral
 }
 
 function sourceLabel(invoice: { source: string; providerLabel?: string | null }, internalTestMode: boolean) {
-  if (invoice.source === "UPLOAD") return "Upload manuel";
+  if (invoice.source === "UPLOAD") return "Dépôt manuel";
   const providerLabel = invoice.providerLabel?.toLowerCase() ?? "";
   if (providerLabel.includes("qonto")) return "Qonto PA";
   if (internalTestMode && (providerLabel.includes("sandbox") || providerLabel.includes("mock"))) return "Test interne";

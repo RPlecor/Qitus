@@ -54,7 +54,7 @@ export default function AccountingRulesPage() {
                 <p className="sub">Récupère les sources officielles, construit le pack Qitus et applique la version active au workspace courant.</p>
               </div>
               <Form method="post" action="/api/accounting-rules/sync">
-                <button className="btn btn-p" type="submit">Synchroniser maintenant</button>
+                <button className="btn btn-p" type="submit">Mettre à jour maintenant</button>
               </Form>
             </div>
           </section>
@@ -64,7 +64,7 @@ export default function AccountingRulesPage() {
           <h2>Packs de règles</h2>
           <TableShell>
             <table className="tbl">
-              <thead><tr><th>Version</th><th>Statut</th><th>Source</th><th>Mappings</th><th>Activé le</th></tr></thead>
+              <thead><tr><th>Version</th><th>Statut</th><th>Source</th><th>Correspondances</th><th>Activé le</th></tr></thead>
               <tbody>
                 {packs.map((pack) => (
                   <tr key={pack.id}>

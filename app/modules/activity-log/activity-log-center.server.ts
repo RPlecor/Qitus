@@ -1,6 +1,7 @@
 import { Prisma, type ActivityLog } from "@prisma/client";
 import { prisma } from "../db.server";
 import type { CompanyWorkspace } from "../company-workspace/company-workspace.server";
+import { sanitizeUserFacingText } from "../product-language/product-language";
 
 export type ActivityEvent = {
   action: string;
@@ -125,9 +126,9 @@ function activityLabel(action: string) {
     "import.step_started": "Étape import démarrée",
     "import.step_completed": "Étape import terminée",
     "import.step_failed": "Étape import échouée",
-    "import.mapping_submitted": "Mapping CSV enregistré",
-    "import.retry_requested": "Retry import demandé",
-    "import.retry_categorization_requested": "Retry catégorisation demandé",
+    "import.mapping_submitted": "Correspondance de colonnes enregistrée",
+    "import.retry_requested": "Relance de l'import demandée",
+    "import.retry_categorization_requested": "Relance de la catégorisation demandée",
     "import.completed": "Import terminé",
     "import.failed": "Import échoué",
     "import.deleted": "Import supprimé",
@@ -153,14 +154,14 @@ function activityLabel(action: string) {
     "closing_adjustment.required_missing": "OD requise manquante",
     "closing_adjustment.ready_for_review": "OD prête à relire",
     "closing_adjustment.reopened": "OD réouverte",
-    "closing_adjustment.stale": "OD obsolète",
-    "closing_adjustment.recalculated_stale": "OD obsolètes recalculées",
+    "closing_adjustment.stale": "OD à mettre à jour",
+    "closing_adjustment.recalculated_stale": "OD mises à jour recalculées",
     "closing_adjustment.approval_blocked_missing_evidence": "Validation OD bloquée par pièce manquante",
-    "closing_workpaper.created": "Workpaper de clôture créé",
-    "closing_workpaper.updated": "Workpaper de clôture modifié",
-    "closing_workpaper.archived": "Workpaper de clôture archivé",
-    "closing_workpaper.marked_ready": "Workpaper marqué prêt",
-    "closing_workpaper.marked_draft": "Workpaper remis en brouillon",
+    "closing_workpaper.created": "Feuille de travail de clôture créée",
+    "closing_workpaper.updated": "Feuille de travail de clôture modifiée",
+    "closing_workpaper.archived": "Feuille de travail de clôture archivée",
+    "closing_workpaper.marked_ready": "Feuille de travail marquée prête",
+    "closing_workpaper.marked_draft": "Feuille de travail remise en brouillon",
     "document.marked_stale": "Documents à régénérer",
     "document_generation.attempted": "Génération document lancée",
     "document_generation.succeeded": "Audit génération réussi",
@@ -170,14 +171,14 @@ function activityLabel(action: string) {
     "document.blocked": "Génération document bloquée",
     "document.failed": "Document échoué",
     "document.downloaded": "Document téléchargé",
-    "document.evidence_bundle_downloaded": "Paquet de preuve téléchargé",
-    "attachment.uploaded": "Pièce uploadée",
-    "attachment.extracted": "Pièce extraite",
-    "attachment.extraction_failed": "Extraction pièce échouée",
+    "document.evidence_bundle_downloaded": "Dossier de preuves téléchargé",
+    "attachment.uploaded": "Pièce déposée",
+    "attachment.extracted": "Lecture de pièce terminée",
+    "attachment.extraction_failed": "Lecture de pièce impossible",
     "attachment.linked": "Pièce rattachée",
     "attachment.unlinked": "Pièce détachée",
     "attachment.archived": "Pièce archivée",
-    "attachment.manual_extraction_updated": "Métadonnées pièce modifiées",
+    "attachment.manual_extraction_updated": "Informations de pièce modifiées",
     "annual_closing.started": "Clôture démarrée",
     "annual_closing.step_completed": "Étape de clôture terminée",
     "annual_closing.step_blocked": "Étape de clôture bloquée",
@@ -193,7 +194,7 @@ function activityLabel(action: string) {
     "reconciliation.bank_balance_saved": "Solde bancaire de rapprochement saisi",
     "reconciliation.bank_match_confirmed": "Match bancaire confirmé",
     "reconciliation.bank_match_ignored": "Match bancaire ignoré",
-    "reconciliation.stripe_fixture_imported": "Fixture Stripe importée",
+    "reconciliation.stripe_fixture_imported": "Données de test Stripe importées",
     "reconciliation.stripe_synced": "Synchronisation Stripe lancée",
     "reconciliation.stripe_run": "Rapprochement Stripe lancé",
     "reconciliation.third_party_run": "Lettrage tiers lancé",
@@ -214,7 +215,7 @@ function activityLabel(action: string) {
     "expert_review.changes_requested": "Changements demandés par l'expert-comptable",
     "expert_review.final_signed_off": "Dossier signé par l'expert-comptable",
     "expert_review.validated": "Dossier validé par l'expert-comptable",
-    "expert_dossier.snapshot_created": "Snapshot dossier EC créé",
+    "expert_dossier.snapshot_created": "État du dossier EC enregistré",
     "expert_dossier.prepared_for_review": "Dossier EC préparé pour revue",
     "expert_dossier.exported": "Dossier EC exporté",
     "chat.message_sent": "Message chat envoyé",
@@ -223,7 +224,7 @@ function activityLabel(action: string) {
     "billing.checkout_started": "Checkout abonnement démarré",
     "billing.portal_opened": "Portail abonnement ouvert",
     "billing.subscription_updated": "Abonnement mis à jour",
-    "billing.webhook_failed": "Webhook billing échoué",
+    "billing.webhook_failed": "Notification abonnement échouée",
     "usage.limit_reached": "Limite d'usage atteinte",
     "notification.read": "Notification lue",
     "notification.read_all": "Notifications lues",
@@ -242,14 +243,14 @@ function activityLabel(action: string) {
     "vat.declaration_downloaded": "Déclaration TVA téléchargée",
     "vat.declaration_blocked": "Déclaration TVA bloquée",
     "vat.issue_resolved": "Point TVA résolu",
-    "webhook.clerk_user_synced": "Utilisateur Clerk synchronisé",
+    "webhook.clerk_user_synced": "Utilisateur synchronisé",
     "monitoring.metric_recorded": "Métrique enregistrée",
     "cron.notifications_refreshed": "Notifications rafraîchies",
     "open_banking.consent_started": "Connexion bancaire démarrée",
     "open_banking.consent_completed": "Connexion bancaire confirmée",
     "open_banking.consent_revoked": "Connexion bancaire révoquée",
     "open_banking.consent_reconnected": "Connexion bancaire renouvelée",
-    "open_banking.webhook_processed": "Webhook Open Banking traité",
+    "open_banking.webhook_processed": "Notification Open Banking traitée",
     "open_banking.sync_completed": "Synchronisation bancaire terminée",
     "open_banking.sync_failed": "Synchronisation bancaire échouée",
     "automation.safe_run_started": "Automatisation sûre lancée",
@@ -264,7 +265,7 @@ function activityLabel(action: string) {
     "e_invoice.accounting_draft_auto_generated": "Brouillon facture généré automatiquement",
     "expert_dossier.snapshot_auto_prepared": "État transmis EC préparé automatiquement",
   };
-  return labels[action] ?? action;
+  return labels[action] ?? sanitizeUserFacingText(action.replaceAll("_", " ").replaceAll(".", " "));
 }
 
 function activityDetail(row: ActivityLogSummary) {
@@ -285,7 +286,7 @@ function activityDetail(row: ActivityLogSummary) {
   if (row.action.startsWith("expert_review.") && typeof metadata?.label === "string") return metadata.label;
   if (row.action.startsWith("expert_review.") && typeof metadata?.title === "string") return metadata.title;
   if (row.action.startsWith("expert_dossier.") && typeof metadata?.status === "string") return metadata.status;
-  if (row.action.startsWith("chat.") && typeof metadata?.provider === "string") return metadata.provider;
+  if (row.action.startsWith("chat.") && typeof metadata?.provider === "string") return sanitizeUserFacingText(metadata.provider);
   if (row.action.startsWith("billing.") && typeof metadata?.tier === "string") return metadata.tier;
   if (row.action.startsWith("usage.") && typeof metadata?.capability === "string") return metadata.capability;
   if (row.action.startsWith("notification.") && typeof metadata?.type === "string") return metadata.type;
@@ -303,8 +304,8 @@ function activityDetail(row: ActivityLogSummary) {
   if (row.action.startsWith("vat.") && typeof metadata?.issueKey === "string") return metadata.issueKey;
   if (row.action.startsWith("vat.") && typeof metadata?.type === "string") return metadata.type;
   if (row.action.startsWith("webhook.") && typeof metadata?.type === "string") return metadata.type;
-  if (row.action.startsWith("open_banking.") && typeof metadata?.provider === "string") return metadata.provider;
-  if (row.action.startsWith("open_banking.") && typeof metadata?.message === "string") return metadata.message;
+  if (row.action.startsWith("open_banking.") && typeof metadata?.provider === "string") return sanitizeUserFacingText(metadata.provider);
+  if (row.action.startsWith("open_banking.") && typeof metadata?.message === "string") return sanitizeUserFacingText(metadata.message);
   if (row.action.startsWith("automation.") && typeof metadata?.title === "string") return metadata.title;
   if (row.action.startsWith("automation.") && typeof metadata?.count === "number") return `${metadata.count} opportunité(s)`;
   if (row.action.startsWith("automation.") && typeof metadata?.attempted === "number") return `${metadata.attempted} tentative(s)`;
@@ -335,5 +336,5 @@ function offset(filters: ActivityLogFilters) {
 
 function compactMetadata(metadata: unknown) {
   if (!metadata || typeof metadata !== "object") return "";
-  return JSON.stringify(metadata);
+  return sanitizeUserFacingText(JSON.stringify(metadata));
 }

@@ -31,7 +31,7 @@ export default function Chat() {
       <Main title="Chat comptable" subtitle="Lecture seule · contexte Qitus">
         <div className="alert blue">
           <strong>Chat en lecture seule</strong>
-          <span>{readiness.message} Fournisseur : {chatProviderLabel(readiness.provider)} · modèle : {readiness.model}.</span>
+          <span>{readiness.message} Connecteur : {chatProviderLabel(readiness.provider)} · modèle : {readiness.model}.</span>
         </div>
         <div className="kpi-grid">
           <KpiCard label="IA ce mois" value={`${usage.usage.aiCalls}/${usage.subscription.limits.aiCallsPerMonth}`} hint="Quota du plan" />

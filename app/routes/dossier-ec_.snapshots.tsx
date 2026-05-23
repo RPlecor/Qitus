@@ -23,7 +23,7 @@ export default function DossierSnapshotsPage() {
       <Main title="États transmis du dossier EC" subtitle="Historique des états transmis au cabinet" action={<Link className="btn" to="/dossier-ec">Retour dossier</Link>}>
         <div className={`alert ${state.latest?.freshness.isStale ? "orange" : state.latest ? "blue" : "red"}`}>
           <strong>{state.label}</strong>
-          <span>{state.total} état(s) transmis · {state.stale} obsolète(s)</span>
+          <span>{state.total} état(s) transmis · {state.stale} à mettre à jour</span>
         </div>
 
         <TableShell>

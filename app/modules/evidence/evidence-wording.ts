@@ -10,7 +10,7 @@ export function orphanAttachmentsLabel(count: number) {
 }
 
 export function ocrReviewLabel(count: number) {
-  return `${count} OCR à revoir`;
+  return `${count} pièce${count > 1 ? "s" : ""} à relire`;
 }
 
 export function evidenceCoverageSummary(input: { entriesWithoutEvidence: number; orphanAttachments: number; extractionFailures: number }) {
@@ -30,4 +30,3 @@ export function evidenceLevelLabel(level: EvidenceWordingLevel, options: { satis
   if (level === "recommended") return "Recommandée";
   return String(level);
 }
-

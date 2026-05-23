@@ -34,8 +34,8 @@ export default function FactureEntranteDetail() {
         <section className="panel">
           <div className="sec-head">
             <div>
-              <h2>Données extraites</h2>
-              <p className="sub">Source structurée conservée dans le paquet de preuve.</p>
+              <h2>Données lues</h2>
+              <p className="sub">Source structurée conservée dans le dossier de preuves.</p>
             </div>
             <StatusPill label={eInvoiceStatusLabel(invoice.status)} tone={invoice.status === "ERROR" ? "error" : invoice.status === "ACCOUNTED" ? "done" : "neutral"} />
           </div>
@@ -56,15 +56,15 @@ export default function FactureEntranteDetail() {
           <div className="sec-head">
             <div>
               <h2>Réception PA et preuve</h2>
-              <p className="sub">Upload manuel exploitable, mais seule une source PA réelle prouve la réception conforme.</p>
+              <p className="sub">Dépôt manuel exploitable, mais seule une source PA réelle prouve la réception conforme.</p>
             </div>
-            <StatusPill label={invoice.source === "PROVIDER" ? eInvoiceProviderStatusLabel(invoice.providerStatusLabel) : "Upload manuel"} tone={invoice.source === "PROVIDER" ? "ok" : "warn"} />
+            <StatusPill label={invoice.source === "PROVIDER" ? eInvoiceProviderStatusLabel(invoice.providerStatusLabel) : "Dépôt manuel"} tone={invoice.source === "PROVIDER" ? "ok" : "warn"} />
           </div>
           <div className="grid two">
             <div className="kv"><span>Source</span><strong>{invoice.source === "PROVIDER" ? invoice.providerConnection?.safeLabel ?? "Plateforme agréée" : eInvoiceSourceLabel(invoice.source)}</strong></div>
             <div className="kv"><span>Statut PA</span><strong>{eInvoiceProviderStatusLabel(invoice.providerStatusLabel)}</strong></div>
             <div className="kv"><span>Reçue le</span><strong>{invoice.providerReceivedAt ? shortDate(invoice.providerReceivedAt) : "—"}</strong></div>
-            <div className="kv"><span>Synchronisé le</span><strong>{invoice.providerStatusSyncedAt ? shortDate(invoice.providerStatusSyncedAt) : "—"}</strong></div>
+            <div className="kv"><span>Mis à jour le</span><strong>{invoice.providerStatusSyncedAt ? shortDate(invoice.providerStatusSyncedAt) : "—"}</strong></div>
             <div className="kv"><span>XML source</span><strong>{invoice.rawXmlStorageKey ? "Conservé" : "Absent"}</strong></div>
             <div className="kv"><span>Mandat PA</span><strong>{eInvoiceProviderStatusLabel(invoice.providerConnection?.mandateStatus)}</strong></div>
           </div>
@@ -72,7 +72,7 @@ export default function FactureEntranteDetail() {
             <div className="row-actions">
               <Form method="post" action={`/api/e-invoices/${invoice.id}/acknowledge-status`}>
                 <input type="hidden" name="status" value="READ" />
-                <button className="btn" type="submit">Marquer lu côté PA</button>
+                <button className="btn" type="submit">Signaler la lecture à la PA</button>
               </Form>
             </div>
           ) : null}

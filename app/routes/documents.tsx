@@ -39,25 +39,25 @@ export default function Documents() {
           </div>
           <div className="card doc-card">
             <h3>États financiers</h3>
-            <p>Balance, bilan et compte de résultat en Markdown.</p>
+            <p>Balance, bilan et compte de résultat en document lisible.</p>
             <Form method="post" action="/api/documents/statements/generate"><button className="btn">Générer</button></Form>
           </div>
           <div className="card doc-card">
             <h3>Liasse fiscale</h3>
-            <p>Source structurée vérifiable. PDF dérivé si le runtime est disponible.</p>
+            <p>Source structurée vérifiable. PDF ajouté si la génération est disponible.</p>
             <Form method="post" action="/api/documents/liasse/generate"><button className="btn">Générer</button></Form>
           </div>
         </div>
         <div className="sec-head">
-          <h2>Audit génération</h2>
-          {hasFec ? <a className="btn" href="/api/documents/evidence-bundle">Télécharger paquet de preuve</a> : null}
+          <h2>Dernière génération</h2>
+          {hasFec ? <a className="btn" href="/api/documents/evidence-bundle">Télécharger le dossier de preuves</a> : null}
         </div>
         <div className="card">
           {generationAudit ? (
             <>
               <h3>{generationAudit.label}</h3>
               <p className="sub">
-                {generationAudit.types.map(documentTypeLabel).join(", ")} · {generationAudit.filenames.join(", ") || "Aucun fichier"} · {generationAudit.durationMs ?? 0} ms
+                {generationAudit.types.map(documentTypeLabel).join(", ")} · {generationAudit.filenames.join(", ") || "Aucun fichier"} · {formatDuration(generationAudit.durationMs)}
               </p>
               <p className="sub">{generationAudit.userMessage ?? "Audit disponible via le journal d'activité."}</p>
             </>
@@ -68,7 +68,7 @@ export default function Documents() {
         <div className="sec-head"><h2>Documents générés</h2></div>
         <TableShell>
           <table className="tbl">
-            <thead><tr><th>Date</th><th>Type</th><th>Fichier</th><th>État</th><th>Format</th><th className="r">Taille</th><th>Écritures</th><th>Script</th><th>Généré par</th><th></th></tr></thead>
+            <thead><tr><th>Date</th><th>Type</th><th>Fichier</th><th>État</th><th>Format</th><th className="r">Taille</th><th>Écritures</th><th>Outil</th><th>Généré par</th><th></th></tr></thead>
             <tbody>
               {documents.map((document) => (
                 <tr key={document.id}>
@@ -122,8 +122,8 @@ function buildReviewGuidance(blockingCount: number, warningCount: number): Actio
 function buildFreshnessGuidance(staleCount: number, blockingCount: number): ActionableGuidance | null {
   if (staleCount <= 0) return null;
   return {
-    title: "Documents obsolètes",
-    message: `${staleCount} document${staleCount > 1 ? "s sont" : " est"} obsolète${staleCount > 1 ? "s" : ""} après les dernières écritures ou OD.`,
+    title: "Documents à mettre à jour",
+    message: `${staleCount} document${staleCount > 1 ? "s sont" : " est"} à mettre à jour après les dernières écritures ou OD.`,
     tone: "warning",
     source: "documents",
     isActionRequired: true,
@@ -140,4 +140,10 @@ function formatDate(value: string) {
 function formatBytes(value: number | null) {
   if (!value) return "—";
   return `${Math.round(value / 102.4) / 10} Ko`;
+}
+
+function formatDuration(value: number | null | undefined) {
+  if (value == null) return "durée non renseignée";
+  if (value < 1000) return "< 1 s";
+  return `${Math.round(value / 100) / 10} s`;
 }

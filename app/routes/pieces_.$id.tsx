@@ -6,6 +6,7 @@ import { AttachmentMatchingCenter } from "~/modules/evidence/attachment-matching
 import { AttachmentCenter } from "~/modules/evidence/attachment-center.server";
 import { EvidenceReviewWorkflow } from "~/modules/evidence/evidence-review-workflow.server";
 import { evidenceLevelLabel } from "~/modules/evidence/evidence-wording";
+import { attachmentStatusLabelForUser } from "~/modules/ui-labels";
 
 export async function loader(args: LoaderFunctionArgs) {
   const workspace = await requireCompanyWorkspace(args);
@@ -42,7 +43,7 @@ export default function PieceDetail() {
         <div className="grid two">
           <Form method="post" action={`/api/attachments/${attachment.id}/extraction`} className="card">
             <input type="hidden" name="returnTo" value={`/pieces/${attachment.id}`} />
-            <h2>Métadonnées</h2>
+            <h2>Informations de la pièce</h2>
             <div className="field"><label>Fournisseur</label><input name="supplierName" defaultValue={attachment.supplierName ?? ""} /></div>
             <div className="form-row">
               <div className="field"><label>Date facture</label><input type="date" name="invoiceDate" defaultValue={attachment.invoiceDate ?? ""} /></div>
@@ -54,7 +55,7 @@ export default function PieceDetail() {
               <div className="field"><label>TTC</label><input name="amountTtc" defaultValue={attachment.amountTtc ?? ""} /></div>
             </div>
             <div className="field"><label>Devise</label><input name="currency" defaultValue={attachment.currency ?? "EUR"} /></div>
-            <div className="field"><label>Texte extrait</label><textarea name="extractedText" rows={8} defaultValue={attachment.extractedText ?? ""} /></div>
+            <div className="field"><label>Texte lu automatiquement</label><textarea name="extractedText" rows={8} defaultValue={attachment.extractedText ?? ""} /></div>
             <button className="btn btn-p" type="submit">Enregistrer</button>
           </Form>
 
@@ -95,7 +96,7 @@ export default function PieceDetail() {
 
         <section className="panel">
           <div className="row between">
-            <h2>Exigences actives</h2>
+            <h2>Justificatifs à compléter</h2>
             <Link className="btn btn-sm" to="/pieces/revue">Ouvrir la revue</Link>
           </div>
           <table className="tbl">
@@ -167,10 +168,7 @@ function formatEuro(value: string) {
 }
 
 function statusLabel(status: string) {
-  if (status === "EXTRACTED") return "OCR OK";
-  if (status === "EXTRACTION_FAILED") return "OCR à revoir";
-  if (status === "ARCHIVED") return "Archivée";
-  return "Uploadée";
+  return attachmentStatusLabelForUser(status);
 }
 
 function statusClass(status: string) {

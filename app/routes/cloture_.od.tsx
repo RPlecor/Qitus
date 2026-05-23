@@ -43,7 +43,7 @@ export default function ClosingAdjustmentsCockpit() {
         action={
           <div className="form-actions">
             <Form method="post" action="/api/closing-adjustments/generate"><button className="btn btn-p" type="submit">Générer / mettre à jour</button></Form>
-            <Form method="post" action="/api/closing-adjustments/recalculate-stale"><button className="btn" type="submit">Recalculer les obsolètes</button></Form>
+            <Form method="post" action="/api/closing-adjustments/recalculate-stale"><button className="btn" type="submit">Recalculer les OD à mettre à jour</button></Form>
           </div>
         }
       >

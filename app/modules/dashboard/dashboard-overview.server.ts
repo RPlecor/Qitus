@@ -229,7 +229,7 @@ export function buildDashboardAlerts(
       type: "documents",
       tone: "warning",
       title: "Documents à régénérer",
-      message: `${options.staleDocuments} document${options.staleDocuments! > 1 ? "s" : ""} sont obsolètes après les dernières écritures.`,
+      message: `${options.staleDocuments} document${options.staleDocuments! > 1 ? "s" : ""} sont à mettre à jour après les dernières écritures.`,
       primaryAction: { label: "Ouvrir les documents", href: "/documents" },
     }));
   }

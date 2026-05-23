@@ -22,7 +22,7 @@ export default function SharedReview() {
       {error ? <div className="alert red">{error}</div> : null}
       {validated ? <div className="alert blue">Validation enregistrée. Merci.</div> : null}
       {shareLink.reviewedAt ? <div className="alert blue">Dossier validé par {shareLink.reviewerName} le {dateTime(shareLink.reviewedAt)}.</div> : null}
-      {isTransmittedDossierStale ? <div className="alert orange">L'état transmis est obsolète. Demande au client de préparer un nouveau dossier avant validation finale.</div> : null}
+      {isTransmittedDossierStale ? <div className="alert orange">L'état transmis est à mettre à jour. Demande au client de préparer un nouveau dossier avant validation finale.</div> : null}
       {transmittedSnapshot ? <div className="alert blue">État transmis : {transmittedSnapshot.snapshotKey} · {transmittedSnapshot.freshness.statusLabel}</div> : <div className="alert orange">Aucun état transmis n'est associé à ce dossier.</div>}
 
       <section className="kpi-grid">

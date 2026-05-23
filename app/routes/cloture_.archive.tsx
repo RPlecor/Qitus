@@ -26,7 +26,7 @@ export default function ClosingArchive() {
         </div>
         <div className="actions-row">
           <Form method="post" action="/api/cloture/steps/EXPORT_ARCHIVE/run"><button className="btn btn-p">Générer archive finale</button></Form>
-          <a className="btn" href="/api/documents/evidence-bundle">Télécharger le manifeste</a>
+          <a className="btn" href="/api/documents/evidence-bundle">Télécharger l’inventaire du dossier</a>
         </div>
         <table className="tbl">
           <thead><tr><th>Type</th><th>Fichier</th><th>Version</th><th>État</th><th></th></tr></thead>

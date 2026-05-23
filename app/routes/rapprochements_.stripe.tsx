@@ -57,11 +57,14 @@ export default function RapprochementStripe() {
   return (
     <AppShell active="rapprochements">
       <Main title="Rapprochement Stripe" subtitle={`${summary.payouts} payout(s), ${summary.events} événement(s)`}>
-        <div className={`alert ${freshness.status === "stale" ? "orange" : "blue"}`}><strong>{freshness.label}</strong><span>{freshness.staleReasons[0] ?? (stripeConnector ? connectorMessageLabel(stripeConnector) : "Données Stripe de test disponibles en mode interne.")}</span></div>
+        <div className={`alert ${freshness.status === "stale" ? "orange" : "blue"}`}>
+          <strong>{freshness.label}</strong>
+          <span>{freshness.staleReasons[0] ?? (stripeConnector ? connectorMessageLabel(stripeConnector) : internalTestMode ? "Données Stripe de test disponibles en mode interne." : "Connecteur Stripe à configurer.")}</span>
+        </div>
         <div className="card">
           <div className="row-actions">
             {internalTestMode ? <Form method="post"><input type="hidden" name="intent" value="fixture" /><button className="btn" type="submit">Tester un payout Stripe</button></Form> : null}
-            <Form method="post"><input type="hidden" name="intent" value="sync" /><button className="btn" type="submit">Sync connecteur</button></Form>
+            <Form method="post"><input type="hidden" name="intent" value="sync" /><button className="btn" type="submit">Mettre à jour Stripe</button></Form>
             <Form method="post"><input type="hidden" name="intent" value="run" /><button className="btn btn-p" type="submit">Lancer rapprochement</button></Form>
           </div>
         </div>

@@ -355,11 +355,11 @@ export class EInvoiceImpactSource implements ChangeImpactSource {
         status: "action_required",
         severity: "warning",
         title: `${pendingInvoices} facture${pendingInvoices > 1 ? "s" : ""} entrante${pendingInvoices > 1 ? "s" : ""} à traiter`,
-        message: "Des factures électroniques sont parsées mais pas encore comptabilisées.",
+        message: "Des factures électroniques sont lues mais pas encore comptabilisées.",
         why: ["Une facture structurée reçue doit être rapprochée ou transformée en brouillon comptable."],
         surfaces: this.surfaces,
         blockingCapabilities: [],
-        affectedArtifacts: ["Pièces", "TVA", "Dossier de preuve"],
+        affectedArtifacts: ["Pièces", "TVA", "Dossier de preuves"],
         primaryAction: { label: "Ouvrir les factures entrantes", href: "/factures-entrantes" },
         metadata: { pendingInvoices },
       }));
@@ -371,7 +371,7 @@ export class EInvoiceImpactSource implements ChangeImpactSource {
         status: "action_required",
         severity: "warning",
         title: `${providerPendingInvoices} facture${providerPendingInvoices > 1 ? "s" : ""} reçue${providerPendingInvoices > 1 ? "s" : ""} via PA à traiter`,
-        message: "Des factures reçues par provider PA ne sont pas encore comptabilisées.",
+        message: "Des factures reçues par Plateforme Agréée ne sont pas encore comptabilisées.",
         why: ["La réception PA ne suffit pas : Qitus attend une revue et une validation utilisateur avant écriture."],
         surfaces: this.surfaces,
         blockingCapabilities: [],
@@ -407,7 +407,7 @@ export class EInvoiceImpactSource implements ChangeImpactSource {
         why: ["Une écriture E_INVOICE modifie le journal comptable."],
         surfaces: this.surfaces,
         blockingCapabilities: [],
-        affectedArtifacts: ["FEC", "Paquet de preuve"],
+        affectedArtifacts: ["FEC", "Dossier de preuves"],
         primaryAction: { label: "Ouvrir les documents", href: "/documents" },
         metadata: { accountedSinceDocs },
       }));
@@ -431,10 +431,10 @@ export class AccountingRulesImpactSource implements ChangeImpactSource {
       severity: "warning",
       title: "Règles comptables à initialiser",
       message: "Aucun pack de règles Qitus actif n'est disponible pour les futurs imports.",
-      why: ["Synchronise les règles officielles ou relance le seed Qitus."],
+      why: ["Mets à jour les règles officielles ou relance l'initialisation Qitus."],
       surfaces: this.surfaces,
       blockingCapabilities: [],
-      affectedArtifacts: ["VendorMapping"],
+      affectedArtifacts: ["Règles fournisseurs"],
       primaryAction: { label: "Ouvrir les règles comptables", href: "/regles-comptables" },
     })];
 
@@ -503,7 +503,7 @@ export class ClosingImpactSource implements ChangeImpactSource {
       status: "action_required",
       severity: "warning",
       title: `${freshness.staleCount} OD à recalculer`,
-      message: "Des workpapers, pièces ou écritures sont plus récents que les propositions OD.",
+      message: "Des feuilles de travail, pièces ou écritures sont plus récentes que les propositions OD.",
       why: freshness.proposals.filter((proposal) => proposal.stale).flatMap((proposal) => proposal.reasons.map((reason) => reason.label)),
       surfaces: this.surfaces,
       blockingCapabilities: ["approve_closing_adjustment", "close_fiscal_year"],
@@ -536,7 +536,7 @@ export class EvidenceImpactSource implements ChangeImpactSource {
         why: [
           ...(review.requiredMissing > 0 ? [`${entriesWithoutEvidenceLabel(review.requiredMissing)}.`] : []),
           ...(review.orphanAttachments > 0 ? [`${review.orphanAttachments} pièce(s) sans rattachement comptable.`] : []),
-          ...(review.extractionFailures > 0 ? [`${review.extractionFailures} extraction(s) OCR échouée(s).`] : []),
+          ...(review.extractionFailures > 0 ? [`${review.extractionFailures} pièce${review.extractionFailures > 1 ? "s" : ""} à relire.`] : []),
         ],
         surfaces: this.surfaces,
         blockingCapabilities: [],
@@ -553,13 +553,13 @@ export class EvidenceImpactSource implements ChangeImpactSource {
           source: this.sourceKey,
           status: "blocked",
           severity: "blocking",
-          title: `${storageAudit.summary.missing} artefact(s) storage manquant(s)`,
+          title: `${storageAudit.summary.missing} fichier${storageAudit.summary.missing > 1 ? "s" : ""} de preuve introuvable${storageAudit.summary.missing > 1 ? "s" : ""}`,
           message: "Des fichiers référencés en base ne sont plus disponibles dans le stockage.",
           why: storageAudit.items.filter((item) => !item.available).map((item) => item.filename),
           surfaces: this.surfaces,
           blockingCapabilities: ["generate_documents", "prepare_expert_dossier"],
           affectedArtifacts: storageAudit.items.filter((item) => !item.available).map((item) => item.filename),
-          primaryAction: { label: "Ouvrir l'audit storage", href: "/api/storage/audit" },
+          primaryAction: { label: "Ouvrir le contrôle du stockage", href: "/api/storage/audit" },
           metadata: storageAudit.summary,
         }));
       }
@@ -588,13 +588,13 @@ export class ExpertDossierImpactSource implements ChangeImpactSource {
         source: this.sourceKey,
         status: "action_required",
         severity: "blocking",
-        title: "Snapshot EC obsolète",
+        title: "État transmis au cabinet à mettre à jour",
         message: "Le dossier transmis au cabinet ne reflète plus l'état courant.",
         why: snapshotState.latest.freshness.reasons.map((reason) => reason.label),
         surfaces: this.surfaces,
         blockingCapabilities: ["export_expert_dossier"],
         affectedArtifacts: [snapshotState.latest.snapshotKey],
-        primaryAction: { label: "Préparer un nouveau snapshot", href: "/dossier-ec" },
+        primaryAction: { label: "Préparer un nouvel état transmis", href: "/dossier-ec" },
       }));
     }
     if (queue.blockingItems.length > 0) {
@@ -623,7 +623,7 @@ export class ConnectorImpactSource implements ChangeImpactSource {
 
   async listImpacts(workspace: CompanyWorkspace): Promise<ChangeImpact[]> {
     if (workspace.fiscalYear.status === "CLOSED") {
-      return [connectorBlocked("connectors.fiscal_year_closed", "Exercice clôturé", "Les synchronisations connecteur sont bloquées sur un exercice clôturé.", workspace.fiscalYear.status)];
+      return [connectorBlocked("connectors.fiscal_year_closed", "Exercice clôturé", "Les mises à jour des connecteurs sont bloquées sur un exercice clôturé.", workspace.fiscalYear.status)];
     }
     const freshness = await this.openBanking.getFreshness(workspace);
     if (freshness.status === "fresh" || freshness.status === "never_connected") return [];
@@ -633,7 +633,7 @@ export class ConnectorImpactSource implements ChangeImpactSource {
       status: "action_required",
       severity: "warning",
       title: "Connexion bancaire à revoir",
-      message: "Une connexion bancaire est expirée, révoquée ou à synchroniser.",
+      message: "Une connexion bancaire est expirée, révoquée ou à mettre à jour.",
       why: freshness.connections.flatMap((connection) => connection.staleReasons),
       surfaces: this.surfaces,
       blockingCapabilities: freshness.connections.some((connection) => connection.status === "expired" || connection.status === "revoked") ? ["sync_connectors"] : [],

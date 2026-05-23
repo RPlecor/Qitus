@@ -6,7 +6,7 @@ import { requireCompanyWorkspace } from "~/modules/company-workspace/company-wor
 import { AttachmentCenter } from "~/modules/evidence/attachment-center.server";
 import { EvidenceControlCenter } from "~/modules/evidence/evidence-control-center.server";
 import { entriesWithoutEvidenceLabel } from "~/modules/evidence/evidence-wording";
-import { eInvoiceStatusLabel } from "~/modules/ui-labels";
+import { attachmentStatusLabelForUser, eInvoiceStatusLabel } from "~/modules/ui-labels";
 
 export async function loader(args: LoaderFunctionArgs) {
   const workspace = await requireCompanyWorkspace(args);
@@ -41,7 +41,7 @@ export default function Pieces() {
           <KpiCard label="Pièces" value={String(attachments.length)} hint="Liste courante" />
           <KpiCard label="Sans justificatif" value={String(review.requiredMissing)} hint="Écritures à compléter" />
           <KpiCard label="Non rattachées" value={String(review.orphanAttachments)} hint="À relier" />
-          <KpiCard label="OCR à revoir" value={String(review.extractionFailures)} hint="Non bloquant" />
+          <KpiCard label="Pièces à relire" value={String(review.extractionFailures)} hint="Lecture à vérifier" />
         </div>
 
         <UploadZone />
@@ -51,9 +51,9 @@ export default function Pieces() {
             <label>Statut</label>
             <select name="status" defaultValue={query.status ?? ""}>
               <option value="">Actives</option>
-              <option value="UPLOADED">Uploadées</option>
-              <option value="EXTRACTED">Extraites</option>
-              <option value="EXTRACTION_FAILED">OCR échoué</option>
+              <option value="UPLOADED">Déposées</option>
+              <option value="EXTRACTED">Lues</option>
+              <option value="EXTRACTION_FAILED">Lecture à vérifier</option>
               <option value="ARCHIVED">Archivées</option>
             </select>
           </div>
@@ -142,7 +142,7 @@ function UploadZone() {
       </div>
       {fileName ? (
         <div className="upload-actions">
-          <button className="btn btn-p" type="submit">Uploader</button>
+          <button className="btn btn-p" type="submit">Déposer</button>
         </div>
       ) : null}
     </Form>
@@ -150,10 +150,7 @@ function UploadZone() {
 }
 
 export function statusLabel(status: string) {
-  if (status === "EXTRACTED") return "OCR OK";
-  if (status === "EXTRACTION_FAILED") return "OCR à revoir";
-  if (status === "ARCHIVED") return "Archivée";
-  return "Uploadée";
+  return attachmentStatusLabelForUser(status);
 }
 
 export function statusTone(status: string): "ok" | "done" | "warn" | "neutral" {

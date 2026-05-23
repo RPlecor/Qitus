@@ -201,7 +201,7 @@ function AttachmentUploadForm({ transactionId, amount, back }: { transactionId: 
           onChange={(event) => setFileName(event.target.files?.[0]?.name ?? null)}
         />
       </div>
-      <button className="btn btn-p attach-submit" type="submit" disabled={!fileName}>Uploader et rattacher</button>
+      <button className="btn btn-p attach-submit" type="submit" disabled={!fileName}>Déposer et rattacher</button>
     </Form>
   );
 }

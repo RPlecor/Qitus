@@ -135,7 +135,7 @@ export function connectorModeLabel(mode: string | null | undefined) {
     case "disabled":
       return "Désactivé";
     case "fixture":
-      return "Test interne";
+      return "Banc de test interne";
     case "live":
       return "Connecté";
     default:
@@ -150,7 +150,7 @@ export function connectorSourceLabel(source: string | null | undefined) {
     case "fixture":
       return "Données de test";
     case "live":
-      return "Connecteur live";
+      return "Connexion directe";
     default:
       return "Non renseigné";
   }
@@ -175,7 +175,7 @@ export function connectorMessageLabel(input: { provider?: string | null; mode?: 
   }
   if (input.provider === "stripe") {
     if (input.mode === "disabled") return "Stripe non connecté : le rapprochement peut être testé en mode interne.";
-    if (input.mode === "fixture") return "Banc de test interne : import Stripe de test disponible.";
+    if (input.mode === "fixture") return "Banc de test interne : données Stripe de test disponibles.";
     return input.configured ? "Stripe configuré." : "Configuration Stripe incomplète.";
   }
   return "Statut du connecteur à vérifier.";
