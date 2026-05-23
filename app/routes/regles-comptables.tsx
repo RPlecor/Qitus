@@ -25,24 +25,24 @@ export default function AccountingRulesPage() {
 
   return (
     <AppShell active="regles-comptables">
-      <Main title="Règles comptables" subtitle="Sources officielles et packs Qitus automatiquement appliqués aux futurs imports">
+      <Main title="Règles comptables" subtitle="Qitus classe les prochains imports avec les règles actives, sans modifier les écritures déjà créées.">
         <div className="kpi-grid">
-          <KpiCard label="Pack actif" value={activePack?.version ?? "Aucun"} hint={activePack?.summary ?? "Seed initial à synchroniser"} />
-          <KpiCard label="Statut" value={statusLabel(status.status)} hint="Application aux futurs imports" />
-          <KpiCard label="Sources" value={String(new Set(snapshots.map((snapshot) => snapshot.source)).size)} hint={`${snapshots.length} relevé(s) de source`} />
-          <KpiCard label="Transactions concernées" value={String(impact?.affectedTransactionCount ?? 0)} hint="Données existantes non modifiées" />
+          <KpiCard label="Règles utilisées" value={ruleSetName(activePack)} hint={activePack?.summary ?? "Aucune règle active pour le moment"} />
+          <KpiCard label="État" value={statusLabel(status.status)} hint="Utilisées pour les prochains imports" />
+          <KpiCard label="Sources officielles" value={snapshots.length > 0 ? "Vérifiées" : "Non vérifiées"} hint={sourceSnapshotHint(snapshots)} />
+          <KpiCard label="Transactions à surveiller" value={String(impact?.affectedTransactionCount ?? 0)} hint="Uniquement si vous relancez leur classement" />
         </div>
 
         {impact?.existingDataRequiresExplicitAction ? (
           <div className="alert orange">
-            <strong>Règles à jour pour les futurs imports</strong>
-            <span>Des transactions existantes pourraient changer de compte si tu relances leur catégorisation. Qitus ne modifie pas les écritures déjà générées automatiquement.</span>
+            <strong>Les prochains imports utiliseront les règles à jour</strong>
+            <span>Certaines transactions déjà importées pourraient être classées différemment si vous relancez leur classement. Qitus ne change jamais les écritures déjà créées sans action de votre part.</span>
             <Link className="btn btn-sm" to="/imports">Ouvrir les imports</Link>
           </div>
         ) : (
           <div className="alert blue">
-            <strong>Mise à jour transparente</strong>
-            <span>Les règles actives sont utilisées automatiquement pour les prochains imports. Les écritures existantes restent auditées et inchangées.</span>
+            <strong>Classement automatique prêt</strong>
+            <span>Les règles actives seront utilisées pour les prochains imports. Les écritures existantes restent inchangées et auditées.</span>
           </div>
         )}
 
@@ -50,53 +50,53 @@ export default function AccountingRulesPage() {
           <section className="panel">
             <div className="row between">
               <div>
-                <h2>Synchronisation dev/admin</h2>
-                <p className="sub">Récupère les sources officielles, construit le pack Qitus et applique la version active au workspace courant.</p>
+                <h2>Vérification manuelle des règles</h2>
+                <p className="sub">Action réservée à l'équipe Qitus. Elle vérifie les sources officielles, prépare les règles Qitus et les applique aux prochains imports.</p>
               </div>
               <Form method="post" action="/api/accounting-rules/sync">
-                <button className="btn btn-p" type="submit">Mettre à jour maintenant</button>
+                <button className="btn btn-p" type="submit">Vérifier maintenant</button>
               </Form>
             </div>
           </section>
         ) : null}
 
         <section className="panel">
-          <h2>Packs de règles</h2>
+          <h2>Versions des règles</h2>
           <TableShell>
             <table className="tbl">
-              <thead><tr><th>Version</th><th>Statut</th><th>Source</th><th>Correspondances</th><th>Activé le</th></tr></thead>
+              <thead><tr><th>Nom</th><th>État</th><th>Origine</th><th>Règles de classement</th><th>Utilisée depuis</th></tr></thead>
               <tbody>
                 {packs.map((pack) => (
                   <tr key={pack.id}>
-                    <td className="mono">{pack.version}</td>
+                    <td>{ruleSetName(pack)}</td>
                     <td><StatusPill label={packStatusLabel(pack.status)} tone={pack.status === "ACTIVE" ? "ok" : pack.status === "NEEDS_REVIEW" ? "warn" : "neutral"} /></td>
                     <td>{sourceLabel(pack.source)}</td>
                     <td>{pack.vendorMappings.length}</td>
-                    <td className="mono">{pack.activatedAt ? new Date(pack.activatedAt).toLocaleString("fr-FR") : "—"}</td>
+                    <td>{pack.activatedAt ? formatDateTime(pack.activatedAt) : "—"}</td>
                   </tr>
                 ))}
-                {packs.length === 0 ? <tr><td colSpan={5} className="sub">Aucun pack de règles.</td></tr> : null}
+                {packs.length === 0 ? <tr><td colSpan={5} className="sub">Aucune version de règles disponible.</td></tr> : null}
               </tbody>
             </table>
           </TableShell>
         </section>
 
         <section className="panel">
-          <h2>Sources officielles consultées</h2>
+          <h2>Sources officielles vérifiées</h2>
           <TableShell>
             <table className="tbl">
-              <thead><tr><th>Source</th><th>Titre</th><th>Récupéré le</th><th>Changements</th><th>Lien</th></tr></thead>
+              <thead><tr><th>Source</th><th>Document consulté</th><th>Vérifié le</th><th>Évolutions détectées</th><th>Lien</th></tr></thead>
               <tbody>
                 {snapshots.slice(0, 20).map((snapshot) => (
                   <tr key={snapshot.id}>
                     <td>{sourceLabel(snapshot.source)}</td>
                     <td>{snapshot.title}</td>
-                    <td className="mono">{new Date(snapshot.retrievedAt).toLocaleString("fr-FR")}</td>
+                    <td>{formatDateTime(snapshot.retrievedAt)}</td>
                     <td>{snapshot.changes.length}</td>
                     <td><a className="btn btn-sm" href={snapshot.sourceUrl} target="_blank" rel="noreferrer">Voir la source</a></td>
                   </tr>
                 ))}
-                {snapshots.length === 0 ? <tr><td colSpan={5} className="sub">Aucune source synchronisée.</td></tr> : null}
+                {snapshots.length === 0 ? <tr><td colSpan={5} className="sub">Aucune vérification officielle enregistrée pour le moment. Les règles Qitus initiales restent actives.</td></tr> : null}
               </tbody>
             </table>
           </TableShell>
@@ -107,16 +107,16 @@ export default function AccountingRulesPage() {
 }
 
 function statusLabel(status: string) {
-  if (status === "auto_applied") return "Automatique";
-  if (status === "available") return "Disponible";
+  if (status === "auto_applied") return "À jour";
+  if (status === "available") return "À jour";
   if (status === "missing_pack") return "À initialiser";
-  return status;
+  return "À vérifier";
 }
 
 function packStatusLabel(status: string) {
-  if (status === "ACTIVE") return "Actif";
+  if (status === "ACTIVE") return "Utilisée";
   if (status === "ARCHIVED") return "Archivé";
-  if (status === "NEEDS_REVIEW") return "Revue interne";
+  if (status === "NEEDS_REVIEW") return "À vérifier par Qitus";
   return "Brouillon";
 }
 
@@ -124,5 +124,30 @@ function sourceLabel(source: string) {
   if (source === "bofip") return "BOFiP";
   if (source === "anc_pcg") return "ANC / PCG";
   if (source === "impots_gouv") return "impots.gouv";
-  return source;
+  if (source === "qitus-official") return "Qitus";
+  if (source === "seed") return "Qitus";
+  return "Source Qitus";
+}
+
+function ruleSetName(pack: { version?: string | null; activatedAt?: string | Date | null } | null | undefined) {
+  if (!pack) return "Aucune";
+  if (pack.version?.startsWith("qitus-seed-")) return "Règles Qitus initiales";
+  if (pack.version?.startsWith("official-")) return `Règles officielles du ${formatDateOnly(pack.activatedAt)}`;
+  return "Règles Qitus";
+}
+
+function sourceSnapshotHint(snapshots: Array<{ source: string }>) {
+  if (snapshots.length === 0) return "Les règles initiales Qitus sont utilisées";
+  const sourceCount = new Set(snapshots.map((snapshot) => snapshot.source)).size;
+  return `${sourceCount} source${sourceCount > 1 ? "s" : ""} vérifiée${sourceCount > 1 ? "s" : ""}`;
+}
+
+function formatDateTime(value: string | Date | null | undefined) {
+  if (!value) return "—";
+  return new Intl.DateTimeFormat("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }).format(new Date(value));
+}
+
+function formatDateOnly(value: string | Date | null | undefined) {
+  if (!value) return "date inconnue";
+  return new Intl.DateTimeFormat("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" }).format(new Date(value));
 }
