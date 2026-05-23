@@ -12,7 +12,7 @@ import {
   Shield,
   Upload,
 } from "lucide-react";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { requireCompanyWorkspace } from "~/modules/company-workspace/company-workspace.server";
 import { activeFiscalYearCookie } from "~/modules/fiscal-years/fiscal-year-center.server";
 import { OnboardingCenter, onboardingCompletionInputFromForm } from "~/modules/onboarding/onboarding-center.server";
@@ -130,6 +130,7 @@ export default function Onboarding() {
   const [draft, setDraft] = useState<OnboardingDraft>(initialDraft);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [fileMeta, setFileMeta] = useState<{ name: string; size: string } | null>(null);
+  const csvInputRef = useRef<HTMLInputElement>(null);
   const isSubmitting = navigation.state !== "idle";
 
   useEffect(() => {
@@ -148,7 +149,7 @@ export default function Onboarding() {
 
   const currentGroup = STEP_GROUPS[screen];
   const fiscalSummary = useMemo(() => fiscalitySummary(draft), [draft]);
-  const canSubmit = screen === 12 && validateScreen(draft, 12).ok;
+  const canSubmit = screen === 12 && validateScreen(draft, 12).ok && (draft.startMode !== "csv" || Boolean(fileMeta));
 
   function update<K extends keyof OnboardingDraft>(key: K, value: OnboardingDraft[K]) {
     setDraft((current) => ({ ...current, [key]: value }));
@@ -179,6 +180,16 @@ export default function Onboarding() {
     update("fiscalYearQuick", value);
   }
 
+  function handleCsvFileChange(file: File | undefined) {
+    if (!file) {
+      setFileMeta(null);
+      return;
+    }
+    setFileMeta({ name: file.name, size: `${Math.max(1, Math.round(file.size / 1024))} Ko` });
+    update("startMode", "csv");
+    setErrors((current) => ({ ...current, csvFile: undefined }));
+  }
+
   return (
     <div className="ob-shell">
       <aside className="ob-side">
@@ -194,6 +205,15 @@ export default function Onboarding() {
       <main className="ob-main">
         <Form method="post" encType="multipart/form-data" className="ob-content">
           <HiddenDraftInputs draft={draft} />
+          <input
+            ref={csvInputRef}
+            id="onboarding-csv-file"
+            className="ob-file-input"
+            type="file"
+            name="csvFile"
+            accept=".csv,text/csv"
+            onChange={(event) => handleCsvFileChange(event.currentTarget.files?.[0])}
+          />
           {actionData?.error ? <div className="ob-server-error">{actionData.error}</div> : null}
 
           {screen === 0 ? (
@@ -395,15 +415,10 @@ export default function Onboarding() {
 
           {screen === 11 ? (
             <ScreenFrame title="Importer un relevé bancaire" subtitle="Vous pouvez importer un export Qonto, BNP Paribas, Société Générale, Boursobank ou utiliser une correspondance de colonnes.">
-              <label className={`ob-upload ${fileMeta ? "has-file" : ""}`}>
+              <label className={`ob-upload ${fileMeta ? "has-file" : ""}`} htmlFor="onboarding-csv-file">
                 <Upload size={28} />
                 <span>{fileMeta ? fileMeta.name : "Glissez un relevé CSV ou parcourez vos fichiers"}</span>
                 <small>{fileMeta ? fileMeta.size : "Format accepté : .csv"}</small>
-                <input type="file" name="csvFile" accept=".csv,text/csv" onChange={(event) => {
-                  const file = event.currentTarget.files?.[0];
-                  setFileMeta(file ? { name: file.name, size: `${Math.max(1, Math.round(file.size / 1024))} Ko` } : null);
-                  update("startMode", "csv");
-                }} />
               </label>
               {errors.csvFile ? <p className="ob-error visible">{errors.csvFile}</p> : null}
               <OnboardingActions secondaryLabel="Retour" onSecondary={() => goTo(9)} primaryLabel="Importer" onPrimary={() => {
@@ -425,7 +440,7 @@ export default function Onboarding() {
                 <h4>Prochaine action recommandée</h4>
                 <p>{nextActionMessage(draft)}</p>
               </div>
-              {!canSubmit ? <div className="ob-warn">Certaines informations indispensables sont encore manquantes. Modifiez vos réponses avant d'entrer dans Qitus.</div> : null}
+              {!canSubmit ? <div className="ob-warn">{draft.startMode === "csv" && !fileMeta ? "Le fichier CSV doit encore être sélectionné. Revenez à l'étape d'import pour le joindre à l'onboarding." : "Certaines informations indispensables sont encore manquantes. Modifiez vos réponses avant d'entrer dans Qitus."}</div> : null}
               <OnboardingActions secondaryLabel="Modifier mes réponses" onSecondary={() => goTo(2)} primaryLabel={isSubmitting ? "Configuration..." : "Entrer dans Qitus"} submitPrimary disabled={!canSubmit || isSubmitting} />
             </ScreenFrame>
           ) : null}

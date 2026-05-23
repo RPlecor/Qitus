@@ -2812,8 +2812,12 @@ p { margin: 0; }
   background: var(--green-50);
 }
 
-.ob-upload input {
-  display: none;
+.ob-file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .ob-upload small {
