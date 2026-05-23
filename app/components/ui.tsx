@@ -1,6 +1,7 @@
 import { Form, Link, NavLink, useLocation, useRouteLoaderData } from "@remix-run/react";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { alertClassForGuidanceTone, type ActionableGuidance, type ActionableGuidanceAction } from "~/modules/actionable-guidance";
+import { ChatWidget } from "./chat-widget";
 import {
   LayoutDashboard,
   ArrowLeftRight,
@@ -199,6 +200,7 @@ export function AppShell({ children, active = "dashboard" }: { children: ReactNo
         </div>
       </aside>
       {children}
+      <ChatWidget />
     </div>
   );
 }

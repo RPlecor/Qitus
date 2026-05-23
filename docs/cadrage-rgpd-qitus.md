@@ -27,6 +27,7 @@ Qitus n'est **pas sous-traitant** de l'expert-comptable. L'EC accède à un doss
 | **S3-compatible** | Stockage objets | Pièces justificatives, documents générés | À définir | Chiffrement at rest, DPA provider |
 | **Stripe** | Facturation abonnement | email, stripeCustomerId, stripeSubscriptionId | USA (SOC 2) | DPA Stripe, SCCs |
 | **Anthropic** | IA — suggestions catégorisation | Libellés de transactions (anonymisables), labels | USA | DPA Anthropic, zero-retention API |
+| **OpenAI** | IA — assistant Qitus P0 | Questions utilisateur sur Qitus, contexte dossier réduit, sources Qitus | USA / hors UE possible selon configuration | DPA OpenAI, minimisation, redaction avant envoi |
 | **Qonto API** | Connecteur bancaire | Transactions bancaires, IBAN | France/EU | DPA Qonto |
 | **Open Banking provider** | Connecteur bancaire | Transactions bancaires, IBAN, identité bancaire | EU | DPA provider, DSP2/PSD2 |
 
@@ -174,6 +175,7 @@ Clerk est utilisable pour la pré-beta et la beta fermée, mais constitue un ris
 | Préparation du dossier EC | Contrat (6.1.b) | Dossier, snapshot, documents | EC via lien partagé |
 | Partage du dossier au cabinet | Intérêt légitime (6.1.f) + action utilisateur explicite | Dossier, commentaires EC | EC identifié |
 | Suggestions IA de catégorisation | Intérêt légitime (6.1.f) | Libellés de transactions (sans identifiant utilisateur) | Anthropic API |
+| Assistant Qitus P0 | Intérêt légitime (6.1.f) + contrat (assistance produit) | Question utilisateur, sources d'aide Qitus, résumé dossier redigé | OpenAI si `CHAT_PROVIDER=openai` |
 | Facturation de l'abonnement | Contrat (6.1.b) | email, stripeCustomerId | Stripe |
 | Audit et traçabilité | Intérêt légitime (6.1.f) | Actions utilisateur, métadonnées | Néant (interne) |
 | Notifications et alertes | Contrat (6.1.b) | userId, companyId, événements | Néant (interne) |
@@ -186,6 +188,14 @@ Clerk est utilisable pour la pré-beta et la beta fermée, mais constitue un ris
 - Minimiser les données envoyées : envoyer le `normalizedLabel` plutôt que le `label` brut quand possible.
 - Ne pas envoyer l'email, le nom d'utilisateur, le SIREN ni l'IBAN dans les prompts.
 - Documenter ce traitement dans la politique de confidentialité.
+
+**Assistant Qitus P0 / OpenAI :** le chat beta répond uniquement aux questions d'utilisation de Qitus. Il ne traite pas les règles comptables générales, ne crée aucune donnée comptable et ne déclenche aucune mutation. Mesures requises :
+
+- Envoyer uniquement des sources Qitus, des statuts, des compteurs et un contexte dossier réduit.
+- Ne pas envoyer les pièces justificatives complètes, les payloads bancaires bruts, les secrets, les tokens, les clés API ni les IBAN complets.
+- Rediriger les questions hors Qitus vers un refus clair indiquant que les règles comptables générales seront couvertes en V2.
+- Tracer l'appel dans l'activité avec provider, modèle, sources utilisées et refus éventuel, sans contenu sensible brut.
+- Documenter la TIA simplifiée OpenAI avant beta ouverte si `CHAT_PROVIDER=openai` est activé.
 
 **Dossier EC partagé :** le partage du dossier au cabinet est une action explicite de l'utilisateur (pas automatique). Le lien partagé expire. L'EC accède en lecture seule avec revue. Ce n'est pas un transfert de données au sens RGPD mais un accès contrôlé.
 

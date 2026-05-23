@@ -44,6 +44,7 @@
     "validate:privacy-export": "tsx scripts/validate-privacy-export.ts",
     "validate:privacy-redaction": "tsx scripts/validate-privacy-redaction.ts",
     "validate:chat-billing": "tsx scripts/validate-chat-billing.ts",
+    "validate:chat-p0-qitus": "tsx scripts/validate-chat-p0-qitus.ts",
     "validate:end-user": "playwright test -c playwright.config.ts",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",

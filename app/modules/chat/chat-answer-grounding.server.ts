@@ -18,11 +18,14 @@ export class ChatAnswerGrounding {
       contextVersion: "qitus-chat-context-v1",
       references: [
         { code: "dashboard", label: "Dashboard", href: "/dashboard", reason: "Vue d'ensemble, KPIs et alertes." },
+        { code: "imports", label: "Imports", href: "/imports", reason: "Imports CSV, correspondance de colonnes et relance de catégorisation." },
         { code: "transactions", label: "Transactions", href: "/transactions", reason: "Transactions importées, filtres et corrections." },
+        { code: "tva", label: "TVA", href: "/tva", reason: "Position TVA, déclarations et alertes de readiness." },
         { code: "controle", label: "Contrôle", href: "/controle", reason: "Blocages et points de pré-clôture." },
         { code: "ecritures", label: "Écritures", href: "/ecritures", reason: "Journal comptable, OD et exports." },
         { code: "documents", label: "Documents", href: "/documents", reason: "FEC, états, liasse et fraîcheur documentaire." },
         { code: "cloture", label: "Clôture", href: "/cloture", reason: "Workflow annuel et verrouillage d'exercice." },
+        { code: "connecteurs", label: "Connecteurs", href: "/connecteurs", reason: "Connexions bancaires, Stripe, Open Banking et facturation électronique." },
         { code: "abonnement", label: "Abonnement", href: "/abonnement", reason: "Plan, quotas et usage." },
       ].filter((reference) => isRelevant(reference, context)),
     };

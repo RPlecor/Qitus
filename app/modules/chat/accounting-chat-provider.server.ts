@@ -1,7 +1,9 @@
 import { spawn } from "node:child_process";
+import OpenAI from "openai";
 import type { RuntimeConfig } from "../runtime-config.server";
 import { getRuntimeConfig } from "../runtime-config.server";
 import type { ChatReference } from "./chat-answer-grounding.server";
+import type { QitusKnowledgeSource } from "./qitus-knowledge-center.server";
 
 export type AccountingChatMessage = {
   role: "user" | "assistant" | "system";
@@ -19,6 +21,7 @@ export type AccountingChatContext = {
   journalAudit: unknown;
   documentFreshness: unknown;
   annualClosing: unknown;
+  knowledgeSources?: QitusKnowledgeSource[];
 };
 
 export type AccountingChatReply = {
@@ -64,7 +67,7 @@ export class CodexCliChatAdapter implements AccountingChatProvider {
       codexBin: this.config.codexCliBin,
       model: this.config.chatModel,
       cwd: process.cwd(),
-      prompt: buildPrompt(messages, context),
+      prompt: buildPrompt(messages, redactChatProviderInput(context) as AccountingChatContext, this.config.chatMaxContextChars),
       timeoutMs: this.timeoutMs,
     });
     return {
@@ -76,13 +79,54 @@ export class CodexCliChatAdapter implements AccountingChatProvider {
   }
 }
 
+export class OpenAiChatAdapter implements AccountingChatProvider {
+  private readonly client: OpenAI;
+
+  constructor(private readonly config: RuntimeConfig = getRuntimeConfig()) {
+    const apiKey = config.chatOpenAiApiKey ?? config.openAiApiKey;
+    if (!apiKey) throw new Error("CHAT_PROVIDER=openai requires CHAT_OPENAI_API_KEY or OPENAI_API_KEY.");
+    this.client = new OpenAI({ apiKey });
+  }
+
+  async reply(messages: AccountingChatMessage[], context: AccountingChatContext): Promise<AccountingChatReply> {
+    const safeContext = redactChatProviderInput(context) as AccountingChatContext;
+    const completion = await this.client.chat.completions.create({
+      model: this.config.chatModel,
+      temperature: 0.1,
+      messages: [
+        { role: "system", content: buildSystemInstruction() },
+        { role: "user", content: buildPrompt(messages, safeContext, this.config.chatMaxContextChars) },
+      ],
+    });
+    return {
+      content: completion.choices[0]?.message.content?.trim() || "Je n'ai pas de réponse fiable à partir des sources Qitus disponibles.",
+      provider: "openai",
+      model: this.config.chatModel,
+      metadata: { readOnly: true, qitusOnly: true, sources: safeContext.knowledgeSources ?? [] },
+    };
+  }
+}
+
 export function createAccountingChatProvider(config: RuntimeConfig = getRuntimeConfig()): AccountingChatProvider {
   if (config.chatProvider === "fake" || process.env.NODE_ENV === "test") return new FakeChatAdapter();
+  if (config.chatProvider === "openai") return new OpenAiChatAdapter(config);
   return new CodexCliChatAdapter(config);
 }
 
-function buildPrompt(messages: AccountingChatMessage[], context: AccountingChatContext) {
+function buildSystemInstruction() {
   return [
+    "Tu es Assistant Qitus, un assistant produit en lecture seule.",
+    "Périmètre V1: répondre uniquement aux questions d'utilisation de Qitus, de navigation, d'état du dossier, d'actions à réaliser et de compréhension des écrans.",
+    "Tu ne donnes pas d'avis comptable personnalisé, juridique ou fiscal. Les règles comptables générales seront couvertes en V2.",
+    "Tu ne déclenches aucune mutation et tu ne promets jamais d'avoir effectué une action.",
+    "Tu réponds en français, brièvement, avec des étapes concrètes et des liens Qitus quand ils sont disponibles.",
+    "Si les sources Qitus fournies ne permettent pas de répondre, dis-le explicitement au lieu d'inventer.",
+  ].join("\n");
+}
+
+export function buildChatProviderPrompt(messages: AccountingChatMessage[], context: AccountingChatContext, maxChars = 16_000) {
+  return trimToMaxChars([
+    buildSystemInstruction(),
     "Tu es le chat comptable Qitus pour une beta locale.",
     "Tu es strictement en lecture seule : tu n'appelles aucun outil et tu ne demandes jamais de mutation comptable.",
     "Réponds en français, de manière concise et utile.",
@@ -97,7 +141,36 @@ function buildPrompt(messages: AccountingChatMessage[], context: AccountingChatC
     messages.map((message) => `${message.role.toUpperCase()}: ${message.content}`).join("\n"),
     "",
     "Réponse:",
-  ].join("\n");
+  ].join("\n"), maxChars);
+}
+
+function buildPrompt(messages: AccountingChatMessage[], context: AccountingChatContext, maxChars = 16_000) {
+  return buildChatProviderPrompt(messages, context, maxChars);
+}
+
+export function redactChatProviderInput(value: unknown): unknown {
+  if (typeof value === "string") return redactString(value);
+  if (Array.isArray(value)) return value.map(redactChatProviderInput);
+  if (value && typeof value === "object") {
+    return Object.fromEntries(Object.entries(value).map(([key, entry]) => [key, isSensitiveKey(key) ? "[masqué]" : redactChatProviderInput(entry)]));
+  }
+  return value;
+}
+
+function redactString(value: string) {
+  return value
+    .replace(/\bFR\d{2}[A-Z0-9]{11,30}\b/gi, "[IBAN masqué]")
+    .replace(/\b(?:sk|pk|whsec|rk)_(?:live|test)?_[A-Za-z0-9_=-]{8,}\b/g, "[secret masqué]")
+    .replace(/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z]{2,}\b/gi, "[email masqué]");
+}
+
+function isSensitiveKey(key: string) {
+  return /(secret|token|apikey|api_key|password|iban|siret|siren)/i.test(key);
+}
+
+function trimToMaxChars(value: string, maxChars: number) {
+  if (value.length <= maxChars) return value;
+  return `${value.slice(0, maxChars)}\n\n[Contexte tronqué pour limiter les données transmises au provider.]`;
 }
 
 function runCodexCli(input: { codexBin: string; model: string; cwd: string; prompt: string; timeoutMs: number }) {

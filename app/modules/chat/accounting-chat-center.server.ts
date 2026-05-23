@@ -6,8 +6,8 @@ import { prisma } from "../db.server";
 import { ExpectedRouteError } from "../route-errors.server";
 import { getRuntimeConfig, type RuntimeConfig } from "../runtime-config.server";
 import { createAccountingChatProvider, type AccountingChatMessage, type AccountingChatProvider } from "./accounting-chat-provider.server";
+import { ChatResolutionCenter, type ChatResolutionPlan } from "./chat-resolution-center.server";
 import { ChatContextBuilder } from "./chat-context-builder.server";
-import { ChatReadOnlyPolicy } from "./chat-read-only-policy.server";
 
 export type ChatConversationSummary = {
   id: string;
@@ -34,6 +34,9 @@ export type ChatReadiness = {
   canUseChat: boolean;
   remainingAiCalls: number;
   message: string;
+  scope: "qitus_only";
+  providerLabel: string;
+  safeMessage: string;
 };
 
 export class AccountingChatCenter {
@@ -42,7 +45,7 @@ export class AccountingChatCenter {
     private readonly contextBuilder = new ChatContextBuilder(),
     private readonly entitlements = new EntitlementGate(),
     private readonly activity = new ActivityLogCenter(),
-    private readonly policy = new ChatReadOnlyPolicy(),
+    private readonly resolution = new ChatResolutionCenter(provider),
     private readonly config: RuntimeConfig = getRuntimeConfig()
   ) {}
 
@@ -68,13 +71,11 @@ export class AccountingChatCenter {
     });
 
     const context = await this.contextBuilder.buildChatContext(workspace);
-    const decision = this.policy.evaluateMessage(message, context.references);
-    if (decision.allowed) await this.entitlements.assertCanUse(workspace, "chat");
+    const plan = this.resolution.buildPlan(message, context);
+    if (plan.requiresProvider) await this.entitlements.assertCanUse(workspace, "chat");
     const history = await this.messagesForProvider(conversation.id);
-    const reply = decision.allowed
-      ? await this.generateReply(workspace, conversation.id, history, context)
-      : await this.persistPolicyReply(workspace, conversation.id, decision);
-    if (decision.allowed) {
+    const reply = await this.generateReply(workspace, conversation.id, history, context, plan);
+    if (plan.requiresProvider) {
       await this.entitlements.recordUsage(workspace, "chat", { conversationId: conversation.id });
     }
     await prisma.chatConversation.update({ where: { id: conversation.id }, data: { updatedAt: new Date() } });
@@ -82,6 +83,7 @@ export class AccountingChatCenter {
       conversation: summarizeConversation({ ...conversation, _count: { messages: history.length + 1 } }),
       userMessage: summarizeMessage(userMessage),
       assistantMessage: summarizeMessage(reply),
+      sources: plan.knowledgeSources,
       context,
     };
   }
@@ -134,6 +136,9 @@ export class AccountingChatCenter {
       readOnly: true,
       canUseChat,
       remainingAiCalls: entitlement.summary.remaining.aiCalls,
+      scope: "qitus_only",
+      providerLabel: chatProviderSafeLabel(this.config.chatProvider),
+      safeMessage: canUseChat ? "Assistant Qitus disponible." : "Limite de questions atteinte pour ce mois.",
       message: canUseChat
         ? "Chat prêt en lecture seule."
         : "Quota chat atteint pour ce mois. Consultez /abonnement.",
@@ -167,11 +172,11 @@ export class AccountingChatCenter {
     workspace: CompanyWorkspace,
     conversationId: string,
     history: AccountingChatMessage[],
-    context: Awaited<ReturnType<ChatContextBuilder["buildChatContext"]>>
+    context: Awaited<ReturnType<ChatContextBuilder["buildChatContext"]>>,
+    plan: ChatResolutionPlan
   ): Promise<ChatMessage> {
     try {
-      const reply = await this.provider.reply(history, context);
-      const safeReply = this.policy.sanitizeAssistantReply(reply, context.references);
+      const safeReply = await this.resolution.resolve(plan, history, context);
       const message = await prisma.chatMessage.create({
         data: {
           conversationId,
@@ -186,7 +191,7 @@ export class AccountingChatCenter {
         action: "chat.reply_generated",
         entityType: "chat",
         entityId: conversationId,
-        metadata: { provider: safeReply.provider, model: safeReply.model, messageId: message.id },
+        metadata: { provider: safeReply.provider, model: safeReply.model, messageId: message.id, qitusOnly: true, sources: plan.knowledgeSources.map((source) => source.sourceId), refused: safeReply.metadata?.refused === true },
       });
       return message;
     } catch (error) {
@@ -209,31 +214,6 @@ export class AccountingChatCenter {
       });
       return message;
     }
-  }
-
-  private async persistPolicyReply(
-    workspace: CompanyWorkspace,
-    conversationId: string,
-    decision: ReturnType<ChatReadOnlyPolicy["evaluateMessage"]>
-  ) {
-    const reply = this.policy.buildBlockedReply(decision);
-    const message = await prisma.chatMessage.create({
-      data: {
-        conversationId,
-        role: "ASSISTANT",
-        content: reply.content,
-        provider: reply.provider,
-        model: reply.model,
-        metadataJson: reply.metadata as Prisma.InputJsonValue,
-      },
-    });
-    await this.activity.recordActivity(workspace, {
-      action: "chat.reply_generated",
-      entityType: "chat",
-      entityId: conversationId,
-      metadata: { provider: reply.provider, model: reply.model, blockedMutation: true, messageId: message.id },
-    });
-    return message;
   }
 }
 
@@ -266,5 +246,11 @@ function titleFromMessage(message: string) {
 function providerFailureMessage(error: unknown) {
   const message = error instanceof Error ? error.message : String(error);
   if (message.includes("Codex CLI")) return message;
-  return "Le chat n'a pas pu répondre pour le moment. Vérifiez que Codex CLI est connecté avec `codex --login`.";
+  return "Le chat n'a pas pu répondre pour le moment. Réessayez dans quelques instants.";
+}
+
+function chatProviderSafeLabel(provider: string) {
+  if (provider === "openai") return "Assistant Qitus";
+  if (provider === "codex-cli") return "Assistant local Qitus";
+  return "Assistant de test Qitus";
 }

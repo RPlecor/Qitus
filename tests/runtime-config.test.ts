@@ -15,6 +15,7 @@ describe("RuntimeConfig", () => {
       billingMode: "stub",
       chatProvider: "codex-cli",
       chatModel: "gpt-5.4-mini",
+      chatP0Scope: "qitus_only",
       objectStorageMode: "local",
       observabilityMode: "local",
       cronMode: "disabled",
@@ -44,6 +45,27 @@ describe("RuntimeConfig", () => {
     expect(getRuntimeConfig({ DATABASE_URL: "postgresql://localhost:5432/paperasse", CHANGE_IMPACTS_MODE: "off" }).changeImpactsMode).toBe("off");
     expect(getRuntimeConfig({ DATABASE_URL: "postgresql://localhost:5432/paperasse", CHANGE_IMPACTS_MODE: "active" }).changeImpactsMode).toBe("active");
     expect(() => getRuntimeConfig({ DATABASE_URL: "postgresql://localhost:5432/paperasse", CHANGE_IMPACTS_MODE: "loud" })).toThrow("CHANGE_IMPACTS_MODE");
+  });
+
+  it("supports the OpenAI chat provider with a dedicated key", () => {
+    const config = getRuntimeConfig({
+      DATABASE_URL: "postgresql://localhost:5432/paperasse",
+      CHAT_PROVIDER: "openai",
+      CHAT_OPENAI_API_KEY: "sk_test_chat",
+    });
+
+    expect(config.chatProvider).toBe("openai");
+    expect(config.chatModel).toBe("gpt-4o-mini");
+    expect(config.chatP0Scope).toBe("qitus_only");
+    expect(() => assertRuntimeConfig(config)).not.toThrow();
+    expect(() => assertRuntimeConfig(getRuntimeConfig({
+      DATABASE_URL: "postgresql://localhost:5432/paperasse",
+      CHAT_PROVIDER: "openai",
+    }))).toThrow("CHAT_PROVIDER=openai");
+    expect(() => getRuntimeConfig({
+      DATABASE_URL: "postgresql://localhost:5432/paperasse",
+      CHAT_P0_SCOPE: "anything",
+    })).toThrow("CHAT_P0_SCOPE");
   });
 
   it("requires Clerk keys only when AUTH_MODE=clerk", () => {

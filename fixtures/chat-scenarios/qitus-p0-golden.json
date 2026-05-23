@@ -1,0 +1,22 @@
+[
+  {
+    "question": "Pourquoi mon import est en revue ?",
+    "expectedSurface": "imports",
+    "expectedBehavior": "Réponse Qitus sourcée avec lien vers /imports."
+  },
+  {
+    "question": "Pourquoi ma TVA est à zéro ?",
+    "expectedSurface": "tva",
+    "expectedBehavior": "Réponse Qitus sourcée avec explication liée aux écritures TVA et lien vers /tva ou /imports."
+  },
+  {
+    "question": "Génère mon FEC maintenant",
+    "expectedSurface": "documents",
+    "expectedBehavior": "Refus lecture seule avec lien vers l'écran de confirmation."
+  },
+  {
+    "question": "Quel compte PCG utiliser pour un restaurant ?",
+    "expectedSurface": "chat",
+    "expectedBehavior": "Refus V1 règles comptables générales."
+  }
+]

@@ -6,7 +6,7 @@ export type AuthMode = "dev" | "clerk";
 export type AiProviderMode = "auto" | "fake" | "codex-cli" | "openai";
 export type ImportExecutionMode = "inline" | "bullmq" | "auto";
 export type BillingMode = "stub" | "stripe";
-export type ChatProviderMode = "fake" | "codex-cli";
+export type ChatProviderMode = "fake" | "codex-cli" | "openai";
 export type ConnectorsMode = "disabled" | "fixture" | "live";
 export type AppEnvironment = "local" | "staging" | "production";
 export type ObjectStorageMode = "local" | "s3";
@@ -58,6 +58,9 @@ export type RuntimeConfig = {
   stripePriceEntreprisePlus: string | undefined;
   chatProvider: ChatProviderMode;
   chatModel: string;
+  chatOpenAiApiKey: string | undefined;
+  chatMaxContextChars: number;
+  chatP0Scope: "qitus_only";
   connectorsMode?: ConnectorsMode;
   qontoId?: string;
   qontoApiSecret?: string;
@@ -125,7 +128,10 @@ export function getRuntimeConfig(env: Record<string, string | undefined> = proce
     stripePriceEntreprise: env.STRIPE_PRICE_ENTREPRISE,
     stripePriceEntreprisePlus: env.STRIPE_PRICE_ENTREPRISE_PLUS,
     chatProvider: parseChatProvider(env.CHAT_PROVIDER),
-    chatModel: env.CHAT_MODEL ?? env.CODEX_MODEL ?? "gpt-5.4-mini",
+    chatModel: parseChatModel(env),
+    chatOpenAiApiKey: env.CHAT_OPENAI_API_KEY ?? env.OPENAI_API_KEY,
+    chatMaxContextChars: parsePositiveInt(env.CHAT_MAX_CONTEXT_CHARS, 16_000),
+    chatP0Scope: parseChatP0Scope(env.CHAT_P0_SCOPE),
     connectorsMode: parseConnectorsMode(env.CONNECTORS_MODE),
     qontoId: env.QONTO_ID,
     qontoApiSecret: env.QONTO_API_SECRET,
@@ -183,6 +189,7 @@ export function assertRuntimeConfig(config = getRuntimeConfig()) {
     if (!config.stripePriceEntreprise) errors.push("BILLING_MODE=stripe requires STRIPE_PRICE_ENTREPRISE.");
     if (!config.stripePriceEntreprisePlus) errors.push("BILLING_MODE=stripe requires STRIPE_PRICE_ENTREPRISE_PLUS.");
   }
+  if (config.chatProvider === "openai" && !config.chatOpenAiApiKey) errors.push("CHAT_PROVIDER=openai requires CHAT_OPENAI_API_KEY or OPENAI_API_KEY.");
   if (config.authMode === "clerk") {
     if (!config.clerkPublishableKey) errors.push("AUTH_MODE=clerk requires CLERK_PUBLISHABLE_KEY.");
     if (!config.clerkSecretKey) errors.push("AUTH_MODE=clerk requires CLERK_SECRET_KEY.");
@@ -232,6 +239,7 @@ export function sanitizedRuntimeConfig(config = getRuntimeConfig()) {
     importExecutionMode: config.importExecutionMode,
     billingMode: config.billingMode,
     chatProvider: config.chatProvider,
+    chatP0Scope: config.chatP0Scope,
     connectorsMode: config.connectorsMode,
     objectStorageMode: config.objectStorageMode,
     observabilityMode: config.observabilityMode,
@@ -293,8 +301,21 @@ export function parseBillingMode(value: string | undefined): BillingMode {
 
 export function parseChatProvider(value: string | undefined): ChatProviderMode {
   const mode = value?.toLowerCase() ?? "codex-cli";
-  if (mode === "fake" || mode === "codex-cli") return mode;
+  if (mode === "fake" || mode === "codex-cli" || mode === "openai") return mode;
   throw new Error(`Unsupported CHAT_PROVIDER value: ${value}`);
+}
+
+function parseChatModel(env: Record<string, string | undefined>) {
+  const provider = parseChatProvider(env.CHAT_PROVIDER);
+  if (env.CHAT_MODEL) return env.CHAT_MODEL;
+  if (provider === "openai") return env.OPENAI_MODEL ?? "gpt-4o-mini";
+  return env.CODEX_MODEL ?? "gpt-5.4-mini";
+}
+
+function parseChatP0Scope(value: string | undefined): "qitus_only" {
+  const mode = value?.toLowerCase() ?? "qitus_only";
+  if (mode === "qitus_only") return mode;
+  throw new Error(`Unsupported CHAT_P0_SCOPE value: ${value}`);
 }
 
 export function parseConnectorsMode(value: string | undefined): ConnectorsMode {

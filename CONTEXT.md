@@ -153,8 +153,12 @@
 - **AccountingChat**: the read-only conversational assistant for one CompanyWorkspace; it can explain and point to screens, but it cannot mutate accounting data.
 - **ChatContext**: the compact business snapshot supplied to AccountingChat, built from Dashboard, AccountingReview, ClosingAdjustment, JournalAudit, DocumentFreshness and AnnualClosing Modules.
 - **ChatReadOnlyPolicy**: the deterministic guard that blocks mutation-like chat requests before they reach an IA provider.
+- **ChatSafetyPolicy**: the broader chat guard that keeps the P0 assistant Qitus-only, blocks mutations, blocks personalized accounting advice and returns a safe refusal before provider calls.
+- **QitusKnowledgeCenter**: the deterministic local knowledge retrieval Module for the P0 chat, built from Qitus product concepts, routes, actions, labels and help text; it excludes BOFiP, PCG, CGI and general accounting doctrine.
+- **ChatResolutionCenter**: the orchestration Module that combines chat safety, Qitus knowledge retrieval and the provider adapter, calling an IA provider only when enough Qitus sources are available.
 - **ChatAnswerGrounding**: the Module that attaches product references to chat context and replies so answers point back to concrete Qitus screens.
 - **ChatReadiness**: the runtime reading of chat provider, model, read-only state and current quota availability.
+- **ChatWidget**: the global authenticated Qitus assistant surface, mounted in the AppShell, with contextual chips, citations and a permanent educational disclaimer.
 - **Subscription**: the Company billing state, either local stub or Stripe-backed, carrying tier, status, provider and period metadata.
 - **Entitlement**: a product capability checked before use, such as chat or CSV import, based on Subscription tier and UsageMeter counts.
 - **EntitlementStatus**: the explicit allow/block state for one capability, including monthly quota and per-minute rate-limit reasons.
