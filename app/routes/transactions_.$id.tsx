@@ -1,5 +1,7 @@
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
 import { Form, Link, useLoaderData } from "@remix-run/react";
+import { Upload } from "lucide-react";
+import { useState } from "react";
 import { AppShell, Main } from "~/components/ui";
 import { requireCompanyWorkspace } from "~/modules/company-workspace/company-workspace.server";
 import { AttachmentLinkCenter } from "~/modules/evidence/attachment-link-center.server";
@@ -116,20 +118,7 @@ export default function TransactionReview() {
             ))}
             {attachmentLinks.length === 0 ? <li>Aucune pièce rattachée à cette transaction.</li> : null}
           </ul>
-          <Form method="post" action="/api/attachments" encType="multipart/form-data" className="form-row">
-            <input type="hidden" name="returnTo" value={`/transactions/${transaction.id}${back}`} />
-            <input type="hidden" name="entityType" value="TRANSACTION" />
-            <input type="hidden" name="entityId" value={transaction.id} />
-            <input type="hidden" name="relationType" value={Number(transaction.amount) >= 0 ? "CONTRACT" : "INVOICE"} />
-            <div className="field">
-              <label>Ajouter une pièce</label>
-              <input type="file" name="file" accept=".pdf,.png,.jpg,.jpeg,.txt,application/pdf,image/png,image/jpeg,text/plain" />
-            </div>
-            <div className="field">
-              <label>&nbsp;</label>
-              <button className="btn" type="submit">Uploader et rattacher</button>
-            </div>
-          </Form>
+          <AttachmentUploadForm transactionId={transaction.id} amount={Number(transaction.amount)} back={back} />
         </section>
 
         <div className="sec-head"><h2>Correction</h2></div>
@@ -180,6 +169,41 @@ function statusLabel(status: string) {
   if (status === "CONFIRMED") return "Confirmée";
   if (status === "HAS_RULE") return "Avec règle";
   return "Catégorisée";
+}
+
+function AttachmentUploadForm({ transactionId, amount, back }: { transactionId: string; amount: number; back: string }) {
+  const [fileName, setFileName] = useState<string | null>(null);
+  const inputId = `attachment-upload-${transactionId}`;
+
+  return (
+    <Form method="post" action="/api/attachments" encType="multipart/form-data" className="attachment-upload-form">
+      <input type="hidden" name="returnTo" value={`/transactions/${transactionId}${back}`} />
+      <input type="hidden" name="entityType" value="TRANSACTION" />
+      <input type="hidden" name="entityId" value={transactionId} />
+      <input type="hidden" name="relationType" value={amount >= 0 ? "CONTRACT" : "INVOICE"} />
+      <div className="attachment-upload-main">
+        <span className="upload-title">Ajouter une pièce</span>
+        <label className="file-dropzone compact" htmlFor={inputId}>
+          <span className="file-dropzone-icon" aria-hidden="true">
+            <Upload size={20} strokeWidth={1.8} />
+          </span>
+          <span>
+            <strong>{fileName ?? "Choisir une pièce"}</strong>
+            <small>PDF, image ou texte</small>
+          </span>
+        </label>
+        <input
+          id={inputId}
+          className="visually-hidden-file"
+          type="file"
+          name="file"
+          accept=".pdf,.png,.jpg,.jpeg,.txt,application/pdf,image/png,image/jpeg,text/plain"
+          onChange={(event) => setFileName(event.target.files?.[0]?.name ?? null)}
+        />
+      </div>
+      <button className="btn btn-p attach-submit" type="submit" disabled={!fileName}>Uploader et rattacher</button>
+    </Form>
+  );
 }
 
 function formatShortDate(value: string) {
