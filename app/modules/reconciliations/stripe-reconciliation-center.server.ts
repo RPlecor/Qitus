@@ -166,7 +166,7 @@ export class StripeReconciliationCenter {
             { label: { contains: "stripe", mode: "insensitive" } },
             { label: { contains: "payout", mode: "insensitive" } },
             { counterparty: { contains: "stripe", mode: "insensitive" } },
-            { categorization: { OR: [{ accountDebit: "5115" }, { accountCredit: "5115" }] } },
+            { categorization: { OR: [{ accountDebit: "511" }, { accountCredit: "511" }] } },
           ],
         },
       }),

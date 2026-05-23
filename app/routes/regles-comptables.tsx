@@ -4,6 +4,7 @@ import { AppShell, KpiCard, Main, StatusPill, TableShell } from "~/components/ui
 import { AccountingRulePackCenter } from "~/modules/accounting-rules/accounting-rule-pack-center.server";
 import { RegulatorySourceCenter } from "~/modules/accounting-rules/regulatory-source-center.server";
 import { RuleApplicationWorkflow } from "~/modules/accounting-rules/rule-application-workflow.server";
+import { ChartOfAccountsCenter } from "~/modules/accounting-reference/chart-of-accounts-center.server";
 import { requireCompanyWorkspace } from "~/modules/company-workspace/company-workspace.server";
 import { getRuntimeConfig } from "~/modules/runtime-config.server";
 
@@ -14,12 +15,13 @@ export async function loader(args: LoaderFunctionArgs) {
     new RegulatorySourceCenter().listSourceSnapshots(),
     new RuleApplicationWorkflow().getRuleUpdateStatus(workspace),
   ]);
+  const chart = new ChartOfAccountsCenter().validateChartIntegrity();
   const config = getRuntimeConfig();
-  return json({ packs, snapshots, status, canSync: config.authMode === "dev" && process.env.NODE_ENV !== "production" });
+  return json({ packs, snapshots, status, chart, canSync: config.authMode === "dev" && process.env.NODE_ENV !== "production" });
 }
 
 export default function AccountingRulesPage() {
-  const { packs, snapshots, status, canSync } = useLoaderData<typeof loader>();
+  const { packs, snapshots, status, chart, canSync } = useLoaderData<typeof loader>();
   const activePack = status.activePack;
   const impact = status.impact as null | { affectedTransactionCount?: number; conflictCount?: number; protectedTransactionCount?: number; existingDataRequiresExplicitAction?: boolean };
 
@@ -29,8 +31,16 @@ export default function AccountingRulesPage() {
         <div className="kpi-grid">
           <KpiCard label="Règles utilisées" value={ruleSetName(activePack)} hint={activePack?.summary ?? "Aucune règle active pour le moment"} />
           <KpiCard label="État" value={statusLabel(status.status)} hint="Utilisées pour les prochains imports" />
-          <KpiCard label="Sources officielles" value={snapshots.length > 0 ? "Vérifiées" : "Non vérifiées"} hint={sourceSnapshotHint(snapshots)} />
+          <KpiCard label="Référentiel PCG" value={chart.ok ? "Validé" : "À vérifier"} hint={`${chart.accountCount} comptes · ${chart.version}`} />
           <KpiCard label="Transactions à surveiller" value={String(impact?.affectedTransactionCount ?? 0)} hint="Uniquement si vous relancez leur classement" />
+        </div>
+
+        <div className={chart.ok ? "alert blue" : "alert orange"}>
+          <strong>{chart.ok ? "Référentiel comptable validé" : "Référentiel comptable à vérifier"}</strong>
+          <span>
+            Qitus valide les comptes des prochaines écritures avec le plan de comptes ANC chargé dans le référentiel Qitus.
+            Source : <a href={chart.sourceUrl} target="_blank" rel="noreferrer">ANC / Plan comptable général</a>.
+          </span>
         </div>
 
         {impact?.existingDataRequiresExplicitAction ? (

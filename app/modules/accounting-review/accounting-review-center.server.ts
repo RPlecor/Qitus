@@ -424,7 +424,7 @@ function isStripeReconciliationCandidate(transaction: {
 }) {
   const account = `${transaction.categorization?.accountDebit ?? ""} ${transaction.categorization?.accountCredit ?? ""}`;
   const text = `${transaction.label} ${transaction.counterparty ?? ""} ${transaction.notes ?? ""}`.toLowerCase();
-  return account.includes("5115") || /\b(stripe|payout)\b/i.test(text);
+  return account.includes("511") || /\b(stripe|payout)\b/i.test(text);
 }
 
 function transactionEvidence(

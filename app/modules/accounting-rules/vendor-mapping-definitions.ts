@@ -29,6 +29,6 @@ export const qitusVendorMappingDefinitions = [
   ["coworking", "LABEL_KEYWORD", "6132", "Locations immobilières", 0.2, "DOMESTIC_PURCHASE"],
   ["mission conseil", "LABEL_KEYWORD", "706", "Prestations de services", 0.2, "DOMESTIC_SALE"],
   ["mission audit", "LABEL_KEYWORD", "706", "Prestations de services", 0.2, "DOMESTIC_SALE"],
-  ["stripe payments", "VENDOR_CONTAINS", "5115", "Stripe - compte d'attente", 0, "OUT_OF_SCOPE"],
-  ["payout", "LABEL_KEYWORD", "5115", "Stripe - compte d'attente", 0, "OUT_OF_SCOPE"],
+  ["stripe payments", "VENDOR_CONTAINS", "511", "Valeurs à l'encaissement", 0, "OUT_OF_SCOPE"],
+  ["payout", "LABEL_KEYWORD", "511", "Valeurs à l'encaissement", 0, "OUT_OF_SCOPE"],
 ] as const;

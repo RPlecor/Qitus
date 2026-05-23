@@ -22,6 +22,11 @@
 - **CorrectionRuleCenter**: the Module that owns learned correction rules: creation, activation lifecycle, previewed impact, and activity logging.
 - **CorrectionRuleImpact**: the business reading of a CorrectionRule impact: matched transactions, examples, conflicts, and warnings for broad rules.
 - **VendorMapping**: a deterministic global or Company mapping from vendor/label patterns to PCG accounts.
+- **ChartOfAccounts**: the structured PCG account reference loaded from the official ANC plan of accounts artifact and used before any Qitus accounting assignment can become a JournalEntry.
+- **ChartOfAccountsCenter**: the Module that owns PCG account lookup, source metadata, integrity checks, postable-account decisions and active chart version.
+- **AccountingAssignmentValidation**: the validation result proving a Categorization uses known postable accounts, coherent TVA inputs and enough traceability before ledger writing.
+- **AccountingAssignmentValidationPolicy**: the Module that validates automatic and manual Categorization suggestions against ChartOfAccounts and TVA rules before persistence or JournalEntry creation.
+- **CategorizationTrustPolicy**: the Module that decides whether a validated Categorization is auto-writable, needs user review, or is blocked; in beta, AI suggestions always require review.
 - **JournalEntry**: a balanced double-entry accounting entry generated from confirmed Categorizations.
 - **JournalExplorer**: the Module that owns journal listing, filters, pagination, facets, totals, and debit/credit balance.
 - **JournalExport**: a stable export of JournalEntries, such as CSV or JSON, generated from `JournalExplorer` results.

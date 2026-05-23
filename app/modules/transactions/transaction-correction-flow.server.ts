@@ -1,6 +1,9 @@
 import type { VatOperationNature } from "@prisma/client";
 import { prisma } from "../db.server";
+import { AccountingAssignmentValidationPolicy } from "../accounting-reference/accounting-assignment-validation-policy.server";
+import { CategorizationTrustPolicy } from "../accounting-reference/categorization-trust-policy.server";
 import { writeJournalEntries } from "../ledger/ledger-writer";
+import { ExpectedRouteError } from "../route-errors.server";
 import type { CategorizationSuggestion, CategorizationTransaction } from "../categorization/types";
 import { parseVatOperationNature as parseVatNaturePolicy, parseVatRate as parseVatRatePolicy } from "../vat/vat-rate-policy";
 
@@ -63,6 +66,14 @@ export class TransactionCorrectionFlow {
       const accountCreditLabel = accountLabel(input.accountCredit, transaction.categorization?.accountCreditLabel ?? null);
       const vatRate = parseVatRate(input.vatRate);
       const vatOperationNature = parseVatOperationNature(input.vatOperationNature);
+      const validationPolicy = new AccountingAssignmentValidationPolicy();
+      const trustPolicy = new CategorizationTrustPolicy();
+      const suggestion = toCategorizationSuggestion(transaction.id, input, accountDebitLabel, accountCreditLabel);
+      const validation = validationPolicy.validateSuggestion(transaction.fiscalYear.company, suggestion, toCategorizationTransaction(transaction));
+      const trust = trustPolicy.classifySuggestion(suggestion, validation);
+      if (!validation.valid || !trust.writable) {
+        throw new ExpectedRouteError([...validation.blockingReasons, ...trust.reasons].filter(Boolean)[0] ?? "Catégorisation à vérifier avant création de l'écriture.", 400);
+      }
       const categorization = await tx.categorization.upsert({
         where: { transactionId: transaction.id },
         update: {
@@ -77,6 +88,10 @@ export class TransactionCorrectionFlow {
           confidence: "HIGH",
           source: "MANUAL",
           status: "USER_CONFIRMED",
+          chartVersion: validation.chartVersion,
+          validationStatus: "VALIDATED",
+          validationReasonsJson: { blockingReasons: validation.blockingReasons, warnings: validation.warnings, trustReasons: trust.reasons },
+          validatedAt: new Date(),
           confirmedAt: new Date(),
         },
         create: {
@@ -93,6 +108,10 @@ export class TransactionCorrectionFlow {
           confidence: "HIGH",
           source: "MANUAL",
           status: "USER_CONFIRMED",
+          chartVersion: validation.chartVersion,
+          validationStatus: "VALIDATED",
+          validationReasonsJson: { blockingReasons: validation.blockingReasons, warnings: validation.warnings, trustReasons: trust.reasons },
+          validatedAt: new Date(),
           confirmedAt: new Date(),
         },
       });
@@ -106,7 +125,7 @@ export class TransactionCorrectionFlow {
       });
       const [draft] = writeJournalEntries({
         transactions: [toCategorizationTransaction(transaction)],
-        categorizations: [toCategorizationSuggestion(transaction.id, input, accountDebitLabel, accountCreditLabel)],
+        categorizations: [suggestion],
         startingNum: existingJournalEntry?.num ?? (maxEntry?.num ?? 0) + 1,
         company: { vatRegime: transaction.fiscalYear.company.vatRegime },
       });

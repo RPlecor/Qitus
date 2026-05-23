@@ -312,6 +312,11 @@ model Categorization {
   aiRationale            String?
   alternatives           Json?
   status                 CategorizationStatus
+  rulePackId             String?
+  chartVersion           String?
+  validationStatus       CategorizationValidationStatus @default(NOT_VALIDATED)
+  validationReasonsJson  Json?
+  validatedAt            DateTime?
   isAnnualCharge         Boolean                @default(false)
   originalAccountDebit   String?
   originalAccountCredit  String?
@@ -1307,6 +1312,13 @@ enum CategorizationStatus {
   USER_CORRECTED
   MANUAL
   NEEDS_REVIEW
+}
+
+enum CategorizationValidationStatus {
+  NOT_VALIDATED
+  VALIDATED
+  NEEDS_REVIEW
+  BLOCKED
 }
 
 enum EntrySource {

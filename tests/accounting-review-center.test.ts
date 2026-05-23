@@ -33,7 +33,7 @@ describe("AccountingReviewCenter", () => {
       documents: [{ type: DocumentType.FEC, generatedAt: new Date("2025-04-01") }],
       annualChargeCandidates: [{ label: "ASSURANCE RC PRO ANNUELLE", amount: "-540.00", account: "6161" }],
       fixedAssetCandidates: [{ label: "MACBOOK PRO 14 M3", amount: "-1899.00", account: "2183" }],
-      stripeCandidates: [{ label: "PAYOUT MARS 2025", amount: "1200.00", account: "5115" }],
+      stripeCandidates: [{ label: "PAYOUT MARS 2025", amount: "1200.00", account: "511" }],
       revenue: 35_900,
       hasBankEntries: true,
     });

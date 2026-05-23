@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import type { PrismaClient } from "@prisma/client";
 import { prisma } from "../db.server";
+import { ChartOfAccountsCenter } from "../accounting-reference/chart-of-accounts-center.server";
 import { qitusVendorMappingDefinitions } from "./vendor-mapping-definitions";
 
 const QITUS_RULE_SOURCE = "qitus-official";
@@ -85,6 +86,7 @@ export class AccountingRulePackCenter {
 
   async activateRulePack(rulePackId: string) {
     const pack = await this.db.accountingRulePack.findUniqueOrThrow({ where: { id: rulePackId } });
+    assertMappingsCoveredByChart();
     const now = new Date();
     await this.db.$transaction(async (tx) => {
       await tx.accountingRulePack.updateMany({
@@ -155,6 +157,20 @@ export class AccountingRulePackCenter {
       take: 25,
       include: { vendorMappings: true },
     });
+  }
+}
+
+function assertMappingsCoveredByChart() {
+  const chart = new ChartOfAccountsCenter();
+  const integrity = chart.validateChartIntegrity();
+  if (!integrity.ok) {
+    throw new Error(`Référentiel PCG invalide : comptes manquants ${integrity.missingCriticalAccounts.join(", ") || "inconnus"}.`);
+  }
+  const missing = qitusVendorMappingDefinitions.flatMap(([pattern, , accountDebit]) => {
+    return chart.isPostableAccount(accountDebit) ? [] : [`${pattern}:${accountDebit}`];
+  });
+  if (missing.length > 0) {
+    throw new Error(`Règles Qitus incompatibles avec le référentiel PCG : ${missing.join(", ")}.`);
   }
 }
 

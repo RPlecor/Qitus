@@ -1,4 +1,6 @@
 import { prisma } from "../db.server";
+import { AccountingAssignmentValidationPolicy } from "../accounting-reference/accounting-assignment-validation-policy.server";
+import { CategorizationTrustPolicy } from "../accounting-reference/categorization-trust-policy.server";
 import { writeJournalEntries } from "./ledger-writer";
 
 export async function writeEntriesForImport(importId: string) {
@@ -13,6 +15,8 @@ export async function writeEntriesForImport(importId: string) {
   });
 
   const eligibleTransactions = importRow.transactions.filter((transaction) => !transaction.journalEntryId);
+  const validationPolicy = new AccountingAssignmentValidationPolicy();
+  const trustPolicy = new CategorizationTrustPolicy();
   const transactions = eligibleTransactions.map((transaction) => ({
     id: transaction.id,
     date: transaction.date.toISOString().slice(0, 10),
@@ -30,7 +34,8 @@ export async function writeEntriesForImport(importId: string) {
   const categorizations = eligibleTransactions.flatMap((transaction) => {
     const categorization = transaction.categorization;
     if (!categorization || categorization.status === "NEEDS_REVIEW" || !categorization.accountDebit || !categorization.accountCredit || !categorization.journal || !categorization.ecritureLabel) return [];
-    return [{
+    if (categorization.validationStatus !== "VALIDATED") return [];
+    const suggestion = {
       transactionId: transaction.id,
       accountDebit: categorization.accountDebit,
       accountDebitLabel: categorization.accountDebitLabel ?? undefined,
@@ -39,9 +44,16 @@ export async function writeEntriesForImport(importId: string) {
       journal: categorization.journal,
       ecritureLabel: categorization.ecritureLabel,
       vatRate: categorization.vatRate === null ? null : Number(categorization.vatRate),
+      vatOperationNature: categorization.vatOperationNature,
       confidence: categorization.confidence,
       source: categorization.source,
-    }];
+    };
+    const validation = validationPolicy.validateSuggestion(importRow.fiscalYear.company, suggestion, {
+      amount: Number(transaction.amount),
+      type: transaction.type,
+    });
+    const trust = trustPolicy.classifySuggestion(suggestion, validation);
+    return validation.status === "VALIDATED" && trust.writable ? [suggestion] : [];
   });
 
   const drafts = writeJournalEntries({ transactions, categorizations, startingNum: (maxEntry?.num ?? 0) + 1, company: { vatRegime: importRow.fiscalYear.company.vatRegime } });
