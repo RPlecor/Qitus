@@ -119,17 +119,26 @@ export function AppShell({ children, active = "dashboard" }: { children: ReactNo
   const navigation = useMemo(() => buildNavigation(showDemo), [showDemo]);
   const activeId = findActiveEntryId(navigation, location.pathname, active);
   const activeSectionId = findSectionForEntry(navigation.sections, activeId);
-  const [rememberedSectionId, setRememberedSectionId] = useState<string | null>(null);
-  const openSectionId = activeSectionId ?? (location.pathname === "/dashboard" ? null : rememberedSectionId);
+  const [openSectionId, setOpenSectionId] = useState<string | null>(location.pathname === "/dashboard" ? null : activeSectionId);
 
   useEffect(() => {
+    if (location.pathname === "/dashboard") {
+      setOpenSectionId(null);
+      return;
+    }
+    if (activeSectionId) {
+      setOpenSectionId(activeSectionId);
+      window.localStorage.setItem(SIDEBAR_OPEN_SECTION_KEY, activeSectionId);
+      return;
+    }
     const stored = window.localStorage.getItem(SIDEBAR_OPEN_SECTION_KEY);
-    if (stored && navigation.sections.some((section) => section.id === stored)) setRememberedSectionId(stored);
-  }, [navigation.sections]);
+    if (stored && navigation.sections.some((section) => section.id === stored)) setOpenSectionId(stored);
+    else setOpenSectionId(null);
+  }, [activeSectionId, location.pathname, navigation.sections]);
 
   function toggleSection(sectionId: string) {
-    const next = openSectionId === sectionId && activeSectionId !== sectionId ? null : sectionId;
-    setRememberedSectionId(next);
+    const next = openSectionId === sectionId ? null : sectionId;
+    setOpenSectionId(next);
     if (next) window.localStorage.setItem(SIDEBAR_OPEN_SECTION_KEY, next);
     else window.localStorage.removeItem(SIDEBAR_OPEN_SECTION_KEY);
   }
