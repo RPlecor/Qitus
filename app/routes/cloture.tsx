@@ -5,6 +5,7 @@ import { requireCompanyWorkspace } from "~/modules/company-workspace/company-wor
 import { AppShell, KpiCard, Main, StatusPill, TableShell } from "~/components/ui";
 import { ExpertReviewShareCenter } from "~/modules/expert-review/expert-review-share-center.server";
 import { ExpertReviewWorkflow } from "~/modules/expert-dossier/expert-review-workflow.server";
+import { fiscalYearStatusLabel } from "~/modules/ui-labels";
 
 export async function loader(args: LoaderFunctionArgs) {
   const url = new URL(args.request.url);
@@ -40,7 +41,7 @@ export default function Cloture() {
         </div>
 
         <div className="kpi-grid">
-          <KpiCard label="Exercice" value={overview.fiscalYearStatus} hint="Statut comptable" />
+          <KpiCard label="Exercice" value={fiscalYearStatusLabel(overview.fiscalYearStatus)} hint="Statut comptable" />
           <KpiCard label="Étapes" value={`${overview.steps.filter((step) => step.status === "DONE" || step.status === "SKIPPED").length}/12`} hint="Terminées" />
           <KpiCard label="Blocages" value={String(overview.blockers.length)} hint="À résoudre" />
           <KpiCard label="Clôture" value={overview.canClose ? "Possible" : "À préparer"} hint="Verrouillage final" />
