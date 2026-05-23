@@ -118,7 +118,7 @@ function AdjustmentTable({ reviews, empty }: { reviews: ClosingAdjustmentReview[
           <tbody>
             {reviews.map((review) => (
               <tr key={review.proposal.proposalKey}>
-                <td><strong>{review.proposal.label}</strong><div className="sub mono wrap-anywhere">{review.proposal.proposalKey}</div></td>
+                <td><strong>{review.proposal.label}</strong><div className="sub">{proposalOriginLabel(review.proposal)}</div></td>
                 <td>{closingAdjustmentKindLabel(review.proposal.kind)}</td>
                 <td><StatusPill label={closingAdjustmentStatusLabel(review.proposal.status)} tone={statusTone(review.proposal.status)} /></td>
                 <td>{review.freshness.statusLabel}</td>
@@ -132,6 +132,15 @@ function AdjustmentTable({ reviews, empty }: { reviews: ClosingAdjustmentReview[
       </TableShell>
     </>
   );
+}
+
+function proposalOriginLabel(proposal: ClosingAdjustmentReview["proposal"]) {
+  if (proposal.proposalKey.startsWith("CLOSING_WORKPAPER:")) return "Préparée depuis une feuille de travail";
+  if (proposal.kind === "CORPORATE_TAX") return "Calculée depuis le résultat de l'exercice";
+  if (proposal.kind === "VAT_SETTLEMENT") return "Calculée depuis les comptes de TVA";
+  if (proposal.kind === "RECONCILIATION_DIFFERENCE") return "Préparée depuis un écart de rapprochement";
+  if (["CCA", "DEPRECIATION"].includes(proposal.kind)) return "Proposée depuis un contrôle comptable";
+  return "Préparée pour la clôture";
 }
 
 function statusTone(value: string): StatusTone {
