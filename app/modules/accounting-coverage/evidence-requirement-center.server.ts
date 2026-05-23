@@ -1,6 +1,7 @@
 import type { EntrySource } from "@prisma/client";
 import type { CompanyWorkspace } from "../company-workspace/company-workspace.server";
 import { prisma } from "../db.server";
+import { EvidenceRequirementPolicyCenter } from "../official-references/evidence-requirement-policy-center.server";
 import { ExpectedRouteError } from "../route-errors.server";
 
 export type EvidenceRequirementKind = "invoice" | "receipt" | "bank_statement" | "contract" | "user_decision" | "expert_validation";
@@ -55,6 +56,8 @@ type EvidenceClosingProposal = {
 };
 
 export class EvidenceRequirementCenter {
+  constructor(private readonly evidencePolicy = new EvidenceRequirementPolicyCenter()) {}
+
   async listEvidenceRequirements(workspace: CompanyWorkspace): Promise<EvidenceRequirement[]> {
     const [entries, draftProposals, links, expertValidation] = await Promise.all([
       prisma.journalEntry.findMany({
@@ -96,9 +99,10 @@ export class EvidenceRequirementCenter {
   }
 
   getEvidencePolicy() {
+    const wording = this.evidencePolicy.getWording();
     return {
-      importEntries: "Les écritures issues d'un import doivent être reliées à une facture, un reçu ou une preuve bancaire.",
-      closingAdjustments: "Les OD de clôture doivent être reliées à une décision utilisateur ou à un calcul auditable.",
+      importEntries: `Les écritures issues d'un import sont suivies comme ${wording.nonBlockingGap} tant qu'aucun justificatif n'est rattaché.`,
+      closingAdjustments: "Les OD de clôture doivent être reliées à une décision utilisateur ou à un calcul auditable quand le référentiel l'exige.",
       expertReview: "La validation expert-comptable est recommandée avant beta externe.",
     };
   }

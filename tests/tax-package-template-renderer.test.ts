@@ -12,9 +12,11 @@ describe("TaxPackageTemplateRenderer", () => {
       vat: { deductible: 20, collected: 200, net: 180 },
     });
 
-    expect(source).toContain("Liasse fiscale 2033 - brouillon structuré");
+    expect(source).toContain("Pré-liasse réel simplifié 2033 - préparation vérifiable");
     expect(source).toContain("| A1 | Dénomination | ACME Digital | Profil société |");
     expect(source).toContain("| 44566 | TVA déductible | 20,00 | JournalLine |");
-    expect(source).toContain("Brouillon local - non télétransmis");
+    expect(source).toContain("Préparation vérifiable locale - non télétransmise");
+    expect(source).toContain("Référentiel : 2033-SD-2026");
+    expect(source).toContain("| disponibilites | Disponibilités | à compléter | Journal comptable |");
   });
 });

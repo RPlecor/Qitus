@@ -3,6 +3,8 @@ import type { CompanyWorkspace } from "../company-workspace/company-workspace.se
 import { prisma } from "../db.server";
 import { DocumentCatalog, type DocumentCatalogItem } from "../documents/document-catalog.server";
 import { JournalAuditCenter, type JournalAuditSummary } from "../journal/journal-audit-center.server";
+import { FecComplianceReferenceCenter } from "../official-references/fec-compliance-reference-center.server";
+import { VatReferenceCenter } from "../official-references/vat-reference-center.server";
 import { ExpectedRouteError } from "../route-errors.server";
 
 export type FecPrecheckIssue = {
@@ -25,10 +27,13 @@ export type FecPrecheck = {
 export class FecPrecheckCenter {
   constructor(
     private readonly documents = new DocumentCatalog(),
-    private readonly journalAudit = new JournalAuditCenter()
+    private readonly journalAudit = new JournalAuditCenter(),
+    private readonly fecReference = new FecComplianceReferenceCenter(),
+    private readonly vatReference = new VatReferenceCenter()
   ) {}
 
   async getFecPrecheck(workspace: CompanyWorkspace): Promise<FecPrecheck> {
+    this.fecReference.assertReady();
     const [documents, journal, hasVatLines] = await Promise.all([
       this.documents.listDocuments(workspace),
       this.journalAudit.getAuditSummary(workspace),
@@ -82,10 +87,11 @@ export class FecPrecheckCenter {
   }
 
   private async hasVatLines(workspace: CompanyWorkspace) {
+    const vatAccounts = Object.values(this.vatReference.getVatAccounts());
     const count = await prisma.journalLine.count({
       where: {
         journalEntry: { fiscalYearId: workspace.fiscalYear.id },
-        account: { in: ["44566", "44571", "4452", "44551", "44567"] },
+        account: { in: vatAccounts },
       },
     });
     return count > 0;

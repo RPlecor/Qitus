@@ -6,6 +6,7 @@ import { ActivityLogCenter } from "../activity-log/activity-log-center.server";
 import type { CompanyWorkspace } from "../company-workspace/company-workspace.server";
 import { prisma } from "../db.server";
 import { LocalDocumentStorageAdapter, type DocumentStorageAdapter } from "../documents/document-storage-adapter.server";
+import { VatReferenceCenter } from "../official-references/vat-reference-center.server";
 import { ExpectedRouteError } from "../route-errors.server";
 import { VatPositionCenter, resolvePeriod, type VatPositionFilters } from "./vat-position-center.server";
 
@@ -61,7 +62,8 @@ export class VatDeclarationCenter {
   constructor(
     private readonly position = new VatPositionCenter(),
     private readonly storage: DocumentStorageAdapter = new LocalDocumentStorageAdapter(),
-    private readonly activity = new ActivityLogCenter()
+    private readonly activity = new ActivityLogCenter(),
+    private readonly vatReference = new VatReferenceCenter()
   ) {}
 
   async listDeclarations(workspace: CompanyWorkspace) {
@@ -90,6 +92,7 @@ export class VatDeclarationCenter {
   }
 
   async generateDraft(workspace: CompanyWorkspace, input: GenerateVatDeclarationInput = {}) {
+    this.vatReference.assertReady();
     const period = resolvePeriod(workspace, input);
     const type = resolveDeclarationType(workspace, input.type);
     const review = await this.assertVatDeclarationReady(workspace, {
@@ -200,6 +203,7 @@ export class VatDeclarationCenter {
   }
 
   async getVatReview(workspace: CompanyWorkspace, filters: VatPositionFilters = {}): Promise<VatReview> {
+    this.vatReference.assertReady();
     if (workspace.company.vatRegime === "FRANCHISE") {
       return {
         status: "not_applicable",

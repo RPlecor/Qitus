@@ -1,20 +1,24 @@
 import { Prisma } from "@prisma/client";
 import type { CompanyWorkspace } from "../company-workspace/company-workspace.server";
 import { prisma } from "../db.server";
+import { ReconciliationPolicyCenter } from "../official-references/reconciliation-policy-center.server";
 import { ExpectedRouteError } from "../route-errors.server";
 import { absMoney, daysBetween, money, ReconciliationCore } from "./reconciliation-core.server";
 
-const THIRD_PARTY_PREFIXES = ["401", "411", "467"];
-
 export class ThirdPartyMatchingCenter {
-  constructor(private readonly core = new ReconciliationCore()) {}
+  constructor(
+    private readonly core = new ReconciliationCore(),
+    private readonly policy = new ReconciliationPolicyCenter()
+  ) {}
 
   async runThirdPartyMatching(workspace: CompanyWorkspace) {
     const run = await this.core.getOrCreateRun(workspace, "THIRD_PARTY");
+    const thirdPartyPrefixes = this.policy.getAccounts().thirdPartyPrefixes;
+    const tolerance = this.policy.getTolerances().exactAmountEpsilon;
     const lines = await prisma.journalLine.findMany({
       where: {
         journalEntry: { fiscalYearId: workspace.fiscalYear.id },
-        OR: THIRD_PARTY_PREFIXES.map((prefix) => ({ account: { startsWith: prefix } })),
+        OR: thirdPartyPrefixes.map((prefix) => ({ account: { startsWith: prefix } })),
       },
       include: { journalEntry: true },
       orderBy: [{ account: "asc" }],
@@ -29,7 +33,7 @@ export class ThirdPartyMatchingCenter {
       const right = lines.find((candidate) => {
         if (candidate.id === left.id || used.has(candidate.id) || candidate.account !== left.account) return false;
         const rightNet = money(Number(candidate.debit) - Number(candidate.credit));
-        return Math.abs(leftNet + rightNet) < 0.01;
+        return Math.abs(leftNet + rightNet) <= tolerance;
       });
       if (right) {
         used.add(left.id);
@@ -71,7 +75,7 @@ export class ThirdPartyMatchingCenter {
     await this.core.replaceRunData(workspace, "THIRD_PARTY", {
       matches,
       issues,
-      metadata: { lines: lines.length, accounts: THIRD_PARTY_PREFIXES },
+      metadata: { lines: lines.length, accounts: thirdPartyPrefixes, tolerance },
     });
     return this.summarizeThirdPartyMatching(workspace);
   }

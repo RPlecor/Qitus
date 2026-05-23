@@ -6,31 +6,33 @@ import { RegulatorySourceCenter } from "~/modules/accounting-rules/regulatory-so
 import { RuleApplicationWorkflow } from "~/modules/accounting-rules/rule-application-workflow.server";
 import { ChartOfAccountsCenter } from "~/modules/accounting-reference/chart-of-accounts-center.server";
 import { requireCompanyWorkspace } from "~/modules/company-workspace/company-workspace.server";
+import { OfficialReferenceCenter } from "~/modules/official-references/official-reference-center.server";
 import { getRuntimeConfig } from "~/modules/runtime-config.server";
 
 export async function loader(args: LoaderFunctionArgs) {
   const workspace = await requireCompanyWorkspace(args);
-  const [packs, snapshots, status] = await Promise.all([
+  const [packs, snapshots, status, references] = await Promise.all([
     new AccountingRulePackCenter().listRulePacks(),
     new RegulatorySourceCenter().listSourceSnapshots(),
     new RuleApplicationWorkflow().getRuleUpdateStatus(workspace),
+    Promise.resolve(new OfficialReferenceCenter().getReferenceReadiness()),
   ]);
   const chart = new ChartOfAccountsCenter().validateChartIntegrity();
   const config = getRuntimeConfig();
-  return json({ packs, snapshots, status, chart, canSync: config.authMode === "dev" && process.env.NODE_ENV !== "production" });
+  return json({ packs, snapshots, status, chart, references, canSync: config.authMode === "dev" && process.env.NODE_ENV !== "production" });
 }
 
 export default function AccountingRulesPage() {
-  const { packs, snapshots, status, chart, canSync } = useLoaderData<typeof loader>();
+  const { packs, snapshots, status, chart, references, canSync } = useLoaderData<typeof loader>();
   const activePack = status.activePack;
   const impact = status.impact as null | { affectedTransactionCount?: number; conflictCount?: number; protectedTransactionCount?: number; existingDataRequiresExplicitAction?: boolean };
 
   return (
     <AppShell active="regles-comptables">
-      <Main title="Règles comptables" subtitle="Qitus classe les prochains imports avec les règles actives, sans modifier les écritures déjà créées." backLink={{ label: "Paramètres", href: "/parametres" }}>
+      <Main title="Référentiels Qitus" subtitle="Qitus prépare les sorties comptables avec des référentiels explicites, versionnés et vérifiés." backLink={{ label: "Paramètres", href: "/parametres" }}>
         <div className="kpi-grid">
-          <KpiCard label="Règles utilisées" value={ruleSetName(activePack)} hint={activePack?.summary ?? "Aucune règle active pour le moment"} />
-          <KpiCard label="État" value={statusLabel(status.status)} hint="Utilisées pour les prochains imports" />
+          <KpiCard label="Référentiels" value={`${references.summary.ready}/${references.summary.total}`} hint="Validés avant beta ouverte" />
+          <KpiCard label="État" value={references.status === "ready" ? "Prêt" : references.status === "warning" ? "À surveiller" : "Bloqué"} hint="TVA, FEC, pré-liasse, OD, justificatifs et facture électronique" />
           <KpiCard label="Référentiel PCG" value={chart.ok ? "Validé" : "À vérifier"} hint={`${chart.accountCount} comptes · ${chart.version}`} />
           <KpiCard label="Transactions à surveiller" value={String(impact?.affectedTransactionCount ?? 0)} hint="Uniquement si vous relancez leur classement" />
         </div>
@@ -60,15 +62,40 @@ export default function AccountingRulesPage() {
           <section className="panel">
             <div className="row between">
               <div>
-                <h2>Vérification manuelle des règles</h2>
-                <p className="sub">Action réservée à l'équipe Qitus. Elle vérifie les sources officielles, prépare les règles Qitus et les applique aux prochains imports.</p>
+                <h2>Vérification manuelle des référentiels</h2>
+                <p className="sub">Action réservée à l'équipe Qitus. Elle trace les sources officielles, vérifie les packs actifs et conserve le dernier référentiel validé.</p>
               </div>
-              <Form method="post" action="/api/accounting-rules/sync">
+              <Form method="post" action="/api/references/sync">
                 <button className="btn btn-p" type="submit">Vérifier maintenant</button>
               </Form>
             </div>
           </section>
         ) : null}
+
+        <section className="panel">
+          <h2>Référentiels de préparation vérifiable</h2>
+          <TableShell>
+            <table className="tbl">
+              <thead><tr><th>Référentiel</th><th>État</th><th>Version</th><th>Source</th><th>Depuis</th><th>Action</th></tr></thead>
+              <tbody>
+                {references.items.map((reference) => (
+                  <tr key={reference.kind}>
+                    <td>{reference.label}</td>
+                    <td><StatusPill label={referenceStatusLabel(reference.status)} tone={reference.status === "ready" ? "ok" : reference.status === "warning" ? "warn" : "error"} /></td>
+                    <td>{reference.version}</td>
+                    <td><a href={reference.sourceUrl} target="_blank" rel="noreferrer">{referenceSourceLabel(reference.source)}</a></td>
+                    <td>{formatDateOnly(reference.effectiveFrom)}</td>
+                    <td>
+                      <Form method="post" action={`/api/references/${reference.kind}/validate`}>
+                        <button className="btn btn-sm" type="submit">Vérifier</button>
+                      </Form>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </TableShell>
+        </section>
 
         <section className="panel">
           <h2>Versions des règles</h2>
@@ -137,6 +164,20 @@ function sourceLabel(source: string) {
   if (source === "qitus-official") return "Qitus";
   if (source === "seed") return "Qitus";
   return "Source Qitus";
+}
+
+function referenceSourceLabel(source: string | undefined) {
+  if (source === "ANC") return "ANC";
+  if (source === "BOFIP") return "BOFiP";
+  if (source === "IMPOTS_GOUV") return "impots.gouv";
+  if (source === "CGI") return "CGI";
+  return "Qitus";
+}
+
+function referenceStatusLabel(status: string) {
+  if (status === "ready") return "Validé";
+  if (status === "warning") return "À surveiller";
+  return "Bloqué";
 }
 
 function ruleSetName(pack: { version?: string | null; activatedAt?: string | Date | null } | null | undefined) {

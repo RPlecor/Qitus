@@ -2,6 +2,7 @@ import Decimal from "decimal.js";
 import type { VatOperationNature } from "@prisma/client";
 import type { CompanyWorkspace } from "../company-workspace/company-workspace.server";
 import { prisma } from "../db.server";
+import { VatReferenceCenter } from "../official-references/vat-reference-center.server";
 
 export type VatRegimeLike = "FRANCHISE" | "REEL_SIMPLIFIE" | "REEL_NORMAL" | string;
 
@@ -30,6 +31,8 @@ export type VatTreatment = {
 export type VatOperationNatureLike = VatOperationNature | "DOMESTIC_PURCHASE" | "DOMESTIC_SALE" | "INTRACOM_PURCHASE" | "INTRACOM_SALE" | "REVERSE_CHARGE" | "EXEMPT" | "OUT_OF_SCOPE";
 
 export class VatLedgerPolicy {
+  private readonly vatReference = new VatReferenceCenter();
+
   resolveVatTreatment(company: { vatRegime: VatRegimeLike }, transaction: { amount: number; type?: "DEBIT" | "CREDIT" }, categorization: { vatRate?: number | string | null; vatOperationNature?: VatOperationNatureLike | null }): VatTreatment {
     const vatRate = categorization.vatRate === undefined || categorization.vatRate === null ? null : Number(categorization.vatRate);
     return resolveVatTreatment({ amount: transaction.amount, vatRegime: company.vatRegime, vatRate, transactionType: transaction.type ?? (transaction.amount >= 0 ? "CREDIT" : "DEBIT"), vatOperationNature: categorization.vatOperationNature });
@@ -40,8 +43,9 @@ export class VatLedgerPolicy {
   }
 
   async summarizeVatForFiscalYear(workspace: CompanyWorkspace) {
+    const vatAccounts = Object.values(this.vatReference.getVatAccounts());
     const lines = await prisma.journalLine.findMany({
-      where: { journalEntry: { fiscalYearId: workspace.fiscalYear.id }, account: { in: ["44566", "44571", "4452", "44551", "44567"] } },
+      where: { journalEntry: { fiscalYearId: workspace.fiscalYear.id }, account: { in: vatAccounts } },
       select: { account: true, debit: true, credit: true },
     });
     return summarizeVatLines(lines.map((line) => ({ account: line.account, debit: Number(line.debit), credit: Number(line.credit) })));

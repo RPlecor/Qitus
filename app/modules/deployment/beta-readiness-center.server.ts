@@ -9,6 +9,7 @@ import { OpenBankingCenter } from "../open-banking/open-banking-center.server";
 import { StorageAuditCenter } from "../storage/storage-audit-center.server";
 import { getRuntimeConfig, type RuntimeConfig } from "../runtime-config.server";
 import { QontoPaReadinessCenter } from "../e-invoices/qonto-pa-readiness-center.server";
+import { OfficialReferenceCenter } from "../official-references/official-reference-center.server";
 
 export type BetaReadinessSeverity = "ready" | "warning" | "blocked";
 
@@ -37,7 +38,7 @@ export class BetaReadinessCenter {
   }
 
   async listChecks(workspace: CompanyWorkspace): Promise<BetaReadinessCheck[]> {
-    const [runtime, health, security, openBanking, storageAudit, metricCatalog, qontoPaReadiness] = await Promise.all([
+    const [runtime, health, security, openBanking, storageAudit, metricCatalog, qontoPaReadiness, accountingReferences] = await Promise.all([
       Promise.resolve(new DeploymentRuntimeCenter(this.config).getRuntimeReport()),
       new HealthCheckCenter(this.config).getReadiness(),
       Promise.resolve(new SecurityHardeningCenter(this.config).getSecurityStatus()),
@@ -45,6 +46,7 @@ export class BetaReadinessCenter {
       new StorageAuditCenter(this.config).getStorageAudit(workspace),
       Promise.resolve(new MetricCatalog().assertRequiredMetricsPresent()),
       new QontoPaReadinessCenter(this.config).getReadiness(),
+      Promise.resolve(new OfficialReferenceCenter().getReferenceReadiness()),
     ]);
     const storage = new StorageConfigurationCenter(this.config).getStatus();
     const worker = new WorkerRuntimeCenter(this.config).getRuntimeStatus();
@@ -93,6 +95,15 @@ export class BetaReadinessCenter {
         status: this.config.eInvoiceProvider !== "qonto_pa" ? "ready" : qontoPaReadiness.status === "blocked" ? "blocked" : qontoPaReadiness.status === "ready" ? "ready" : "warning",
         message: this.config.eInvoiceProvider !== "qonto_pa" ? "Qonto PA non sélectionnée comme provider actif." : qontoPaReadiness.message,
         action: this.config.eInvoiceProvider === "qonto_pa" ? qontoPaReadiness.recommendedAction : undefined,
+      },
+      {
+        code: "accounting_references",
+        label: "Référentiels comptables",
+        status: accountingReferences.status,
+        message: accountingReferences.status === "ready"
+          ? `${accountingReferences.summary.ready}/${accountingReferences.summary.total} référentiels Qitus sont validés.`
+          : `${accountingReferences.summary.blocked} référentiel(s) bloqué(s), ${accountingReferences.summary.warning} à surveiller.`,
+        action: accountingReferences.status === "ready" ? undefined : "Ouvrir Référentiels Qitus et corriger les référentiels bloqués.",
       },
       {
         code: "webhooks",

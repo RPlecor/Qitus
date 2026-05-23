@@ -1,4 +1,5 @@
 import type { CompanyWorkspace } from "../company-workspace/company-workspace.server";
+import { TaxPackageReferenceCenter } from "../official-references/tax-package-reference-center.server";
 
 export type TaxPackageRenderInput = {
   workspace: CompanyWorkspace;
@@ -7,13 +8,24 @@ export type TaxPackageRenderInput = {
 };
 
 export class TaxPackageTemplateRenderer {
+  constructor(private readonly taxPackageReference = new TaxPackageReferenceCenter()) {}
+
   renderStructuredSource(input: TaxPackageRenderInput) {
     const { workspace, journal, vat } = input;
     const year = workspace.fiscalYear.endDate.getFullYear();
+    const kind = this.taxPackageReference.pickKind({
+      taxRegime: workspace.company.incomeRegime,
+      vatRegime: workspace.company.vatRegime,
+      legalForm: workspace.company.legalForm,
+    });
+    const reference = this.taxPackageReference.getActiveReference(kind);
+    const label = reference.payloadJson.label;
     return [
-      "# Liasse fiscale 2033 - brouillon structuré",
+      `# ${label} - préparation vérifiable`,
       "",
-      "> Brouillon local - non télétransmis. Document de revue expert-comptable.",
+      "> Préparation vérifiable locale - non télétransmise. Document de revue expert-comptable.",
+      "",
+      `Référentiel : ${reference.version} · checksum ${reference.checksum}`,
       "",
       "## Identification",
       "",
@@ -24,21 +36,12 @@ export class TaxPackageTemplateRenderer {
       `| A3 | Forme juridique | ${workspace.company.legalForm} | Profil société |`,
       `| A4 | Exercice | ${date(workspace.fiscalYear.startDate)} au ${date(workspace.fiscalYear.endDate)} | FiscalYear |`,
       "",
-      "## 2033-A - Bilan simplifié",
+      `## ${reference.payloadJson.packageCode} - Cases préparées`,
       "",
       "| Case | Libellé | Montant EUR | Source |",
       "|---|---|---:|---|",
-      `| 110 | Total actif - brouillon | ${money(journal.debitTotal)} | JournalEntry débit total |`,
-      `| 310 | Total passif - brouillon | ${money(journal.creditTotal)} | JournalEntry crédit total |`,
-      `| 399 | Équilibre débit/crédit | ${journal.balanced ? "oui" : "non"} | JournalAudit |`,
-      "",
-      "## 2033-B - Compte de résultat simplifié",
-      "",
-      "| Case | Libellé | Montant EUR | Source |",
-      "|---|---|---:|---|",
-      `| 210 | Produits d'exploitation - brouillon | ${money(Math.max(0, journal.creditTotal - vat.collected))} | JournalEntry crédits hors TVA estimée |`,
-      `| 230 | Charges d'exploitation - brouillon | ${money(Math.max(0, journal.debitTotal - vat.deductible))} | JournalEntry débits hors TVA estimée |`,
-      `| 270 | Résultat comptable indicatif | ${money(journal.creditTotal - journal.debitTotal)} | JournalExplorer summary |`,
+      ...reference.payloadJson.cases.map((taxCase) => `| ${taxCase.code} | ${escapeCell(taxCase.label)} | ${amountForCase(taxCase.code, journal, vat)} | ${taxCase.requiredSource === "journal" ? "Journal comptable" : "À compléter"} |`),
+      `| controle_equilibre | Équilibre débit/crédit | ${journal.balanced ? "oui" : "à vérifier"} | Journal comptable |`,
       "",
       "## TVA - Agrégation préparatoire",
       "",
@@ -53,10 +56,18 @@ export class TaxPackageTemplateRenderer {
       `- Année fiscale : ${year}`,
       `- Écritures incluses : ${journal.entriesCount}`,
       `- Lignes incluses : ${journal.linesCount}`,
-      `- Source structurée générée par : TaxPackageTemplateRenderer`,
+      `- Référentiel liasse : ${reference.version}`,
       "",
     ].join("\n");
   }
+}
+
+function amountForCase(code: string, journal: TaxPackageRenderInput["journal"], vat: TaxPackageRenderInput["vat"]) {
+  if (code === "chiffre_affaires") return money(Math.max(0, journal.creditTotal - vat.collected));
+  if (code === "charges_externes" || code === "achats") return money(Math.max(0, journal.debitTotal - vat.deductible));
+  if (code === "disponibilites") return "à compléter";
+  if (code === "resultat") return money(journal.creditTotal - journal.debitTotal);
+  return "à compléter";
 }
 
 function date(value: Date) {

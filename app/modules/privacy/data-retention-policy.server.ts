@@ -10,14 +10,6 @@ export type RetentionEntityType =
   | "closing_evidence"
   | "expert_dossier";
 
-const AUTO_PURGE_DAYS: Partial<Record<RetentionEntityType, number>> = {
-  share_link: 30,
-  notification: 365,
-  webhook_event: 90,
-  privacy_export: 7,
-  temporary_workdir: 1,
-};
-
 const ACCOUNTING_EVIDENCE: RetentionEntityType[] = [
   "journal_entry",
   "document",
@@ -27,8 +19,10 @@ const ACCOUNTING_EVIDENCE: RetentionEntityType[] = [
 ];
 
 export class DataRetentionPolicy {
+  constructor(private readonly reference = new DataRetentionReferenceCenter()) {}
+
   describe(entityType: RetentionEntityType) {
-    const autoPurgeAfterDays = AUTO_PURGE_DAYS[entityType] ?? null;
+    const autoPurgeAfterDays = this.reference.getRetentionDays(entityType);
     const protectedAccountingEvidence = ACCOUNTING_EVIDENCE.includes(entityType);
     return {
       entityType,
@@ -45,8 +39,9 @@ export class DataRetentionPolicy {
 
   listPolicies() {
     return [
-      ...Object.keys(AUTO_PURGE_DAYS),
+      ...this.reference.listPurgeableRules().map((rule) => rule.kind),
       ...ACCOUNTING_EVIDENCE,
     ].map((entityType) => this.describe(entityType as RetentionEntityType));
   }
 }
+import { DataRetentionReferenceCenter } from "../official-references/data-retention-reference-center.server";

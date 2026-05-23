@@ -3,6 +3,8 @@ import { DocumentType, type BankAccount, type Company, type FiscalYear } from "@
 import { AccountingReviewCenter } from "../accounting-review/accounting-review-center.server";
 import type { CompanyWorkspace } from "../company-workspace/company-workspace.server";
 import { prisma } from "../db.server";
+import { FecComplianceReferenceCenter } from "../official-references/fec-compliance-reference-center.server";
+import { TaxPackageReferenceCenter } from "../official-references/tax-package-reference-center.server";
 import type { PaperasseCompanyInput } from "../paperasse/types";
 import { PaperasseRuntime } from "../paperasse/paperasse-runtime";
 import { DocumentGeneration } from "./document-generation";
@@ -34,10 +36,14 @@ export class DocumentGenerationCenter {
       })
     ),
     private readonly accountingReview = new AccountingReviewCenter(),
-    private readonly storage: DocumentStorageAdapter = new LocalDocumentStorageAdapter()
+    private readonly storage: DocumentStorageAdapter = new LocalDocumentStorageAdapter(),
+    private readonly fecReference = new FecComplianceReferenceCenter(),
+    private readonly taxPackageReference = new TaxPackageReferenceCenter()
   ) {}
 
   async generateDocuments(workspace: CompanyWorkspace, input: { types: PaperasseDocumentGenerationType[] }): Promise<GeneratedDocumentSummary[]> {
+    if (input.types.includes("fec")) this.fecReference.assertReady();
+    if (input.types.includes("liasse" as PaperasseDocumentGenerationType)) this.taxPackageReference.assertReady();
     for (const type of input.types) await this.accountingReview.assertDocumentsCanBeGenerated(workspace, type);
 
     const [bankAccounts, entries] = await Promise.all([

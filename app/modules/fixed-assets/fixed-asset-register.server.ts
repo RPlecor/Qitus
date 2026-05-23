@@ -1,6 +1,8 @@
 import { Prisma } from "@prisma/client";
 import type { CompanyWorkspace } from "../company-workspace/company-workspace.server";
 import { prisma } from "../db.server";
+import { FixedAssetReferenceCenter } from "../official-references/fixed-asset-reference-center.server";
+import { ExpectedRouteError } from "../route-errors.server";
 
 export type FixedAssetInput = {
   label: string;
@@ -36,6 +38,8 @@ export type DepreciationPreview = {
 };
 
 export class FixedAssetRegister {
+  constructor(private readonly reference = new FixedAssetReferenceCenter()) {}
+
   async listAssets(workspace: CompanyWorkspace): Promise<FixedAssetSummary[]> {
     const assets = await prisma.fixedAsset.findMany({
       where: { fiscalYearId: workspace.fiscalYear.id },
@@ -45,16 +49,18 @@ export class FixedAssetRegister {
   }
 
   async createAsset(workspace: CompanyWorkspace, input: FixedAssetInput): Promise<FixedAssetSummary> {
+    this.assertAssetInput(input);
     const asset = await prisma.fixedAsset.create({
-      data: toData(workspace.fiscalYear.id, input),
+      data: toData(workspace.fiscalYear.id, input, this.reference),
     });
     return summarizeAsset(asset, workspace.fiscalYear.endDate);
   }
 
   async updateAsset(workspace: CompanyWorkspace, assetId: string, input: FixedAssetInput): Promise<FixedAssetSummary> {
+    this.assertAssetInput(input);
     const asset = await prisma.fixedAsset.update({
       where: { id: assetId, fiscalYearId: workspace.fiscalYear.id },
-      data: toData(workspace.fiscalYear.id, input),
+      data: toData(workspace.fiscalYear.id, input, this.reference),
     });
     return summarizeAsset(asset, workspace.fiscalYear.endDate);
   }
@@ -71,18 +77,26 @@ export class FixedAssetRegister {
     const asset = await prisma.fixedAsset.findFirstOrThrow({ where: { id: assetId, fiscalYearId: workspace.fiscalYear.id } });
     return depreciationPreview(asset, workspace.fiscalYear.endDate);
   }
+
+  private assertAssetInput(input: FixedAssetInput) {
+    this.reference.assertReady();
+    if (!this.reference.validateUsefulLifeYears(Number(input.usefulLifeYears || this.reference.getDefaultFamily().usefulLifeYears))) {
+      throw new ExpectedRouteError("La durée d'amortissement doit être comprise entre 1 et 50 ans.", 400);
+    }
+  }
 }
 
-function toData(fiscalYearId: string, input: FixedAssetInput) {
+function toData(fiscalYearId: string, input: FixedAssetInput, reference = new FixedAssetReferenceCenter()) {
+  const defaultFamily = reference.getDefaultFamily();
   return {
     fiscalYearId,
     label: String(input.label || "").trim(),
-    account: String(input.account || "2183").trim(),
+    account: String(input.account || defaultFamily.assetAccount).trim(),
     acquisitionDate: new Date(input.acquisitionDate),
     amount: new Prisma.Decimal(Number(input.amount || 0)),
-    usefulLifeYears: Number(input.usefulLifeYears || 3),
-    depreciationAccount: String(input.depreciationAccount || "28183").trim(),
-    expenseAccount: String(input.expenseAccount || "68112").trim(),
+    usefulLifeYears: Number(input.usefulLifeYears || defaultFamily.usefulLifeYears),
+    depreciationAccount: String(input.depreciationAccount || defaultFamily.amortizationAccount).trim(),
+    expenseAccount: String(input.expenseAccount || defaultFamily.expenseAccount).trim(),
   };
 }
 

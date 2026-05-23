@@ -220,6 +220,17 @@
 - **WorkerRuntime**: the non-secret runtime reading of import workers and cron mode, independent from a live worker process.
 - **MetricCatalog**: the stable list of beta metrics expected for imports, Open Banking, documents, chat, billing, closing and deterministic hit rate.
 - **BetaOpsRunbook**: the operational checklist for starting web/worker, checking health, running migrations, validating Open Banking mock, switching storage and rolling back locally.
+- **OfficialReferencePack**: one versioned Qitus reference pack with kind, source, source URL, checksum, effective date, payload and validation result; active packs are the only allowed basis for beta-critical calculations.
+- **OfficialReferenceCenter**: the orchestration Module for syncing, validating, listing and asserting readiness of all official or Qitus-maintained reference packs before critical capabilities run.
+- **VatReference**: the active TVA reference pack covering CA3/CA12 forms, rates, operation natures, TVA accounts and compatibility rules consumed by VAT Modules.
+- **FecComplianceReference**: the active FEC reference pack covering required columns, order, formats, naming and pre-export checks consumed by document and expert-dossier Modules.
+- **TaxPackageReference**: the active 2033/2050 pre-liasse reference pack covering tables, cases, account mappings, formulas and explicit `à compléter` states.
+- **ClosingAdjustmentReference**: the active OD reference pack covering supported adjustment types, accounts, formulas, evidence levels and approval blockers.
+- **FixedAssetReference**: the active fixed-asset reference pack covering asset families, accounts, methods, indicative useful lives and prorata controls.
+- **EvidenceRequirementPolicyReference**: the active evidence reference pack distinguishing blocking proof, dossier coverage gaps and recommended attachments with user-facing wording.
+- **ReconciliationPolicyReference**: the active reconciliation reference pack covering bank, third-party and suspense accounts plus amount/date tolerances and review rules.
+- **EInvoiceReference**: the active incoming e-invoice reference pack covering Factur-X, UBL, CII, PA statuses, required fields, dedupe rules and compliant-reception proof.
+- **DataRetentionReference**: the active privacy retention reference pack covering purgeable non-accounting data, protected accounting data and audit expectations.
 
 ## Architecture Vocabulary
 
