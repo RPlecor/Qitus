@@ -7,6 +7,7 @@ import { ClosingAdjustmentCenter, type ClosingAdjustmentSummary } from "~/module
 import { requireCompanyWorkspace } from "~/modules/company-workspace/company-workspace.server";
 import { DocumentFreshnessCenter } from "~/modules/documents/document-freshness-center.server";
 import { EvidenceControlCenter } from "~/modules/evidence/evidence-control-center.server";
+import { entriesWithoutEvidenceLabel, evidenceCoverageHint, evidenceCoverageSummary } from "~/modules/evidence/evidence-wording";
 import { AppShell, ButtonLink, KpiCard, Main, StatusPill, TableShell } from "~/components/ui";
 
 export async function loader(args: LoaderFunctionArgs) {
@@ -51,7 +52,7 @@ export default function Controle() {
           <KpiCard label="Ouverts" value={String(issueState.open)} hint="Issues suivables" />
           <KpiCard label="OD proposées" value={String(adjustmentState.draft)} hint={`${adjustmentState.approved} validée${adjustmentState.approved > 1 ? "s" : ""}`} />
           <KpiCard label="Documents" value={documentFreshness.staleCount > 0 ? "À régénérer" : "À jour"} hint={`${documentFreshness.staleCount} obsolète${documentFreshness.staleCount > 1 ? "s" : ""}`} />
-          <KpiCard label="Pièces" value={evidenceReview.requiredMissing > 0 ? "Manquantes" : "OK"} hint={`${evidenceReview.requiredMissing} requise(s), ${evidenceReview.orphanAttachments} orpheline(s)`} />
+          <KpiCard label="Pièces" value={evidenceReview.requiredMissing > 0 ? "À compléter" : "OK"} hint={evidenceCoverageHint({ entriesWithoutEvidence: evidenceReview.requiredMissing, orphanAttachments: evidenceReview.orphanAttachments })} />
         </div>
 
         <ControlSection title="Blocages" empty="Aucun blocage comptable." controls={blocking} />
@@ -70,8 +71,8 @@ function EvidenceSection({ review }: { review: { requiredMissing: number; recomm
     <>
       <div className="sec-head"><h2>Justificatifs</h2></div>
       <div className={`alert ${review.requiredMissing > 0 ? "orange" : "blue"}`}>
-        <strong>{review.requiredMissing > 0 ? "Écritures sans pièce" : "Pièces requises couvertes"}</strong>
-        <span>{review.requiredMissing} requise(s) manquante(s) · {review.orphanAttachments} pièce(s) sans écriture · {review.extractionFailures} OCR à revoir</span>
+        <strong>{review.requiredMissing > 0 ? "Écritures sans justificatif" : "Justificatifs couverts"}</strong>
+        <span>{evidenceCoverageSummary({ entriesWithoutEvidence: review.requiredMissing, orphanAttachments: review.orphanAttachments, extractionFailures: review.extractionFailures })}</span>
         <Link className="btn btn-sm" to="/pieces">Pièces</Link>
       </div>
     </>
@@ -191,7 +192,7 @@ function HandledIssues({ issues }: { issues: Array<{ issueKey: string; controlCo
 }
 
 function statusLabel(status: string) {
-  if (status === "blocked") return "Pré-clôture bloquée : corrige les éléments bloquants avant de générer les documents.";
+  if (status === "blocked") return "Pré-clôture bloquée : corrigez les éléments bloquants avant de générer les documents.";
   if (status === "ready_with_warnings") return "Documents générables : des points de pré-clôture restent à revoir.";
   return "Exercice prêt : aucun point bloquant ou avertissement détecté.";
 }

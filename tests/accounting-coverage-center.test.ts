@@ -17,7 +17,7 @@ describe("AccountingCoverageCenter", () => {
 
     expect(overview.status).toBe("blocked");
     expect(overview.label).toBe("Couverture EC à risque");
-    expect(overview.areas.find((area) => area.code === "evidence")).toMatchObject({ status: "missing", risk: "high" });
+    expect(overview.areas.find((area) => area.code === "evidence")).toMatchObject({ status: "partial", risk: "medium" });
     expect(overview.areas.find((area) => area.code === "vat")).toMatchObject({ status: "partial" });
   });
 

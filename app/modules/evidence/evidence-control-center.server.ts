@@ -3,6 +3,7 @@ import { prisma } from "../db.server";
 import { ExpectedRouteError } from "../route-errors.server";
 import { EvidenceRequirementCenter } from "../accounting-coverage/evidence-requirement-center.server";
 import { AttachmentLinkCenter } from "./attachment-link-center.server";
+import { entriesWithoutEvidenceLabel } from "./evidence-wording";
 
 export type EvidenceReview = {
   status: "ready" | "missing_required" | "needs_attention";
@@ -46,7 +47,7 @@ export class EvidenceControlCenter {
   async assertEvidenceCoverage(workspace: CompanyWorkspace) {
     const review = await this.getEvidenceReview(workspace);
     if (review.requiredMissing > 0) {
-      throw new ExpectedRouteError(`${review.requiredMissing} pièce(s) requise(s) manquent encore au dossier.`, 409);
+      throw new ExpectedRouteError(`${entriesWithoutEvidenceLabel(review.requiredMissing)}.`, 409);
     }
     return review;
   }

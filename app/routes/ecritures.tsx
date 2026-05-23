@@ -3,6 +3,7 @@ import { Form, Link, useLoaderData } from "@remix-run/react";
 import { AppShell, ButtonLink, KpiCard, Main, TableShell } from "~/components/ui";
 import { requireCompanyWorkspace } from "~/modules/company-workspace/company-workspace.server";
 import { EvidenceControlCenter } from "~/modules/evidence/evidence-control-center.server";
+import { entriesWithoutEvidenceLabel, orphanAttachmentsLabel } from "~/modules/evidence/evidence-wording";
 import { JournalAuditCenter } from "~/modules/journal/journal-audit-center.server";
 import { JournalExplorer, type JournalExplorerQuery } from "~/modules/journal/journal-explorer.server";
 
@@ -34,7 +35,7 @@ export default function Ecritures() {
           </div>
           <div className={`notice-item ${evidence.requiredMissing === 0 ? "notice-ok" : "notice-warn"}`}>
             <span className={`notice-dot ${evidence.requiredMissing === 0 ? "ok" : "orange"}`} />
-            <span>{evidence.requiredMissing === 0 ? `Pièces requises présentes — ${evidence.orphanAttachments} non rattachée(s)` : <strong>{evidence.requiredMissing} pièce(s) requise(s) manquante(s)</strong>}</span>
+            <span>{evidence.requiredMissing === 0 ? `Justificatifs couverts — ${orphanAttachmentsLabel(evidence.orphanAttachments)}` : <strong>{entriesWithoutEvidenceLabel(evidence.requiredMissing)}</strong>}</span>
           </div>
           {audit.issues.slice(0, 3).map((issue) => (
             <div key={`${issue.code}-${issue.entryId}`} className="notice-item notice-warn">

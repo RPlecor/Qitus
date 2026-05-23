@@ -5,6 +5,7 @@ import { requireCompanyWorkspace } from "~/modules/company-workspace/company-wor
 import { AttachmentMatchingCenter } from "~/modules/evidence/attachment-matching-center.server";
 import { AttachmentCenter } from "~/modules/evidence/attachment-center.server";
 import { EvidenceReviewWorkflow } from "~/modules/evidence/evidence-review-workflow.server";
+import { evidenceLevelLabel } from "~/modules/evidence/evidence-wording";
 
 export async function loader(args: LoaderFunctionArgs) {
   const workspace = await requireCompanyWorkspace(args);
@@ -104,7 +105,7 @@ export default function PieceDetail() {
                 <tr key={item.id}>
                   <td>{kindLabel(item.kind)}</td>
                   <td>{item.label}<div className="sub"><Link to={item.href}>Voir l'élément</Link></div></td>
-                  <td>{item.level === "required" ? "Requise" : "Recommandée"}</td>
+                  <td>{evidenceLevelLabel(item.level)}</td>
                   <td>
                     <Form method="post" action={`/api/evidence-review/requirements/${encodeURIComponent(item.id)}/link`}>
                       <input type="hidden" name="returnTo" value={`/pieces/${attachment.id}`} />

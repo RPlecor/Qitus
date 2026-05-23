@@ -5,6 +5,7 @@ import { AppShell, KpiCard, Main, StatusPill, TableShell } from "~/components/ui
 import { requireCompanyWorkspace } from "~/modules/company-workspace/company-workspace.server";
 import { AttachmentCenter } from "~/modules/evidence/attachment-center.server";
 import { EvidenceControlCenter } from "~/modules/evidence/evidence-control-center.server";
+import { entriesWithoutEvidenceLabel } from "~/modules/evidence/evidence-wording";
 import { eInvoiceStatusLabel } from "~/modules/ui-labels";
 
 export async function loader(args: LoaderFunctionArgs) {
@@ -38,7 +39,7 @@ export default function Pieces() {
 
         <div className="kpi-grid">
           <KpiCard label="Pièces" value={String(attachments.length)} hint="Liste courante" />
-          <KpiCard label="Requises manquantes" value={String(review.requiredMissing)} hint="Écritures sans pièce" />
+          <KpiCard label="Sans justificatif" value={String(review.requiredMissing)} hint="Écritures à compléter" />
           <KpiCard label="Non rattachées" value={String(review.orphanAttachments)} hint="À relier" />
           <KpiCard label="OCR à revoir" value={String(review.extractionFailures)} hint="Non bloquant" />
         </div>
@@ -69,10 +70,10 @@ export default function Pieces() {
 
         <div className="grid two">
           <section className="panel">
-            <h2>Écritures sans pièce</h2>
+            <h2>Écritures sans justificatif</h2>
             <ul className="evidence-list">
               {entriesWithoutEvidence.slice(0, 5).map((item) => <li key={item.id}><span>{item.label}</span><Link className="btn btn-sm" to={item.href}>Voir</Link></li>)}
-              {entriesWithoutEvidence.length === 0 ? <li>Aucune exigence requise manquante.</li> : null}
+              {entriesWithoutEvidence.length === 0 ? <li>Aucune écriture sans justificatif rattaché.</li> : null}
             </ul>
           </section>
           <section className="panel">

@@ -4,6 +4,7 @@ import { AppShell, Main } from "~/components/ui";
 import { AccountingCoverageCenter } from "~/modules/accounting-coverage/accounting-coverage-center.server";
 import { requireCompanyWorkspace } from "~/modules/company-workspace/company-workspace.server";
 import { EvidenceReviewWorkflow } from "~/modules/evidence/evidence-review-workflow.server";
+import { evidenceLevelLabel } from "~/modules/evidence/evidence-wording";
 
 export async function loader(args: LoaderFunctionArgs) {
   const workspace = await requireCompanyWorkspace(args);
@@ -57,12 +58,12 @@ export default function CouvertureDetail() {
               <Link className="btn btn-sm" to="/pieces/revue">Traiter la revue</Link>
             </div>
             <div className="kpi-grid">
-              <div className="kpi"><div className="kpi-label">À fournir</div><span className="kpi-val">{evidenceQueue.summary.requiredMissing}</span><div className="sub">Requises</div></div>
+              <div className="kpi"><div className="kpi-label">À compléter</div><span className="kpi-val">{evidenceQueue.summary.requiredMissing}</span><div className="sub">Écritures sans justificatif</div></div>
               <div className="kpi"><div className="kpi-label">Recommandées</div><span className="kpi-val">{evidenceQueue.summary.recommendedMissing}</span><div className="sub">Non bloquantes</div></div>
               <div className="kpi"><div className="kpi-label">Satisfaites</div><span className="kpi-val">{evidenceQueue.summary.satisfied}</span><div className="sub">Pièces reliées</div></div>
             </div>
 
-            <EvidenceSection title="À fournir" items={evidenceQueue.required} />
+            <EvidenceSection title="À compléter" items={evidenceQueue.required} />
             <EvidenceSection title="Recommandées" items={evidenceQueue.recommended} />
             <EvidenceSection title="Satisfaites" items={evidenceQueue.satisfied.slice(0, 25)} satisfied />
           </>
@@ -86,7 +87,7 @@ function EvidenceSection({ title, items, satisfied = false }: { title: string; i
             <tr key={item.id}>
               <td>{kindLabel(item.kind)}</td>
               <td>{item.label}</td>
-              <td>{item.level === "required" ? "Requis" : "Recommandé"}</td>
+              <td>{evidenceLevelLabel(item.level, { satisfied })}</td>
               <td>{satisfied ? <span className="st-done">Satisfaite</span> : <Link className="btn btn-sm" to={`/pieces/revue?requirement=${encodeURIComponent(item.id)}`}>Fournir</Link>}</td>
             </tr>
           ))}

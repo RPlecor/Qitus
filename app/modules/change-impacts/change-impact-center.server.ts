@@ -6,6 +6,7 @@ import type { CompanyWorkspace } from "../company-workspace/company-workspace.se
 import { prisma } from "../db.server";
 import { DocumentFreshnessCenter } from "../documents/document-freshness-center.server";
 import { EvidenceControlCenter } from "../evidence/evidence-control-center.server";
+import { entriesWithoutEvidenceLabel } from "../evidence/evidence-wording";
 import { DossierSnapshotReviewCenter } from "../expert-dossier/dossier-snapshot-review-center.server";
 import { ExpertDossierReadinessWorkflow } from "../expert-dossier/expert-dossier-readiness-workflow.server";
 import { FecPrecheckCenter } from "../expert-dossier/fec-precheck-center.server";
@@ -529,16 +530,16 @@ export class EvidenceImpactSource implements ChangeImpactSource {
         code: "evidence.review",
         source: this.sourceKey,
         status: review.requiredMissing > 0 ? "action_required" : "warning",
-        severity: review.requiredMissing > 0 ? "blocking" : "warning",
-        title: review.requiredMissing > 0 ? `${review.requiredMissing} pièce(s) requise(s) manquante(s)` : "Justificatifs à revoir",
+        severity: "warning",
+        title: review.requiredMissing > 0 ? entriesWithoutEvidenceLabel(review.requiredMissing) : "Justificatifs à revoir",
         message: "Le dossier de preuve contient des exigences non satisfaites ou des pièces à traiter.",
         why: [
-          ...(review.requiredMissing > 0 ? [`${review.requiredMissing} pièce(s) requise(s) manquante(s).`] : []),
+          ...(review.requiredMissing > 0 ? [`${entriesWithoutEvidenceLabel(review.requiredMissing)}.`] : []),
           ...(review.orphanAttachments > 0 ? [`${review.orphanAttachments} pièce(s) sans rattachement comptable.`] : []),
           ...(review.extractionFailures > 0 ? [`${review.extractionFailures} extraction(s) OCR échouée(s).`] : []),
         ],
         surfaces: this.surfaces,
-        blockingCapabilities: review.requiredMissing > 0 ? ["close_fiscal_year"] : [],
+        blockingCapabilities: [],
         affectedArtifacts: ["Justificatifs"],
         primaryAction: { label: "Ouvrir la revue des pièces", href: "/pieces/revue" },
         metadata: review,

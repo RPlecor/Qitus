@@ -9,6 +9,7 @@ import { ReconciliationFreshnessCenter } from "../reconciliations/reconciliation
 import { ReconciliationReviewWorkflow } from "../reconciliations/reconciliation-review-workflow.server";
 import { ClosingAdjustmentFreshnessCenter } from "../closing-adjustments/closing-adjustment-freshness-center.server";
 import { ClosingWorkpaperCenter } from "../closing-workpapers/closing-workpaper-center.server";
+import { entriesWithoutEvidenceLabel } from "../evidence/evidence-wording";
 import { EvidenceRequirementCenter, type EvidenceRequirementSummary } from "./evidence-requirement-center.server";
 
 export type CoverageAreaCode =
@@ -239,12 +240,12 @@ function buildCoverageAreas(snapshot: AccountingCoverageSnapshot): CoverageArea[
     area(
       "evidence",
       "Justificatifs",
-      snapshot.journalEntryCount === 0 ? "not_applicable" : snapshot.missingEvidence.requiredMissing > 0 ? "missing" : snapshot.missingEvidence.missing > 0 || snapshot.orphanAttachmentCount > 0 || snapshot.extractionFailureCount > 0 ? "partial" : "covered",
-      snapshot.missingEvidence.requiredMissing > 0 ? "high" : snapshot.missingEvidence.missing > 0 || snapshot.orphanAttachmentCount > 0 || snapshot.extractionFailureCount > 0 ? "medium" : "low",
+      snapshot.journalEntryCount === 0 ? "not_applicable" : snapshot.missingEvidence.missing > 0 || snapshot.orphanAttachmentCount > 0 || snapshot.extractionFailureCount > 0 ? "partial" : "covered",
+      snapshot.missingEvidence.missing > 0 || snapshot.orphanAttachmentCount > 0 || snapshot.extractionFailureCount > 0 ? "medium" : "low",
       `${snapshot.missingEvidence.satisfied}/${snapshot.missingEvidence.total} preuve(s) satisfaite(s)`,
       [`${snapshot.attachmentCount} pièce(s)`, `${snapshot.attachmentLinkCount} rattachement(s)`],
       [
-        ...(snapshot.missingEvidence.missing > 0 ? [`${snapshot.missingEvidence.missing} exigence(s) de preuve manquante(s)`] : []),
+        ...(snapshot.missingEvidence.missing > 0 ? [entriesWithoutEvidenceLabel(snapshot.missingEvidence.missing)] : []),
         ...(snapshot.orphanAttachmentCount > 0 ? [`${snapshot.orphanAttachmentCount} pièce(s) sans écriture`] : []),
         ...(snapshot.extractionFailureCount > 0 ? [`${snapshot.extractionFailureCount} extraction(s) OCR échouée(s)`] : []),
       ],

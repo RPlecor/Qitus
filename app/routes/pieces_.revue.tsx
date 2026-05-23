@@ -4,6 +4,7 @@ import { AppShell, Main } from "~/components/ui";
 import { requireCompanyWorkspace } from "~/modules/company-workspace/company-workspace.server";
 import { EvidenceAuditCenter } from "~/modules/evidence/evidence-audit-center.server";
 import { EvidenceReviewWorkflow } from "~/modules/evidence/evidence-review-workflow.server";
+import { evidenceLevelLabel } from "~/modules/evidence/evidence-wording";
 
 export async function loader(args: LoaderFunctionArgs) {
   const workspace = await requireCompanyWorkspace(args);
@@ -20,7 +21,7 @@ export default function PiecesRevue() {
 
   return (
     <AppShell active="pieces">
-      <Main title="Revue des pièces" subtitle="Fournir les justificatifs manquants un par un">
+      <Main title="Revue des pièces" subtitle="Compléter les justificatifs un par un">
         <div className="row-actions">
           <Link className="btn btn-ghost" to="/pieces">← Pièces</Link>
           <Link className="btn" to="/couverture/evidence">Couverture justificatifs</Link>
@@ -29,7 +30,7 @@ export default function PiecesRevue() {
         {query.error ? <div className="alert red"><strong>{query.error}</strong></div> : null}
 
         <div className="kpi-grid">
-          <div className="kpi"><div className="kpi-label">À fournir</div><span className="kpi-val">{queue.summary.requiredMissing}</span><div className="sub">Pièces requises</div></div>
+          <div className="kpi"><div className="kpi-label">À compléter</div><span className="kpi-val">{queue.summary.requiredMissing}</span><div className="sub">Écritures sans justificatif</div></div>
           <div className="kpi"><div className="kpi-label">Recommandées</div><span className="kpi-val">{queue.summary.recommendedMissing}</span><div className="sub">Non bloquantes</div></div>
           <div className="kpi"><div className="kpi-label">Satisfaites</div><span className="kpi-val">{queue.summary.satisfied}</span><div className="sub">Déjà rattachées</div></div>
           <div className="kpi"><div className="kpi-label">Audit stockage</div><span className={`kpi-val ${audit.status === "ready" ? "st-done" : "st-warn"}`}>{audit.status === "ready" ? "OK" : "À revoir"}</span><div className="sub">{audit.summary.missingStoredFiles} fichier manquant</div></div>
@@ -37,8 +38,8 @@ export default function PiecesRevue() {
 
         <section className="panel">
           <div className="row between">
-            <h2>À fournir</h2>
-            <span className="sub">{queue.required.length} exigence(s) requise(s)</span>
+            <h2>À compléter</h2>
+            <span className="sub">{queue.required.length} écriture(s) sans justificatif</span>
           </div>
           <EvidenceRequirementTable items={queue.required} upload />
         </section>
@@ -72,7 +73,7 @@ function EvidenceRequirementTable({ items, upload = false }: { items: Array<{ id
           <tr key={item.id}>
             <td>{kindLabel(item.kind)}</td>
             <td>{item.label}<div className="sub"><Link to={item.href}>Voir l'élément comptable</Link></div></td>
-            <td>{item.level === "required" ? "Requise" : "Recommandée"}</td>
+            <td>{evidenceLevelLabel(item.level, { satisfied: !upload })}</td>
             <td>
               {upload ? (
                 <Form method="post" action={`/api/evidence-review/requirements/${encodeURIComponent(item.id)}/upload`} encType="multipart/form-data" className="inline-form">

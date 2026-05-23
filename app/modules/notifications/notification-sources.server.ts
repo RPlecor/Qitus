@@ -9,6 +9,7 @@ import { ClosingWorkpaperCenter } from "../closing-workpapers/closing-workpaper-
 import type { CompanyWorkspace } from "../company-workspace/company-workspace.server";
 import { DocumentFreshnessCenter } from "../documents/document-freshness-center.server";
 import { EvidenceControlCenter } from "../evidence/evidence-control-center.server";
+import { entriesWithoutEvidenceLabel } from "../evidence/evidence-wording";
 import { prisma } from "../db.server";
 import { ImportHistory } from "../import-orchestrator/import-history.server";
 import { RegulatoryFreshnessCenter } from "../regulatory/regulatory-freshness-center.server";
@@ -357,8 +358,8 @@ class EvidenceNotificationSource implements NotificationSource {
       evidence.requiredMissing > 0 ? {
         type: "CLOSING_BLOCKER" as const,
         severity: "WARNING" as const,
-        title: `${evidence.requiredMissing} justificatif${evidence.requiredMissing > 1 ? "s" : ""} requis manquant${evidence.requiredMissing > 1 ? "s" : ""}`,
-        body: "Le dossier expert-comptable signale des écritures sans pièce rattachée.",
+        title: entriesWithoutEvidenceLabel(evidence.requiredMissing),
+        body: "Le dossier expert-comptable signale des écritures sans justificatif rattaché.",
         href: "/couverture/evidence",
         primaryActionLabel: "Compléter les justificatifs",
         dedupeKey: "coverage:evidence-missing",
