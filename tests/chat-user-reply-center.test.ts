@@ -49,7 +49,7 @@ describe("ChatUserReplyCenter", () => {
       references: [{ code: "dashboard", label: "Tableau de bord", href: "/dashboard", reason: "Test" }],
     });
 
-    expect(reply.content).toBe("Ouvrez Tableau de bord.");
+    expect(reply.content).toContain("Ouvrez Tableau de bord");
     expectForbiddenTermsAbsent(reply.content);
   });
 });

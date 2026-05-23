@@ -1,5 +1,7 @@
 import type { AccountingChatMessage, AccountingChatReply } from "./accounting-chat-provider.server";
 import type { ChatReference } from "./chat-answer-grounding.server";
+import type { ChatAnswerDomain, ChatProviderDraft } from "./chat-provider-draft.server";
+import { sourceCitationMetadata } from "./chat-provider-draft.server";
 import type { ChatScopeDecision } from "./chat-safety-policy.server";
 import type { QitusKnowledgeSource } from "./qitus-knowledge-center.server";
 
@@ -21,6 +23,8 @@ export type ChatUserReplyInput = {
   history: AccountingChatMessage[];
   knowledgeSources: QitusKnowledgeSource[];
   references: ChatReference[];
+  providerDraft?: ChatProviderDraft;
+  answerDomain?: ChatAnswerDomain;
 };
 
 export class ChatUserReplyCenter {
@@ -35,12 +39,40 @@ export class ChatUserReplyCenter {
       metadata: {
         ...input.reply.metadata,
         intent: input.decision.intent,
+        answerDomain: input.answerDomain ?? answerDomainForDecision(input.decision),
+        sources: sourceCitationMetadata(input.knowledgeSources),
+        providerDraftUsed: Boolean(input.providerDraft),
+        providerDraft: input.providerDraft ? {
+          provider: input.providerDraft.provider,
+          model: input.providerDraft.model,
+          confidence: input.providerDraft.confidence,
+          usedSourceIds: input.providerDraft.usedSourceIds,
+          suggestedRouteHrefs: input.providerDraft.suggestedRouteHrefs,
+          refusalReason: input.providerDraft.refusalReason,
+        } : undefined,
       },
     };
   }
 
-  assertUserFacingReply(reply: AccountingChatReply) {
-    const forbidden = CHAT_USER_FORBIDDEN_TERMS.filter((term) => reply.content.includes(term));
+  composeSafeFallback(input: ChatUserReplyInput, metadata: Record<string, unknown> = {}): AccountingChatReply {
+    return {
+      ...input.reply,
+      provider: "policy",
+      model: "qitus-language-fallback",
+      content: composeNaturalReply(input.history.filter((message) => message.role === "user").at(-1)?.content ?? "", input),
+      metadata: {
+        ...input.reply.metadata,
+        ...metadata,
+        intent: input.decision.intent,
+        answerDomain: input.answerDomain ?? answerDomainForDecision(input.decision),
+        sources: sourceCitationMetadata(input.knowledgeSources),
+        providerDraftUsed: Boolean(input.providerDraft),
+      },
+    };
+  }
+
+  assertUserFacingReply(reply: AccountingChatReply, forbiddenTerms = CHAT_USER_FORBIDDEN_TERMS) {
+    const forbidden = forbiddenTerms.filter((term) => reply.content.includes(term));
     if (forbidden.length > 0) {
       throw new Error(`Chat reply contains forbidden user-facing term(s): ${forbidden.join(", ")}`);
     }
@@ -49,9 +81,14 @@ export class ChatUserReplyCenter {
   private shouldCompose(input: ChatUserReplyInput, question: string) {
     if (input.reply.provider === "fake" || input.reply.provider === "policy") return true;
     if (input.decision.refusalKind) return true;
+    if (hasTechnicalDebugText(input.reply.content)) return true;
     if (hasInternalLink(input.reply.content)) return false;
     return mentionsImportCsv(question) || mentionsCategorization(question) || mentionsEvidence(question) || mentionsVatZero(question) || mentionsConnectors(question);
   }
+}
+
+function answerDomainForDecision(decision: ChatScopeDecision): ChatAnswerDomain {
+  return decision.refusalKind === "accounting_rules" || decision.intent === "accounting_rules_v2" ? "accounting_rules" : "qitus_usage";
 }
 
 function composeNaturalReply(question: string, input: ChatUserReplyInput) {
@@ -142,4 +179,8 @@ function mentionsConnectors(question: string) {
 
 function hasInternalLink(content: string) {
   return /\[[^\]]+]\(\/[^)\s]+\)/.test(content) || /\s\(\/[^)\s]+\)/.test(content);
+}
+
+function hasTechnicalDebugText(content: string) {
+  return /(Réponse démo Qitus|Contexte utilisé|Références disponibles|Écrans utiles|sourceId|metadata|JSON)/i.test(content);
 }

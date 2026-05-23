@@ -1,4 +1,6 @@
 import type { AccountingChatContext, AccountingChatMessage, AccountingChatProvider, AccountingChatReply } from "./accounting-chat-provider.server";
+import { ChatHumanLanguagePolicy } from "./chat-human-language-policy.server";
+import { normalizeProviderDraft, type ChatAnswerDomain, type ChatProviderDraft } from "./chat-provider-draft.server";
 import { ChatReplyGuidanceCenter } from "./chat-reply-guidance-center.server";
 import { ChatSafetyPolicy, type ChatScopeDecision } from "./chat-safety-policy.server";
 import { ChatUserReplyCenter } from "./chat-user-reply-center.server";
@@ -17,7 +19,8 @@ export class ChatResolutionCenter {
     private readonly safety = new ChatSafetyPolicy(),
     private readonly knowledge = new QitusKnowledgeCenter(),
     private readonly guidance = new ChatReplyGuidanceCenter(),
-    private readonly userReplies = new ChatUserReplyCenter()
+    private readonly userReplies = new ChatUserReplyCenter(),
+    private readonly language = new ChatHumanLanguagePolicy()
   ) {}
 
   buildPlan(message: string, context: AccountingChatContext): ChatResolutionPlan {
@@ -52,26 +55,21 @@ export class ChatResolutionCenter {
 
   async resolve(plan: ChatResolutionPlan, history: AccountingChatMessage[], context: AccountingChatContext): Promise<AccountingChatReply> {
     if (plan.fallbackReply) {
-      const userReply = this.userReplies.normalizeReply({
+      return this.finalizeReply({
         reply: plan.fallbackReply,
+        providerDraft: normalizeProviderDraft(plan.fallbackReply),
         decision: plan.decision,
         history,
         knowledgeSources: plan.knowledgeSources,
         references: context.references,
       });
-      const guidedReply = this.guidance.normalizeReply({
-        reply: userReply,
-        knowledgeSources: plan.knowledgeSources,
-        references: context.references,
-      });
-      this.userReplies.assertUserFacingReply(guidedReply);
-      return guidedReply;
     }
     const providerContext: AccountingChatContext = {
       ...context,
       knowledgeSources: plan.knowledgeSources,
     };
     const reply = await this.provider.reply(history, providerContext);
+    const providerDraft = normalizeProviderDraft(reply);
     const safeReply = this.safety.sanitizeAssistantReply({
       ...reply,
       metadata: {
@@ -80,17 +78,37 @@ export class ChatResolutionCenter {
         knowledgeSources: plan.knowledgeSources,
       },
     }, context.references);
-    const userReply = this.userReplies.normalizeReply({
+    return this.finalizeReply({
       reply: safeReply,
+      providerDraft,
       decision: plan.decision,
       history,
       knowledgeSources: plan.knowledgeSources,
       references: context.references,
     });
+  }
+
+  private finalizeReply(input: {
+    reply: AccountingChatReply;
+    providerDraft: ChatProviderDraft;
+    decision: ChatScopeDecision;
+    history: AccountingChatMessage[];
+    knowledgeSources: QitusKnowledgeSource[];
+    references: AccountingChatContext["references"];
+    answerDomain?: ChatAnswerDomain;
+  }) {
+    const userReply = this.userReplies.normalizeReply(input);
+    const languageResult = this.language.validateReply(userReply);
+    const languageSafeReply = languageResult.ok
+      ? userReply
+      : this.userReplies.composeSafeFallback(input, {
+        languagePolicyFallback: true,
+        languagePolicyForbiddenTerms: languageResult.forbiddenTerms,
+      });
     const guidedReply = this.guidance.normalizeReply({
-      reply: userReply,
-      knowledgeSources: plan.knowledgeSources,
-      references: context.references,
+      reply: languageSafeReply,
+      knowledgeSources: input.knowledgeSources,
+      references: input.references,
     });
     this.userReplies.assertUserFacingReply(guidedReply);
     return guidedReply;

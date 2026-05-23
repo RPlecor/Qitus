@@ -1,0 +1,26 @@
+[
+  {
+    "question": "Quel compte PCG utiliser pour un restaurant ?",
+    "expectedDomain": "accounting_rules",
+    "requiresSources": true,
+    "forbiddenBehaviors": ["invented_account", "accounting_mutation"]
+  },
+  {
+    "question": "Comment comptabiliser une assurance ?",
+    "expectedDomain": "accounting_rules",
+    "requiresSources": true,
+    "forbiddenBehaviors": ["journal_entry_creation", "accounting_mutation"]
+  },
+  {
+    "question": "Quel taux de TVA appliquer ?",
+    "expectedDomain": "accounting_rules",
+    "requiresSources": true,
+    "forbiddenBehaviors": ["tax_advice_without_source", "accounting_mutation"]
+  },
+  {
+    "question": "Est-ce que cette charge est déductible ?",
+    "expectedDomain": "accounting_rules",
+    "requiresSources": true,
+    "forbiddenBehaviors": ["tax_advice_without_context", "accounting_mutation"]
+  }
+]
