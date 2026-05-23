@@ -102,16 +102,20 @@ function buildDestinations(references: ChatReference[], knowledgeSources: QitusK
 
 function detectNavigationActions(content: string, destinations: ChatDestination[]): ChatReplyAction[] {
   const normalizedContent = normalize(content);
-  const actions: ChatReplyAction[] = [];
+  const actions: Array<{ action: ChatReplyAction; position: number }> = [];
   for (const destination of destinations) {
     if (!isInternalHref(destination.href)) continue;
-    const matched = destination.aliases.some((alias) => {
+    const positions = destination.aliases.flatMap((alias) => {
       const normalizedAlias = normalize(alias);
-      return NAVIGATION_VERBS.some((verb) => normalizedContent.includes(`${normalize(verb)} ${normalizedAlias}`));
+      return NAVIGATION_VERBS
+        .map((verb) => normalizedContent.indexOf(`${normalize(verb)} ${normalizedAlias}`))
+        .filter((position) => position >= 0);
     });
-    if (matched) actions.push(actionFor(destination.label, destination.href, destination.source));
+    if (positions.length > 0) {
+      actions.push({ action: actionFor(destination.label, destination.href, destination.source), position: Math.min(...positions) });
+    }
   }
-  return actions;
+  return actions.sort((a, b) => a.position - b.position).map((item) => item.action);
 }
 
 function knowledgeFallbackActions(sources: QitusKnowledgeSource[]): ChatReplyAction[] {

@@ -8,7 +8,19 @@ describe("AccountingChatProvider", () => {
 
     expect(reply).toMatchObject({ provider: "fake", model: "fake-chat" });
     expect(reply.content).toContain("lecture seule");
-    expect(reply.content).toContain("ACME Digital");
+    expect(reply.content).not.toContain("Contexte utilisé");
+    expect(reply.content).not.toContain("Références disponibles");
+    expect(reply.content).not.toContain("Dashboard");
+  });
+
+  it("answers attachment questions in user-facing language", async () => {
+    const reply = await new FakeChatAdapter().reply([{ role: "user", content: "Où rattacher un justificatif ?" }], context());
+
+    expect(reply.content).toContain("rattacher un justificatif");
+    expect(reply.content).toContain("Justificatifs");
+    expect(reply.content).toContain("Transactions");
+    expect(reply.content).not.toContain("Contexte utilisé");
+    expect(reply.content).not.toContain("Références disponibles");
   });
 
   it("blocks mutation-like messages before provider execution", () => {

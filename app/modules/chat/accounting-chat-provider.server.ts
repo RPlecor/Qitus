@@ -39,18 +39,37 @@ export class FakeChatAdapter implements AccountingChatProvider {
   async reply(messages: AccountingChatMessage[], context: AccountingChatContext): Promise<AccountingChatReply> {
     const question = messages.filter((message) => message.role === "user").at(-1)?.content ?? "";
     return {
-      content: [
-        "Réponse démo Qitus.",
-        `Votre question : ${question}`,
-        `Contexte utilisé : ${context.company}, exercice ${context.fiscalYear}.`,
-        `Références disponibles : ${context.references.map((reference) => `${reference.label} ${reference.href}`).join(", ")}.`,
-        "Le chat est en lecture seule : il peut expliquer les blocages et indiquer les écrans à ouvrir, mais ne modifie aucune donnée comptable.",
-      ].join("\n"),
+      content: buildFakeUserReply(question, context),
       provider: "fake",
       model: "fake-chat",
       metadata: { fake: true, references: context.references },
     };
   }
+}
+
+function buildFakeUserReply(question: string, context: AccountingChatContext) {
+  if (/\b(justificatif|justificatifs|pi[eè]ce|pi[eè]ces|rattacher|attacher)\b/i.test(question)) {
+    return [
+      "Pour rattacher un justificatif, ouvrez Justificatifs ou ouvrez Transactions pour partir de la transaction concernée.",
+      "Depuis une transaction, utilisez l’action Rattacher un justificatif. Depuis Justificatifs, ajoutez la pièce puis rattachez-la à une transaction ou à une écriture.",
+      "Le chat reste en lecture seule : il vous guide, mais ne modifie pas votre dossier.",
+    ].join("\n");
+  }
+
+  const primarySource = context.knowledgeSources?.find((source) => source.href) ?? null;
+  if (primarySource) {
+    return [
+      `Pour cette question, ouvrez ${primarySource.title}.`,
+      "Vous y trouverez les informations et les actions utiles pour avancer dans Qitus.",
+      "Le chat reste en lecture seule : il vous guide, mais ne modifie pas votre dossier.",
+    ].join("\n");
+  }
+
+  return [
+    "Je peux vous aider à comprendre où agir dans Qitus et quoi vérifier ensuite.",
+    "Ouvrez Tableau de bord pour voir les prochaines actions recommandées.",
+    "Le chat reste en lecture seule : il vous guide, mais ne modifie pas votre dossier.",
+  ].join("\n");
 }
 
 export class CodexCliChatAdapter implements AccountingChatProvider {

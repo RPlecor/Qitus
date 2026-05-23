@@ -17,7 +17,7 @@ export class ChatAnswerGrounding {
     return {
       contextVersion: "qitus-chat-context-v1",
       references: [
-        { code: "dashboard", label: "Dashboard", href: "/dashboard", reason: "Vue d'ensemble, KPIs et alertes." },
+        { code: "dashboard", label: "Tableau de bord", href: "/dashboard", reason: "Vue d'ensemble, indicateurs et alertes." },
         { code: "imports", label: "Imports", href: "/imports", reason: "Imports CSV, correspondance de colonnes et relance de catégorisation." },
         { code: "transactions", label: "Transactions", href: "/transactions", reason: "Transactions importées, filtres et corrections." },
         { code: "tva", label: "TVA", href: "/tva", reason: "Position TVA, déclarations et alertes de readiness." },

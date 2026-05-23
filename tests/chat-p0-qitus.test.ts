@@ -87,7 +87,27 @@ describe("Chat P0 Qitus", () => {
 
     expect(reply).toMatchObject({ provider: "fake", model: "fake-chat" });
     expect(reply.content).toContain("lecture seule");
-    expect(reply.content).toContain("ACME Digital");
+    expect(reply.content).not.toContain("Contexte utilisé");
+    expect(reply.content).not.toContain("Références disponibles");
+    expect(reply.content).not.toContain("Dashboard");
+  });
+
+  it("keeps demo answers natural and actionable after resolution", async () => {
+    const center = new ChatResolutionCenter(new FakeChatAdapter());
+    const ctx = context();
+    const plan = center.buildPlan("Où rattacher un justificatif ?", ctx);
+    const reply = await center.resolve(plan, [{ role: "user", content: "Où rattacher un justificatif ?" }], ctx);
+
+    expect(reply.content).toContain("Pour rattacher un justificatif");
+    expect(reply.content).toContain("Justificatifs");
+    expect(reply.content).toContain("Transactions");
+    expect(reply.content).not.toContain("Contexte utilisé");
+    expect(reply.content).not.toContain("Références disponibles");
+    expect(reply.content).not.toContain("Dashboard");
+    expect(reply.metadata?.actions).toEqual(expect.arrayContaining([
+      { label: "Ouvrir Transactions", href: "/transactions", kind: "secondary", source: "reference" },
+      { label: "Ouvrir Justificatifs", href: "/pieces", kind: "primary", source: "reference" },
+    ]));
   });
 });
 
