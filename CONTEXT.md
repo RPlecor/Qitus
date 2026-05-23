@@ -187,8 +187,10 @@
 - **AutomationOpportunity**: one domain-owned action Qitus can run safely, suggest, or prepare as a user-approved draft, always with an expected effect and audit event.
 - **AutomationOpportunityCenter**: the aggregation Module that lists and runs only category 1 deterministic automations; it does not contain accounting rules itself.
 - **AutomationOpportunitySource**: the domain contract used by imports, transactions, VAT, reconciliations, documents, closing, e-invoices, expert dossier and notifications to expose their own automations.
+- **AutomationEligibilityPolicy**: the Module that normalizes AutomationOpportunities into safe, needs-validation, or blocked states using the configured confidence threshold and non-ambiguity checks before any automatic execution.
 - **AutomationMode**: the runtime mode `off`, `assistive` or `safe_auto`; production defaults to assistive while local/staging can run category 1 automatically.
-- **AISuggestionAdapter**: an optional suggestion-only Seam for extraction, grouping and explanation; it never creates entries, OD, rules or reconciliations directly.
+- **AISuggestionAdapter**: an optional suggestion-only Seam for extraction, grouping and explanation; it returns only AISuggestions and never creates entries, OD, rules, statuses or reconciliations directly.
+- **AISuggestion**: an AI-produced explanation, confidence, source list and recommended action that always requires user validation before any business mutation.
 - **BankConsent**: the provider-backed user consent state, including expiration, revocation and reconnect needs without storing raw bank credentials.
 - **BankFeedNormalizer**: the Module that converts provider account and transaction payloads into canonical bank movements ingested through `ImportOrchestrator`.
 - **BankFeedSync**: one Open Banking synchronization attempt, with fetched/imported counts, user-readable errors and activity audit.

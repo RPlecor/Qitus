@@ -21,6 +21,7 @@ describe("RuntimeConfig", () => {
       openBankingProvider: "disabled",
       changeImpactsMode: "shadow",
       automationMode: "safe_auto",
+      automationConfidenceThreshold: 1,
     });
   });
 
@@ -30,6 +31,13 @@ describe("RuntimeConfig", () => {
     expect(getRuntimeConfig({ APP_ENV: "production", DATABASE_URL: "postgresql://localhost:5432/paperasse" }).automationMode).toBe("assistive");
     expect(getRuntimeConfig({ DATABASE_URL: "postgresql://localhost:5432/paperasse", AUTOMATION_MODE: "off" }).automationMode).toBe("off");
     expect(() => getRuntimeConfig({ DATABASE_URL: "postgresql://localhost:5432/paperasse", AUTOMATION_MODE: "magic" })).toThrow("AUTOMATION_MODE");
+  });
+
+  it("supports a strict automation confidence threshold", () => {
+    expect(getRuntimeConfig({ DATABASE_URL: "postgresql://localhost:5432/paperasse" }).automationConfidenceThreshold).toBe(1);
+    expect(getRuntimeConfig({ DATABASE_URL: "postgresql://localhost:5432/paperasse", AUTOMATION_CONFIDENCE_THRESHOLD: "0.95" }).automationConfidenceThreshold).toBe(0.95);
+    expect(() => getRuntimeConfig({ DATABASE_URL: "postgresql://localhost:5432/paperasse", AUTOMATION_CONFIDENCE_THRESHOLD: "1.1" })).toThrow("AUTOMATION_CONFIDENCE_THRESHOLD");
+    expect(() => getRuntimeConfig({ DATABASE_URL: "postgresql://localhost:5432/paperasse", AUTOMATION_CONFIDENCE_THRESHOLD: "nope" })).toThrow("AUTOMATION_CONFIDENCE_THRESHOLD");
   });
 
   it("supports the change impacts migration mode", () => {

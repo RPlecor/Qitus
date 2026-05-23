@@ -91,6 +91,7 @@ Pour exposer à de vrais utilisateurs :
 - `OBJECT_STORAGE_MODE=s3`
 - `OPEN_BANKING_PROVIDER=disabled|gocardless|bridge|powens|tink|yapily`
 - `AUTOMATION_MODE=off|assistive|safe_auto` (`assistive` recommandé en production)
+- `AUTOMATION_CONFIDENCE_THRESHOLD=1.0` garde l'exécution automatique aux matches exacts déterministes
 - `QITUS_INTERNAL_TEST_MODE=false` par défaut ; passer à `true` uniquement pour les validations manuelles internes.
 
 `npm run validate:production-config` refuse une configuration production incomplète.

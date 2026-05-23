@@ -101,31 +101,31 @@ export default function Dashboard() {
           <div className="card impact-card">
             <div className="sec-head">
               <div>
-                <h2>Automatisations disponibles</h2>
+                <h2>État du dossier</h2>
                 <span className="sub">
-                  {overview.automation.safeRunnable} sûre(s) · {overview.automation.suggestions} suggestion(s) · {overview.automation.validationRequired} à valider
+                  {overview.automation.safeRunnable} traitement(s) sûr(s) · {overview.automation.suggestions} validation(s) conseillée(s) · {overview.automation.validationRequired} brouillon(s) ou action(s) à relire
                 </span>
               </div>
               {overview.automation.safeRunnable > 0 ? (
                 <automationFetcher.Form method="post" action="/api/automation/run-safe">
                   <button className="btn btn-sm" type="submit" disabled={automationFetcher.state !== "idle"}>
-                    {automationFetcher.state === "idle" ? "Exécuter le sûr" : "Exécution..."}
+                    {automationFetcher.state === "idle" ? "Mettre à jour le sûr" : "Mise à jour..."}
                   </button>
                 </automationFetcher.Form>
               ) : null}
             </div>
             {automationFetcher.data ? (
               <div className={automationFetcher.data.failed > 0 ? "alert orange" : "alert green"}>
-                {automationFetcher.data.completed} automatisation(s) terminée(s), {automationFetcher.data.skipped} ignorée(s), {automationFetcher.data.failed} échouée(s).
+                {automationFetcher.data.completed} traitement(s) terminé(s), {automationFetcher.data.skipped} ignoré(s), {automationFetcher.data.failed} échoué(s).
               </div>
             ) : null}
             {overview.automation.opportunities.slice(0, 4).map((item) => (
-              <div key={item.opportunityKey} className={`impact-row ${item.category === 1 ? "warning" : item.category === 2 ? "info" : "blocking"}`}>
+              <div key={item.opportunityKey} className={`impact-row ${item.eligibilityStatus === "blocked" ? "blocking" : item.category === 1 ? "warning" : "info"}`}>
                 <div className="impact-content">
                   <strong>{item.title}</strong>
-                  <span>{item.detail}</span>
+                  <span>{item.eligibilityStatus === "safe" ? item.detail : `${item.detail} ${item.eligibilityReasons[0] ?? ""}`}</span>
                 </div>
-                <Link className="btn btn-sm" to={item.href}>{item.requiresUserValidation ? "Ouvrir" : "Voir"}</Link>
+                <Link className="btn btn-sm" to={item.href}>{item.eligibilityStatus === "safe" ? "Voir" : "Valider"}</Link>
               </div>
             ))}
           </div>

@@ -73,6 +73,49 @@ describe("AutomationOpportunityCenter", () => {
     expect(result).toMatchObject({ attempted: 1, completed: 1, failed: 0 });
   });
 
+  it("keeps only deterministic confidence 1 opportunities executable by default", async () => {
+    const center = new AutomationOpportunityCenter({
+      mode: "assistive",
+      sources: [stubSource("imports", [stubOpportunity("probable", 1, false, 0.95)])],
+    });
+
+    const opportunities = await center.getOpportunities(workspace);
+
+    expect(opportunities[0]).toMatchObject({
+      category: 2,
+      eligibilityStatus: "needs_validation",
+      confidenceThreshold: 1,
+    });
+    expect(opportunities[0].eligibilityReasons[0]).toContain("inférieure au seuil");
+  });
+
+  it("blocks safe execution when a category 1 opportunity is reclassified", async () => {
+    const run = vi.fn().mockResolvedValue({ message: "nope" });
+    const center = new AutomationOpportunityCenter({
+      mode: "safe_auto",
+      sources: [stubSource("imports", [stubOpportunity("probable", 1, false, 0.95)], run)],
+      activity: { recordActivity: vi.fn() } as never,
+      assertMutable: vi.fn(),
+    });
+
+    const result = await center.runSafeAutomations(workspace);
+
+    expect(run).not.toHaveBeenCalled();
+    expect(result).toMatchObject({ attempted: 0, completed: 0 });
+  });
+
+  it("reclassifies accounting mutations when non-ambiguity checks are missing", async () => {
+    const center = new AutomationOpportunityCenter({
+      mode: "assistive",
+      sources: [stubSource("imports", [stubOpportunity("entry", 1, false, 1, "accounting_mutation")])],
+    });
+
+    const opportunities = await center.getOpportunities(workspace);
+
+    expect(opportunities[0]).toMatchObject({ category: 2, eligibilityStatus: "needs_validation" });
+    expect(opportunities[0].eligibilityReasons[0]).toContain("non-ambiguïté comptable absents");
+  });
+
   it("summarizes categories and required validations", async () => {
     const center = new AutomationOpportunityCenter({
       mode: "assistive",
@@ -109,7 +152,7 @@ function stubSource(sourceKey: string, opportunities: AutomationOpportunity[], r
   };
 }
 
-function stubOpportunity(opportunityKey: string, category: 1 | 2 | 3, requiresUserValidation = false): AutomationOpportunity {
+function stubOpportunity(opportunityKey: string, category: 1 | 2 | 3, requiresUserValidation = false, confidence = 1, effectKind: AutomationOpportunity["effectKind"] = "diagnostic"): AutomationOpportunity {
   return {
     opportunityKey,
     sourceKey: "test",
@@ -117,7 +160,11 @@ function stubOpportunity(opportunityKey: string, category: 1 | 2 | 3, requiresUs
     category,
     title: opportunityKey,
     detail: "Détail",
-    confidence: 1,
+    confidence,
+    confidenceThreshold: 1,
+    eligibilityStatus: category === 1 ? "safe" : "needs_validation",
+    eligibilityReasons: [],
+    effectKind,
     source: "test",
     expectedEffect: "Effet attendu",
     reversible: true,

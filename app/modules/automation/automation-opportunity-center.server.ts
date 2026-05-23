@@ -16,8 +16,11 @@ import { ThirdPartyMatchingCenter } from "../reconciliations/third-party-matchin
 import { ExpectedRouteError } from "../route-errors.server";
 import { getRuntimeConfig, type AutomationMode } from "../runtime-config.server";
 import { VatDeclarationCenter } from "../vat/vat-declaration-center.server";
+import { AutomationEligibilityPolicy } from "./automation-eligibility-policy.server";
 
 export type AutomationCategory = 1 | 2 | 3;
+export type AutomationEligibilityStatus = "safe" | "needs_validation" | "blocked";
+export type AutomationEffectKind = "diagnostic" | "derived_artifact" | "accounting_mutation" | "review_draft";
 
 export type AutomationDomain =
   | "imports"
@@ -39,12 +42,29 @@ export type AutomationOpportunity = {
   title: string;
   detail: string;
   confidence: number;
+  confidenceThreshold: number;
+  eligibilityStatus: AutomationEligibilityStatus;
+  eligibilityReasons: string[];
+  effectKind: AutomationEffectKind;
+  safetyChecks?: AutomationSafetyChecks;
   source: string;
   expectedEffect: string;
   reversible: boolean;
   requiresUserValidation: boolean;
   href: string;
   auditEventName: string;
+};
+
+export type AutomationSafetyChecks = {
+  candidateCount?: number;
+  hasCompetingAlternatives?: boolean;
+  deterministicSource?: boolean;
+  activeRule?: boolean;
+  accountResolved?: boolean;
+  vatResolvedOrNotApplicable?: boolean;
+  balancedEntry?: boolean;
+  protectedUserDecision?: boolean;
+  conflictReasons?: string[];
 };
 
 export type AutomationOpportunityFilters = {
@@ -91,6 +111,7 @@ export interface AutomationOpportunitySource {
 export type AutomationOpportunityCenterOptions = {
   sources?: AutomationOpportunitySource[];
   mode?: AutomationMode;
+  eligibilityPolicy?: AutomationEligibilityPolicy;
   activity?: ActivityLogCenter;
   assertMutable?: (workspace: CompanyWorkspace) => Promise<void>;
 };
@@ -98,12 +119,14 @@ export type AutomationOpportunityCenterOptions = {
 export class AutomationOpportunityCenter {
   private readonly sources: AutomationOpportunitySource[];
   private readonly mode: AutomationMode;
+  private readonly eligibilityPolicy: AutomationEligibilityPolicy;
   private readonly activity: ActivityLogCenter;
   private readonly assertMutable: (workspace: CompanyWorkspace) => Promise<void>;
 
   constructor(options: AutomationOpportunityCenterOptions = {}) {
     this.sources = options.sources ?? defaultAutomationOpportunitySources();
     this.mode = options.mode ?? getRuntimeConfig().automationMode;
+    this.eligibilityPolicy = options.eligibilityPolicy ?? new AutomationEligibilityPolicy();
     this.activity = options.activity ?? new ActivityLogCenter();
     this.assertMutable = options.assertMutable ?? assertFiscalYearMutable;
   }
@@ -120,6 +143,7 @@ export class AutomationOpportunityCenter {
     const unique = new Map<string, AutomationOpportunity>();
     for (const opportunity of batches.flat()) unique.set(opportunity.opportunityKey, opportunity);
     const filtered = Array.from(unique.values())
+      .map((opportunity) => this.eligibilityPolicy.normalize(workspace, opportunity))
       .filter((opportunity) => !filters.domain || opportunity.domain === filters.domain)
       .filter((opportunity) => !filters.category || opportunity.category === filters.category)
       .sort(compareOpportunities);
@@ -135,7 +159,7 @@ export class AutomationOpportunityCenter {
   async runSafeAutomations(workspace: CompanyWorkspace, input: AutomationRunInput = {}): Promise<AutomationRunResult> {
     const opportunities = (await this.getOpportunities(workspace, { domain: input.domain, category: 1 }))
       .filter((opportunity) => !input.opportunityKeys?.length || input.opportunityKeys.includes(opportunity.opportunityKey))
-      .filter((opportunity) => !opportunity.requiresUserValidation);
+      .filter((opportunity) => opportunity.eligibilityStatus === "safe" && !opportunity.requiresUserValidation);
     const initial: AutomationRunResult = { mode: this.mode, attempted: 0, completed: 0, failed: 0, skipped: 0, results: [] };
     if (this.mode === "off" || this.mode === "assistive") {
       return {
@@ -167,6 +191,7 @@ export class AutomationOpportunityCenter {
         continue;
       }
       try {
+        this.eligibilityPolicy.assertRunnable(workspace, opportunity);
         const run = await source.runSafeOpportunity(workspace, opportunity.opportunityKey);
         result.completed += 1;
         result.results.push({ opportunityKey: opportunity.opportunityKey, status: "completed", title: opportunity.title, message: run.message });
@@ -179,6 +204,10 @@ export class AutomationOpportunityCenter {
             source: opportunity.source,
             category: opportunity.category,
             confidence: opportunity.confidence,
+            confidenceThreshold: opportunity.confidenceThreshold,
+            eligibilityStatus: opportunity.eligibilityStatus,
+            eligibilityReasons: opportunity.eligibilityReasons,
+            effectKind: opportunity.effectKind,
             expectedEffect: opportunity.expectedEffect,
             actualEffect: run.message,
           },
@@ -213,9 +242,9 @@ export function summarizeAutomationOpportunities(mode: AutomationMode, opportuni
   return {
     mode,
     total: opportunities.length,
-    safeRunnable: opportunities.filter((opportunity) => opportunity.category === 1 && !opportunity.requiresUserValidation).length,
+    safeRunnable: opportunities.filter((opportunity) => opportunity.category === 1 && opportunity.eligibilityStatus === "safe" && !opportunity.requiresUserValidation).length,
     suggestions: opportunities.filter((opportunity) => opportunity.category === 2).length,
-    validationRequired: opportunities.filter((opportunity) => opportunity.category === 3 || opportunity.requiresUserValidation).length,
+    validationRequired: opportunities.filter((opportunity) => opportunity.category === 3 || opportunity.requiresUserValidation || opportunity.eligibilityStatus === "needs_validation").length,
     byDomain: opportunities.reduce<Record<string, number>>((acc, opportunity) => {
       acc[opportunity.domain] = (acc[opportunity.domain] ?? 0) + 1;
       return acc;
@@ -257,6 +286,7 @@ class ImportAutomationSource implements AutomationOpportunitySource {
           title: "Colonnes d'import à associer",
           detail: `${item.originalFilename ?? "Import"} attend une association de colonnes avant traitement.`,
           confidence: 0.9,
+          effectKind: "diagnostic",
           expectedEffect: "Préparer le parsing CSV sans modifier la comptabilité.",
           reversible: true,
           requiresUserValidation: true,
@@ -273,6 +303,7 @@ class ImportAutomationSource implements AutomationOpportunitySource {
           title: "Relancer la catégorisation",
           detail: `${item.originalFilename ?? "Import"} contient ${item.parsedRows} ligne(s) déjà parsée(s).`,
           confidence: 1,
+          effectKind: "accounting_mutation",
           expectedEffect: "Rejouer la catégorisation et créer seulement les écritures manquantes.",
           reversible: true,
           requiresUserValidation: false,
@@ -288,6 +319,7 @@ class ImportAutomationSource implements AutomationOpportunitySource {
         title: "Relancer l'import technique",
         detail: `${item.originalFilename ?? "Import"} est en erreur avant parsing.`,
         confidence: 1,
+        effectKind: "derived_artifact",
         expectedEffect: "Rejouer le parsing du fichier sans supprimer l'import.",
         reversible: true,
         requiresUserValidation: false,
@@ -330,6 +362,7 @@ class TransactionAutomationSource implements AutomationOpportunitySource {
       title: "Suggestions de catégorisation à examiner",
       detail: `${reviewCount} transaction(s) peuvent recevoir une suggestion explicable, mais demandent une validation utilisateur.`,
       confidence: 0.65,
+      effectKind: "review_draft",
       expectedEffect: "Réduire les transactions à vérifier sans écriture automatique ambiguë.",
       reversible: true,
       requiresUserValidation: true,
@@ -368,6 +401,7 @@ class AttachmentAutomationSource implements AutomationOpportunitySource {
       title: "Pièces à rapprocher",
       detail: `${unmatched} pièce(s) peuvent être proposées en rapprochement avec une transaction ou une écriture.`,
       confidence: 0.7,
+      effectKind: "review_draft",
       expectedEffect: "Afficher les meilleurs liens probables sans rattachement automatique.",
       reversible: true,
       requiresUserValidation: true,
@@ -402,6 +436,7 @@ class VatAutomationSource implements AutomationOpportunitySource {
       title: "Générer le brouillon TVA",
       detail: actionable.detail,
       confidence: 1,
+      effectKind: "derived_artifact",
       expectedEffect: "Créer un brouillon CA3/CA12 sans télédéclaration ni paiement.",
       reversible: true,
       requiresUserValidation: false,
@@ -442,6 +477,7 @@ class ReconciliationAutomationSource implements AutomationOpportunitySource {
         title: `Relancer le rapprochement ${reconciliationKindLabel(run.kind)}`,
         detail: run.staleReasons[0] ?? "Le rapprochement doit être calculé.",
         confidence: 1,
+        effectKind: "derived_artifact",
         expectedEffect: "Calculer les matches exacts et laisser les écarts en revue.",
         reversible: true,
         requiresUserValidation: false,
@@ -488,6 +524,7 @@ class DocumentAutomationSource implements AutomationOpportunitySource {
       title: hasCoreDocuments > 0 ? "Régénérer les documents comptables" : "Générer les documents comptables",
       detail: freshness.staleCount > 0 ? `${freshness.staleCount} document(s) à régénérer.` : "Les écritures sont disponibles pour générer FEC, balance et états.",
       confidence: 1,
+      effectKind: "derived_artifact",
       expectedEffect: "Produire FEC, balance, bilan et compte de résultat si le journal est exportable.",
       reversible: true,
       requiresUserValidation: false,
@@ -526,6 +563,7 @@ class ClosingAutomationSource implements AutomationOpportunitySource {
       title: "Propositions OD à générer",
       detail: `${ready} feuille(s) de travail prête(s) peuvent produire des propositions d'OD.`,
       confidence: 1,
+      effectKind: "review_draft",
       expectedEffect: "Créer ou mettre à jour des brouillons OD. Validation utilisateur obligatoire avant écriture.",
       reversible: true,
       requiresUserValidation: true,
@@ -564,6 +602,7 @@ class EInvoiceAutomationSource implements AutomationOpportunitySource {
       title: "Brouillon comptable facture à préparer",
       detail: `${invoice.supplierName ?? "Facture fournisseur"} peut recevoir un brouillon comptable à relire.`,
       confidence: 0.95,
+      effectKind: "review_draft",
       expectedEffect: "Préparer un brouillon équilibré sans créer d'écriture avant approbation.",
       reversible: true,
       requiresUserValidation: true,
@@ -595,6 +634,7 @@ class ExpertDossierAutomationSource implements AutomationOpportunitySource {
       title: "Préparer l'état transmis EC",
       detail: queue.warnings.length > 0 ? `${queue.warnings.length} avertissement(s), aucun blocage.` : "Le dossier peut être figé sans partage automatique.",
       confidence: 1,
+      effectKind: "derived_artifact",
       expectedEffect: "Créer un snapshot local du dossier. Aucun partage cabinet automatique.",
       reversible: true,
       requiresUserValidation: false,
@@ -640,6 +680,7 @@ class NotificationAutomationSource implements AutomationOpportunitySource {
       title: "Nettoyer les notifications obsolètes",
       detail: "Les notifications dont la cause a disparu peuvent être expirées automatiquement.",
       confidence: 1,
+      effectKind: "diagnostic",
       expectedEffect: "Rafraîchir les notifications sans marquer comme lues les alertes encore actives.",
       reversible: true,
       requiresUserValidation: false,
@@ -659,12 +700,17 @@ class NotificationAutomationSource implements AutomationOpportunitySource {
 }
 
 export interface AISuggestionAdapter {
-  suggest(input: { text: string; context?: Record<string, unknown> }): Promise<{
-    title: string;
-    rationale: string;
-    confidence: number;
-  }>;
+  suggest(input: { text: string; context?: Record<string, unknown> }): Promise<AISuggestion>;
 }
+
+export type AISuggestion = {
+  title: string;
+  rationale: string;
+  confidence: number;
+  sources: string[];
+  recommendedAction: string;
+  requiresUserValidation: true;
+};
 
 function opportunity(input: {
   key: string;
@@ -674,6 +720,8 @@ function opportunity(input: {
   title: string;
   detail: string;
   confidence: number;
+  effectKind: AutomationEffectKind;
+  safetyChecks?: AutomationSafetyChecks;
   expectedEffect: string;
   reversible: boolean;
   requiresUserValidation: boolean;
@@ -688,6 +736,11 @@ function opportunity(input: {
     title: input.title,
     detail: input.detail,
     confidence: input.confidence,
+    confidenceThreshold: 1,
+    eligibilityStatus: input.category === 1 ? "safe" : "needs_validation",
+    eligibilityReasons: [],
+    effectKind: input.effectKind,
+    safetyChecks: input.safetyChecks,
     source: input.sourceKey,
     expectedEffect: input.expectedEffect,
     reversible: input.reversible,
@@ -706,6 +759,7 @@ function sourceFailureOpportunity(sourceKey: string, error: unknown): Automation
     title: "Diagnostic d'automatisation indisponible",
     detail: userMessage(error),
     confidence: 1,
+    effectKind: "diagnostic",
     expectedEffect: "Afficher l'erreur sans bloquer les autres diagnostics.",
     reversible: true,
     requiresUserValidation: true,

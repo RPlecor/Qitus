@@ -71,6 +71,7 @@ export type RuntimeConfig = {
   providerSecretEncryptionKey?: string;
   changeImpactsMode: ChangeImpactsMode;
   automationMode: AutomationMode;
+  automationConfidenceThreshold: number;
   qitusInternalTestMode: boolean;
   eInvoiceProvider: EInvoiceProviderMode;
   eInvoiceProviderBaseUrl?: string;
@@ -138,6 +139,7 @@ export function getRuntimeConfig(env: Record<string, string | undefined> = proce
     providerSecretEncryptionKey: env.PROVIDER_SECRET_ENCRYPTION_KEY,
     changeImpactsMode: parseChangeImpactsMode(env.CHANGE_IMPACTS_MODE),
     automationMode: parseAutomationMode(env.AUTOMATION_MODE, parseAppEnvironment(env.APP_ENV)),
+    automationConfidenceThreshold: parseAutomationConfidenceThreshold(env.AUTOMATION_CONFIDENCE_THRESHOLD),
     qitusInternalTestMode: parseBoolean(env.QITUS_INTERNAL_TEST_MODE, false),
     eInvoiceProvider: parseEInvoiceProvider(env.E_INVOICE_PROVIDER),
     eInvoiceProviderBaseUrl: env.E_INVOICE_PROVIDER_BASE_URL,
@@ -335,6 +337,13 @@ export function parseAutomationMode(value: string | undefined, appEnv: AppEnviro
   const mode = value?.toLowerCase() ?? (appEnv === "production" ? "assistive" : "safe_auto");
   if (mode === "off" || mode === "assistive" || mode === "safe_auto") return mode;
   throw new Error(`Unsupported AUTOMATION_MODE value: ${value}`);
+}
+
+export function parseAutomationConfidenceThreshold(value: string | undefined) {
+  if (!value) return 1;
+  const parsed = Number(value);
+  if (Number.isFinite(parsed) && parsed >= 0 && parsed <= 1) return parsed;
+  throw new Error(`Unsupported AUTOMATION_CONFIDENCE_THRESHOLD value: ${value}`);
 }
 
 export function parseEInvoiceProvider(value: string | undefined): EInvoiceProviderMode {
