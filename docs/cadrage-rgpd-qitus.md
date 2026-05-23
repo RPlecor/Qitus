@@ -20,17 +20,19 @@ Qitus n'est **pas sous-traitant** de l'expert-comptable. L'EC accède à un doss
 | Sous-traitant | Fonction | Données concernées | Localisation | Garanties |
 |---|---|---|---|---|
 | **Clerk** | Authentification, identité | email, nom, clerkId | USA (SOC 2 Type II) | DPA Clerk, SCCs |
-| **Clever Cloud** | Hébergement applicatif beta | Toutes (transit + compute) | France / EU | DPA Clever Cloud, localisation France à confirmer contractuellement |
-| **PostgreSQL Clever Cloud** | Base de données beta | Toutes données persistées | France / EU | Chiffrement at rest, backups et rétention à confirmer sur le plan retenu |
+| **Render** | Hébergement applicatif pré-beta fermé | Données de test, démo, staging interne | USA/EU (selon plan) | DPA Render si données personnelles réelles traitées |
+| **PostgreSQL Render** | Base de données pré-beta fermé | Données de test, démo, staging interne | USA/EU (selon plan) | Chiffrement at rest et backups selon plan |
+| **Clever Cloud** | Hébergement applicatif beta ouverte | Toutes (transit + compute) | France / EU | DPA Clever Cloud, localisation France à confirmer contractuellement |
+| **PostgreSQL Clever Cloud** | Base de données beta ouverte | Toutes données persistées | France / EU | Chiffrement at rest, backups et rétention à confirmer sur le plan retenu |
 | **S3-compatible** | Stockage objets | Pièces justificatives, documents générés | À définir | Chiffrement at rest, DPA provider |
 | **Stripe** | Facturation abonnement | email, stripeCustomerId, stripeSubscriptionId | USA (SOC 2) | DPA Stripe, SCCs |
 | **Anthropic** | IA — suggestions catégorisation | Libellés de transactions (anonymisables), labels | USA | DPA Anthropic, zero-retention API |
 | **Qonto API** | Connecteur bancaire | Transactions bancaires, IBAN | France/EU | DPA Qonto |
 | **Open Banking provider** | Connecteur bancaire | Transactions bancaires, IBAN, identité bancaire | EU | DPA provider, DSP2/PSD2 |
 
-**Décision beta :** l'hébergement applicatif et la base PostgreSQL doivent migrer vers Clever Cloud pour privilégier un hébergement en France avant traitement de données réelles. Chaque sous-traitant doit avoir un DPA (Data Processing Agreement) signé avant traitement de données réelles. Pour la beta fermée avec données de test uniquement, les DPA Clerk et Clever Cloud sont prioritaires.
+**Décision beta :** Qitus reste sur Render tant que la beta n'est pas ouverte et que l'environnement sert au staging, aux démonstrations et aux tests contrôlés. L'hébergement applicatif et la base PostgreSQL doivent migrer vers Clever Cloud avant ouverture de la beta avec données réelles d'utilisateurs externes, afin de privilégier un hébergement en France. Chaque sous-traitant doit avoir un DPA (Data Processing Agreement) signé avant traitement de données réelles. Pour la beta fermée avec données de test uniquement, les DPA Clerk et Render sont prioritaires ; pour la beta ouverte, Clever Cloud devient prioritaire.
 
-**Point d'attention USA :** Clerk, Stripe et Anthropic sont basés aux USA. Depuis l'invalidation du Privacy Shield (Schrems II, 2020), le transfert vers les USA nécessite des SCCs (Standard Contractual Clauses) et une évaluation d'impact du transfert (TIA). Le EU-US Data Privacy Framework (DPF) adopté en juillet 2023 couvre les entreprises certifiées — vérifier la certification DPF de chaque sous-traitant US. Le passage à Clever Cloud réduit le risque de transfert hors UE sur l'hébergement et la base de données, mais ne supprime pas les transferts liés à l'authentification, la facturation ou l'IA.
+**Point d'attention USA :** Clerk, Render, Stripe et Anthropic sont basés aux USA ou peuvent impliquer des transferts hors UE selon la configuration. Depuis l'invalidation du Privacy Shield (Schrems II, 2020), le transfert vers les USA nécessite des SCCs (Standard Contractual Clauses) et une évaluation d'impact du transfert (TIA). Le EU-US Data Privacy Framework (DPF) adopté en juillet 2023 couvre les entreprises certifiées — vérifier la certification DPF de chaque sous-traitant US. Le passage à Clever Cloud avant beta ouverte réduit le risque de transfert hors UE sur l'hébergement et la base de données, mais ne supprime pas les transferts liés à l'authentification, la facturation ou l'IA.
 
 ---
 
@@ -248,7 +250,7 @@ L'AIPD est obligatoire quand le traitement est "susceptible d'engendrer un risqu
 | Croisement de données | Oui, partiellement — croisement banque + pièces + TVA |
 | Personnes vulnérables | Non |
 | Usage innovant (IA) | Oui — catégorisation IA avec Anthropic |
-| Transfert hors UE | Oui — Clerk, Stripe, Anthropic (USA). Hébergement et base cible beta : Clever Cloud France |
+| Transfert hors UE | Oui en pré-beta Render et pour Clerk, Stripe, Anthropic. Hébergement et base cible beta ouverte : Clever Cloud France |
 
 **Verdict :** 3 critères sur 9 sont remplis (croisement, IA, transfert hors UE). La CNIL considère qu'à partir de 2 critères, l'AIPD est fortement recommandée. **Une AIPD simplifiée est recommandée avant la sortie de beta avec données réelles.**
 
@@ -318,9 +320,9 @@ En cas de violation de données personnelles :
 
 ### P0 — Obligatoire avant ouverture beta avec données réelles
 
-- [ ] Signer les DPA avec Clerk et Clever Cloud.
-- [ ] Vérifier la certification DPF de Clerk, Stripe, Anthropic.
-- [ ] Déployer la beta sur Clever Cloud avec hébergement applicatif et PostgreSQL localisés en France.
+- [ ] Signer les DPA avec Clerk, Render et Clever Cloud selon les environnements utilisés.
+- [ ] Vérifier la certification DPF de Clerk, Render, Stripe, Anthropic.
+- [ ] Migrer la beta ouverte sur Clever Cloud avec hébergement applicatif et PostgreSQL localisés en France.
 - [ ] Publier la politique de confidentialité sur `/privacy`.
 - [ ] Ajouter le lien vers la politique de confidentialité sur `/signup`.
 - [ ] Implémenter `GET /api/privacy/export` (export RGPD complet en ZIP).
@@ -372,7 +374,7 @@ En cas de violation de données personnelles :
 ## 11. Décisions ouvertes
 
 1. **Entité juridique :** quelle est l'entité juridique responsable de traitement ? (SAS ? Auto-entrepreneur ? À créer ?)
-2. **Hébergement EU :** décision beta actée — migrer vers Clever Cloud avec hébergement en France. À confirmer : région exacte, chiffrement at rest, fréquence des backups et rétention.
+2. **Hébergement EU :** décision beta actée — rester sur Render avant ouverture beta, puis migrer vers Clever Cloud avec hébergement en France avant données réelles externes. À confirmer : région exacte, chiffrement at rest, fréquence des backups et rétention.
 3. **DPO :** désigner un DPO (obligatoire si > 5 000 personnes concernées ou traitement à grande échelle) ou un contact privacy ?
 4. **Analytics :** si ajout d'analytics, utiliser un outil EU-only (Plausible, Matomo) pour éviter le consentement cookie complexe.
 5. **Anthropic zero-retention :** confirmer contractuellement que le mode zero-retention est activé et documenté dans le DPA.
