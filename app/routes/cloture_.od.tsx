@@ -59,12 +59,12 @@ export default function ClosingAdjustmentsCockpit() {
           <span>Les feuilles de travail portent les hypothèses ; les propositions portent les lignes ; seule la validation utilisateur crée une écriture OD.</span>
         </div>
 
-        <div className="segmented">
-          <Link className={`seg ${tab === "workpapers" ? "active" : ""}`} to="/cloture/od?tab=workpapers">Feuilles de travail</Link>
-          <Link className={`seg ${tab === "review" ? "active" : ""}`} to="/cloture/od?tab=review">OD à relire</Link>
-          <Link className={`seg ${tab === "approved" ? "active" : ""}`} to="/cloture/od?tab=approved">Validées</Link>
-          <Link className={`seg ${tab === "rejected" ? "active" : ""}`} to="/cloture/od?tab=rejected">Rejetées</Link>
-          <Link className={`seg ${tab === "evidence" ? "active" : ""}`} to="/cloture/od?tab=evidence">Pièces manquantes</Link>
+        <div className="segmented" role="tablist" aria-label="Vues des OD de clôture">
+          <Link role="tab" aria-selected={tab === "workpapers"} className={`seg ${tab === "workpapers" ? "active" : ""}`} to="/cloture/od?tab=workpapers">Feuilles de travail</Link>
+          <Link role="tab" aria-selected={tab === "review"} className={`seg ${tab === "review" ? "active" : ""}`} to="/cloture/od?tab=review">OD à relire</Link>
+          <Link role="tab" aria-selected={tab === "approved"} className={`seg ${tab === "approved" ? "active" : ""}`} to="/cloture/od?tab=approved">Validées</Link>
+          <Link role="tab" aria-selected={tab === "rejected"} className={`seg ${tab === "rejected" ? "active" : ""}`} to="/cloture/od?tab=rejected">Rejetées</Link>
+          <Link role="tab" aria-selected={tab === "evidence"} className={`seg ${tab === "evidence" ? "active" : ""}`} to="/cloture/od?tab=evidence">Pièces manquantes</Link>
         </div>
 
         {tab === "workpapers" ? (
