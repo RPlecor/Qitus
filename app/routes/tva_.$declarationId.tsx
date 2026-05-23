@@ -5,6 +5,7 @@ import { requireCompanyWorkspace } from "~/modules/company-workspace/company-wor
 import { VatDeclarationCenter } from "~/modules/vat/vat-declaration-center.server";
 import { VatDeclarationFreshnessCenter } from "~/modules/vat/vat-declaration-freshness-center.server";
 import { VatRegularizationCenter } from "~/modules/vat/vat-regularization-center.server";
+import { freshnessLabel, vatDeclarationStatusLabel } from "~/modules/ui-labels";
 
 export async function loader(args: LoaderFunctionArgs) {
   const workspace = await requireCompanyWorkspace(args);
@@ -32,8 +33,8 @@ export default function VatDeclarationDetail() {
         </div>
 
         <div className="kpi-grid">
-          <div className="kpi"><div className="kpi-label">Statut</div><span className="kpi-val">{declaration.status}</span></div>
-          <div className="kpi"><div className="kpi-label">Fraîcheur</div><span className="kpi-val">{freshness?.statusLabel ?? "Active"}</span></div>
+          <div className="kpi"><div className="kpi-label">Statut</div><span className="kpi-val">{vatDeclarationStatusLabel(declaration.status)}</span></div>
+          <div className="kpi"><div className="kpi-label">Fraîcheur</div><span className="kpi-val">{freshnessLabel(freshness?.statusLabel ?? "Active")}</span></div>
           <div className="kpi"><div className="kpi-label">TVA collectée</div><span className="kpi-val">{formatEuro(amounts.collected ?? 0)}</span></div>
           <div className="kpi"><div className="kpi-label">TVA déductible</div><span className="kpi-val">{formatEuro(amounts.deductible ?? 0)}</span></div>
         </div>
@@ -72,7 +73,7 @@ export default function VatDeclarationDetail() {
         <section className="panel">
           <h2>Contrôles</h2>
           <ul className="evidence-list">
-            {controls.map((control) => <li key={control.code ?? control.title}>{control.severity} · {control.title} · {control.detail}</li>)}
+            {controls.map((control) => <li key={control.code ?? control.title}>{control.severity === "blocking" ? "Bloquant" : "Avertissement"} · {control.title} · {control.detail}</li>)}
             {controls.length === 0 ? <li>Aucun contrôle actif au moment de la génération.</li> : null}
           </ul>
           <p className="sub">Comparaison journal courant : écart {formatEuro(declaration.comparison.delta)}.</p>

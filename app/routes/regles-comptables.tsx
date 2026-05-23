@@ -29,7 +29,7 @@ export default function AccountingRulesPage() {
         <div className="kpi-grid">
           <KpiCard label="Pack actif" value={activePack?.version ?? "Aucun"} hint={activePack?.summary ?? "Seed initial à synchroniser"} />
           <KpiCard label="Statut" value={statusLabel(status.status)} hint="Application aux futurs imports" />
-          <KpiCard label="Sources" value={String(new Set(snapshots.map((snapshot) => snapshot.source)).size)} hint={`${snapshots.length} snapshot(s)`} />
+          <KpiCard label="Sources" value={String(new Set(snapshots.map((snapshot) => snapshot.source)).size)} hint={`${snapshots.length} relevé(s) de source`} />
           <KpiCard label="Transactions concernées" value={String(impact?.affectedTransactionCount ?? 0)} hint="Données existantes non modifiées" />
         </div>
 
@@ -70,7 +70,7 @@ export default function AccountingRulesPage() {
                   <tr key={pack.id}>
                     <td className="mono">{pack.version}</td>
                     <td><StatusPill label={packStatusLabel(pack.status)} tone={pack.status === "ACTIVE" ? "ok" : pack.status === "NEEDS_REVIEW" ? "warn" : "neutral"} /></td>
-                    <td>{pack.source}</td>
+                    <td>{sourceLabel(pack.source)}</td>
                     <td>{pack.vendorMappings.length}</td>
                     <td className="mono">{pack.activatedAt ? new Date(pack.activatedAt).toLocaleString("fr-FR") : "—"}</td>
                   </tr>

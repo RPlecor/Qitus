@@ -77,8 +77,8 @@ export default function Imports() {
                 <td><StatusBadge status={toBadgeStatus(importRow.statusKind)} /></td>
                 <td>
                   <div className="row-actions">
-                    {importRow.actions.needsMapping ? <Link className="btn btn-sm" to={`/imports/${importRow.id}/mapping`}>Mapping</Link> : null}
-                    {importRow.actions.canRetry ? <Form method="post" action={`/api/imports/${importRow.id}/retry`}><button className="btn btn-sm" type="submit">Retry</button></Form> : null}
+                    {importRow.actions.needsMapping ? <Link className="btn btn-sm" to={`/imports/${importRow.id}/mapping`}>Associer les colonnes</Link> : null}
+                    {importRow.actions.canRetry ? <Form method="post" action={`/api/imports/${importRow.id}/retry`}><button className="btn btn-sm" type="submit">Réessayer</button></Form> : null}
                     {importRow.actions.canRetryCategorization ? <Form method="post" action={`/api/imports/${importRow.id}/retry-categorization`}><button className="btn btn-sm" type="submit">Relancer la catégorisation</button></Form> : null}
                     <details className="danger-details">
                       <summary className="btn btn-sm btn-danger">Supprimer</summary>
@@ -125,7 +125,7 @@ function stepLabel(step: string | null) {
   const labels: Record<string, string> = {
     queued: "En attente",
     "detect-and-parse": "Détection CSV",
-    "await-mapping": "Mapping requis",
+    "await-mapping": "Colonnes à associer",
     "create-transactions": "Transactions",
     categorize: "Catégorisation",
     "write-ledger": "Écritures",

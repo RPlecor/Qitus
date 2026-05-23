@@ -5,6 +5,7 @@ import { requireCompanyWorkspace } from "~/modules/company-workspace/company-wor
 import { ExpertReviewQueue } from "~/modules/expert-dossier/expert-review-queue.server";
 import { ExpertReviewWorkflow } from "~/modules/expert-dossier/expert-review-workflow.server";
 import { jsonOrRedirectError } from "~/modules/route-errors.server";
+import { expertReviewItemStatusLabel, expertReviewSectionLabel, expertReviewSeverityLabel, expertReviewStatusLabel } from "~/modules/ui-labels";
 
 export async function loader(args: LoaderFunctionArgs) {
   const workspace = await requireCompanyWorkspace(args);
@@ -60,7 +61,7 @@ export default function DossierReviewPage() {
         {error ? <div className="alert red">{error}</div> : null}
         <div className="card card-head">
           <div>
-            <strong>{review ? `Revue ${review.status}` : "Aucune revue active"}</strong>
+            <strong>{review ? `Revue ${expertReviewStatusLabel(review.status)}` : "Aucune revue active"}</strong>
             <div className="sub">{review ? `${summary.open} demande(s) ouvertes · ${summary.blockingOpen} bloquante(s) · ${summary.answered} répondue(s)` : "Crée un partage depuis Dossier EC."}</div>
           </div>
         </div>
@@ -70,7 +71,7 @@ export default function DossierReviewPage() {
           <Form method="post" className="form-grid">
             <input type="hidden" name="intent" value="create" />
             <label>Section<input name="sectionCode" defaultValue="general" /></label>
-            <label>Sévérité<select name="severity" defaultValue="WARNING"><option>INFO</option><option>WARNING</option><option>BLOCKING</option></select></label>
+            <label>Sévérité<select name="severity" defaultValue="WARNING"><option value="INFO">Information</option><option value="WARNING">Avertissement</option><option value="BLOCKING">Bloquant</option></select></label>
             <label>Titre<input name="title" required /></label>
             <label>Détail<textarea name="body" required /></label>
             <button className="btn" type="submit">Ajouter</button>
@@ -84,9 +85,9 @@ export default function DossierReviewPage() {
               {items.map((item) => (
                 <tr key={item.id}>
                   <td><strong>{item.title}</strong><div className="sub">{item.body}</div></td>
-                  <td className="mono">{item.sectionCode}</td>
-                  <td><StatusPill label={item.status} tone={item.status === "RESOLVED" || item.status === "WAIVED" ? "ok" : "warn"} /></td>
-                  <td><StatusPill label={item.severity} tone={item.severity === "BLOCKING" ? "error" : item.severity === "WARNING" ? "warn" : "info"} /></td>
+                  <td>{expertReviewSectionLabel(item.sectionCode)}</td>
+                  <td><StatusPill label={expertReviewItemStatusLabel(item.status)} tone={item.status === "RESOLVED" || item.status === "WAIVED" ? "ok" : "warn"} /></td>
+                  <td><StatusPill label={expertReviewSeverityLabel(item.severity)} tone={item.severity === "BLOCKING" ? "error" : item.severity === "WARNING" ? "warn" : "info"} /></td>
                   <td>{item.comments.length}</td>
                   <td>
                     <Form method="post" className="inline-form">

@@ -2,6 +2,7 @@ import { json, type LoaderFunctionArgs } from "@remix-run/node";
 import { Form, useLoaderData } from "@remix-run/react";
 import { TableShell } from "~/components/ui";
 import { ExpertReviewPortalProjection } from "~/modules/expert-dossier/expert-review-portal-projection.server";
+import { documentFormatLabel, documentTypeLabel, dossierSectionStatusLabel, expertReviewItemStatusLabel, expertReviewSectionLabel, expertReviewStatusLabel, riskLabel } from "~/modules/ui-labels";
 
 export async function loader(args: LoaderFunctionArgs) {
   const portal = await new ExpertReviewPortalProjection().getSharedPortal(String(args.params.token));
@@ -21,8 +22,8 @@ export default function SharedReview() {
       {error ? <div className="alert red">{error}</div> : null}
       {validated ? <div className="alert blue">Validation enregistrée. Merci.</div> : null}
       {shareLink.reviewedAt ? <div className="alert blue">Dossier validé par {shareLink.reviewerName} le {dateTime(shareLink.reviewedAt)}.</div> : null}
-      {isTransmittedDossierStale ? <div className="alert orange">Le snapshot transmis est obsolète. Demande au client de préparer un nouveau dossier avant validation finale.</div> : null}
-      {transmittedSnapshot ? <div className="alert blue">Snapshot transmis : {transmittedSnapshot.snapshotKey} · {transmittedSnapshot.freshness.statusLabel}</div> : <div className="alert orange">Aucun snapshot transmis n'est associé à ce dossier.</div>}
+      {isTransmittedDossierStale ? <div className="alert orange">L'état transmis est obsolète. Demande au client de préparer un nouveau dossier avant validation finale.</div> : null}
+      {transmittedSnapshot ? <div className="alert blue">État transmis : {transmittedSnapshot.snapshotKey} · {transmittedSnapshot.freshness.statusLabel}</div> : <div className="alert orange">Aucun état transmis n'est associé à ce dossier.</div>}
 
       <section className="kpi-grid">
         <div className="kpi"><div className="kpi-label">CA</div><span className="kpi-val">{euro(overview.kpis.revenue)}</span></div>
@@ -38,7 +39,7 @@ export default function SharedReview() {
           <table className="tbl">
             <tbody>
               {dossier.sections.map((section) => (
-                <tr key={section.code}><td>{section.title}</td><td>{section.status}</td><td>{section.risk}</td><td>{section.summary}</td></tr>
+                <tr key={section.code}><td>{section.title}</td><td>{dossierSectionStatusLabel(section.status)}</td><td>{riskLabel(section.risk)}</td><td>{section.summary}</td></tr>
               ))}
             </tbody>
           </table>
@@ -56,7 +57,7 @@ export default function SharedReview() {
           <table className="tbl">
             <thead><tr><th>Type</th><th>Fichier</th><th>Format</th><th>État</th></tr></thead>
             <tbody>
-              {documents.map((document) => <tr key={document.id}><td>{document.type}</td><td>{document.filename}</td><td>{document.format}</td><td>{document.freshness?.statusLabel ?? "À jour"}</td></tr>)}
+              {documents.map((document) => <tr key={document.id}><td>{documentTypeLabel(document.type)}</td><td>{document.filename}</td><td>{documentFormatLabel(document.format)}</td><td>{document.freshness?.statusLabel ?? "À jour"}</td></tr>)}
             </tbody>
           </table>
         </TableShell>
@@ -67,7 +68,7 @@ export default function SharedReview() {
         <TableShell>
           <table className="tbl">
             <tbody>
-              {closing.steps.map((step) => <tr key={step.code}><td>{step.index}. {step.title}</td><td>{step.status}</td><td>{step.blockingCount} blocage(s)</td><td>{step.warningCount} alerte(s)</td></tr>)}
+              {closing.steps.map((step) => <tr key={step.code}><td>{step.index}. {step.title}</td><td>{stepStatusLabel(step.status)}</td><td>{step.blockingCount} blocage(s)</td><td>{step.warningCount} alerte(s)</td></tr>)}
             </tbody>
           </table>
         </TableShell>
@@ -75,12 +76,12 @@ export default function SharedReview() {
 
       <section className="card">
         <h2>Commentaires et demandes</h2>
-        {activeReview ? <p className="sub">Revue {activeReview.status} · {activeReview.summary.open} demande(s) ouverte(s).</p> : <p className="sub">Aucune revue collaborative active. Demande au client de partager le dossier depuis Qitus.</p>}
+        {activeReview ? <p className="sub">Revue {expertReviewStatusLabel(activeReview.status)} · {activeReview.summary.open} demande(s) ouverte(s).</p> : <p className="sub">Aucune revue collaborative active. Demande au client de partager le dossier depuis Qitus.</p>}
         {activeReview ? (
           <>
             <Form method="post" action={`/api/expert-review/shared/${token}/items`} className="form-grid">
               <label>Section<input name="sectionCode" defaultValue="general" /></label>
-              <label>Sévérité<select name="severity" defaultValue="WARNING"><option>INFO</option><option>WARNING</option><option>BLOCKING</option></select></label>
+              <label>Sévérité<select name="severity" defaultValue="WARNING"><option value="INFO">Information</option><option value="WARNING">Avertissement</option><option value="BLOCKING">Bloquant</option></select></label>
               <label>Nom<input name="authorName" defaultValue={shareLink.reviewerName ?? ""} /></label>
               <label>Titre<input name="title" required /></label>
               <label>Détail<textarea name="body" required /></label>
@@ -92,8 +93,8 @@ export default function SharedReview() {
                   {items.map((item) => (
                     <tr key={item.id}>
                       <td><strong>{item.title}</strong><div className="sub">{item.body}</div></td>
-                      <td>{item.sectionCode}</td>
-                      <td>{item.status}</td>
+                      <td>{expertReviewSectionLabel(item.sectionCode)}</td>
+                      <td>{expertReviewItemStatusLabel(item.status)}</td>
                       <td>
                         <Form method="post" action={`/api/expert-review/shared/${token}/items/${item.id}/comments`} className="inline-form">
                           <input name="authorName" placeholder="Nom" defaultValue={shareLink.reviewerName ?? ""} />
@@ -129,6 +130,14 @@ function date(value: string) {
 
 function dateTime(value: string) {
   return new Intl.DateTimeFormat("fr-FR", { dateStyle: "short", timeStyle: "short" }).format(new Date(value));
+}
+
+function stepStatusLabel(status: string) {
+  if (status === "DONE") return "Terminé";
+  if (status === "SKIPPED") return "Ignoré";
+  if (status === "BLOCKED") return "Bloqué";
+  if (status === "READY") return "Prêt";
+  return "À traiter";
 }
 
 function euro(value: number) {

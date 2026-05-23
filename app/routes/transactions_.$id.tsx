@@ -7,6 +7,7 @@ import { TransactionExplorer } from "~/modules/transactions/transaction-explorer
 import { TransactionFilterStateCenter } from "~/modules/transactions/transaction-filter-state";
 import { TransactionReviewQueue } from "~/modules/transactions/transaction-review-queue.server";
 import { TransactionSuggestionCenter } from "~/modules/transactions/transaction-suggestion-center.server";
+import { categorizationSourceLabel } from "~/modules/ui-labels";
 import { VAT_NATURE_OPTIONS, VAT_RATE_OPTIONS, vatNatureLabel, vatRateLabel, vatRateToOptionValue } from "~/modules/vat/vat-rate-policy";
 
 export async function loader(args: LoaderFunctionArgs) {
@@ -64,7 +65,7 @@ export default function TransactionReview() {
             {suggestions.map((suggestion) => (
               <tr key={suggestion.id}>
                 <td>{suggestion.badge}</td>
-                <td>{suggestion.source}</td>
+                <td>{categorizationSourceLabel(suggestion.source)}</td>
                 <td><span className="cpt">{suggestion.accountDebit}</span></td>
                 <td><span className="cpt">{suggestion.accountCredit}</span></td>
                 <td>{vatRateLabel(suggestion.vatRate)}</td>

@@ -54,7 +54,7 @@ export default function Rapprochements() {
           {cards.map((card) => (
             <Link key={card.href} className="card" to={card.href}>
               <div className="sec-head"><h2>{card.title}</h2><span>{card.freshness.label}</span></div>
-              <p className="sub">{card.summary.matched} matché(s), {card.summary.openIssues} issue(s) ouverte(s), progression {card.summary.progress}%.</p>
+              <p className="sub">{card.summary.matched} matché(s), {card.summary.openIssues} point(s) ouvert(s), progression {card.summary.progress}%.</p>
               {card.freshness.staleReasons.length > 0 ? <p className="sub">{card.freshness.staleReasons[0]}</p> : null}
             </Link>
           ))}

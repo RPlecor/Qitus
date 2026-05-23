@@ -5,6 +5,7 @@ import { UsageMeter } from "~/modules/billing/usage-meter.server";
 import { AccountingChatCenter } from "~/modules/chat/accounting-chat-center.server";
 import { ChatContextBuilder } from "~/modules/chat/chat-context-builder.server";
 import { requireCompanyWorkspace } from "~/modules/company-workspace/company-workspace.server";
+import { chatProviderLabel } from "~/modules/ui-labels";
 
 export async function loader(args: LoaderFunctionArgs) {
   const workspace = await requireCompanyWorkspace(args);
@@ -30,7 +31,7 @@ export default function Chat() {
       <Main title="Chat comptable" subtitle="Lecture seule · contexte Qitus">
         <div className="alert blue">
           <strong>Chat en lecture seule</strong>
-          <span>{readiness.message} Provider : {readiness.provider} · modèle : {readiness.model}.</span>
+          <span>{readiness.message} Fournisseur : {chatProviderLabel(readiness.provider)} · modèle : {readiness.model}.</span>
         </div>
         <div className="kpi-grid">
           <KpiCard label="IA ce mois" value={`${usage.usage.aiCalls}/${usage.subscription.limits.aiCallsPerMonth}`} hint="Quota du plan" />
@@ -68,7 +69,7 @@ export default function Chat() {
               {!selected ? (
                 <div className="chat-empty">
                   <p className="sub">Posez une question sur la clôture, les transactions, les OD ou les documents.</p>
-                  <p className="sub mono">{readiness.provider} · {readiness.model}</p>
+                  <p className="sub mono">{chatProviderLabel(readiness.provider)} · {readiness.model}</p>
                 </div>
               ) : null}
             </div>

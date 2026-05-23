@@ -4,6 +4,7 @@ import { ClosingWorkpaperCenter } from "~/modules/closing-workpapers/closing-wor
 import { ClosingWorkpaperWorkflow } from "~/modules/closing-workpapers/closing-workpaper-workflow.server";
 import { requireCompanyWorkspace } from "~/modules/company-workspace/company-workspace.server";
 import { AppShell, Main } from "~/components/ui";
+import { workpaperStatusLabel } from "~/modules/ui-labels";
 
 export async function loader(args: LoaderFunctionArgs) {
   const workspace = await requireCompanyWorkspace(args);
@@ -13,7 +14,7 @@ export async function loader(args: LoaderFunctionArgs) {
     new ClosingWorkpaperWorkflow().getReviewQueue(workspace, { kind }),
     center.getAvailableKinds(),
   ]);
-  const definition = kinds.find((item) => item.kind === kind) ?? { kind, title: kind, description: "Workpapers de clôture.", defaultAmount: 0, defaultDebitAccount: "658", defaultCreditAccount: "471", requiredEvidence: true };
+  const definition = kinds.find((item) => item.kind === kind) ?? { kind, title: kind, description: "Feuilles de travail de clôture.", defaultAmount: 0, defaultDebitAccount: "658", defaultCreditAccount: "471", requiredEvidence: true };
   return json({ kind, definition, reviews });
 }
 
@@ -21,11 +22,11 @@ export default function ClosingWorkpapersByKind() {
   const { kind, definition, reviews } = useLoaderData<typeof loader>();
   return (
     <AppShell active="cloture">
-      <Main title={`Workpapers — ${definition.title}`} subtitle={definition.description}>
+      <Main title={`Feuilles de travail — ${definition.title}`} subtitle={definition.description}>
         <Link className="btn btn-ghost" to="/cloture/od">← Retour OD de clôture</Link>
 
         <div className="card form-card">
-          <h2>Nouveau workpaper</h2>
+          <h2>Nouvelle feuille de travail</h2>
           <Form method="post" action="/api/closing-workpapers" className="form-grid">
             <input type="hidden" name="kind" value={kind} />
             <input type="hidden" name="status" value="READY" />
@@ -59,7 +60,7 @@ export default function ClosingWorkpapersByKind() {
           </Form>
         </div>
 
-        <div className="sec-head"><h2>Workpapers existants</h2></div>
+        <div className="sec-head"><h2>Feuilles de travail existantes</h2></div>
         {reviews.map((review) => (
           <div className="card form-card" key={review.workpaper.workpaperKey}>
             <div className="card-head">
@@ -67,7 +68,7 @@ export default function ClosingWorkpapersByKind() {
                 <strong>{review.workpaper.title}</strong>
                 <div className="sub mono">{review.workpaper.workpaperKey}</div>
               </div>
-              <div className="sub">{review.workpaper.status} · {review.hasProposal ? "OD générée" : "Sans OD"}</div>
+              <div className="sub">{workpaperStatusLabel(review.workpaper.status)} · {review.hasProposal ? "OD générée" : "Sans OD"}</div>
             </div>
             <Form method="post" action={`/api/closing-workpapers/${encodeURIComponent(review.workpaper.workpaperKey)}`} className="form-grid">
               <input type="hidden" name="kind" value={review.workpaper.kind} />
@@ -117,7 +118,7 @@ export default function ClosingWorkpapersByKind() {
             ) : null}
           </div>
         ))}
-        {reviews.length === 0 ? <div className="card sub">Aucun workpaper pour ce domaine.</div> : null}
+        {reviews.length === 0 ? <div className="card sub">Aucune feuille de travail pour ce domaine.</div> : null}
       </Main>
     </AppShell>
   );

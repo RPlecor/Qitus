@@ -5,6 +5,7 @@ import { requireCompanyWorkspace } from "~/modules/company-workspace/company-wor
 import { EInvoiceCenter } from "~/modules/e-invoices/e-invoice-center.server";
 import { EInvoiceMatchingCenter } from "~/modules/e-invoices/e-invoice-matching-center.server";
 import { EInvoiceAuditTrailCenter } from "~/modules/e-invoices/e-invoice-audit-trail-center.server";
+import { eInvoiceFormatLabel, eInvoiceProviderStatusLabel, eInvoiceSourceLabel, eInvoiceStatusLabel, entityTypeLabel } from "~/modules/ui-labels";
 
 export async function loader(args: LoaderFunctionArgs) {
   const workspace = await requireCompanyWorkspace(args);
@@ -36,7 +37,7 @@ export default function FactureEntranteDetail() {
               <h2>Données extraites</h2>
               <p className="sub">Source structurée conservée dans le paquet de preuve.</p>
             </div>
-            <StatusPill label={statusLabel(invoice.status)} tone={invoice.status === "ERROR" ? "error" : invoice.status === "ACCOUNTED" ? "done" : "neutral"} />
+            <StatusPill label={eInvoiceStatusLabel(invoice.status)} tone={invoice.status === "ERROR" ? "error" : invoice.status === "ACCOUNTED" ? "done" : "neutral"} />
           </div>
           {invoice.errorMessage ? <div className="alert red">{invoice.errorMessage}</div> : null}
           <div className="grid two">
@@ -47,7 +48,7 @@ export default function FactureEntranteDetail() {
             <div className="kv"><span>HT</span><strong>{invoice.amountHt ? formatEuro(invoice.amountHt) : "—"}</strong></div>
             <div className="kv"><span>TVA</span><strong>{invoice.amountVat ? formatEuro(invoice.amountVat) : "—"}</strong></div>
             <div className="kv"><span>TTC</span><strong>{invoice.amountTtc ? formatEuro(invoice.amountTtc) : "—"}</strong></div>
-            <div className="kv"><span>Format</span><strong>{invoice.format}</strong></div>
+            <div className="kv"><span>Format</span><strong>{eInvoiceFormatLabel(invoice.format)}</strong></div>
           </div>
         </section>
 
@@ -57,15 +58,15 @@ export default function FactureEntranteDetail() {
               <h2>Réception PA et preuve</h2>
               <p className="sub">Upload manuel exploitable, mais seule une source PA réelle prouve la réception conforme.</p>
             </div>
-            <StatusPill label={invoice.source === "PROVIDER" ? invoice.providerStatusLabel ?? "Provider" : "Upload manuel"} tone={invoice.source === "PROVIDER" ? "ok" : "warn"} />
+            <StatusPill label={invoice.source === "PROVIDER" ? eInvoiceProviderStatusLabel(invoice.providerStatusLabel) : "Upload manuel"} tone={invoice.source === "PROVIDER" ? "ok" : "warn"} />
           </div>
           <div className="grid two">
-            <div className="kv"><span>Source</span><strong>{invoice.source === "PROVIDER" ? invoice.providerConnection?.safeLabel ?? "Provider PA" : "Upload manuel"}</strong></div>
-            <div className="kv"><span>Statut PA</span><strong>{invoice.providerStatusLabel ?? "—"}</strong></div>
+            <div className="kv"><span>Source</span><strong>{invoice.source === "PROVIDER" ? invoice.providerConnection?.safeLabel ?? "Plateforme agréée" : eInvoiceSourceLabel(invoice.source)}</strong></div>
+            <div className="kv"><span>Statut PA</span><strong>{eInvoiceProviderStatusLabel(invoice.providerStatusLabel)}</strong></div>
             <div className="kv"><span>Reçue le</span><strong>{invoice.providerReceivedAt ? shortDate(invoice.providerReceivedAt) : "—"}</strong></div>
             <div className="kv"><span>Synchronisé le</span><strong>{invoice.providerStatusSyncedAt ? shortDate(invoice.providerStatusSyncedAt) : "—"}</strong></div>
             <div className="kv"><span>XML source</span><strong>{invoice.rawXmlStorageKey ? "Conservé" : "Absent"}</strong></div>
-            <div className="kv"><span>Mandat PA</span><strong>{invoice.providerConnection?.mandateStatus ?? "—"}</strong></div>
+            <div className="kv"><span>Mandat PA</span><strong>{eInvoiceProviderStatusLabel(invoice.providerConnection?.mandateStatus)}</strong></div>
           </div>
           {invoice.source === "PROVIDER" ? (
             <div className="row-actions">
@@ -103,7 +104,7 @@ export default function FactureEntranteDetail() {
           </div>
           {latestDraft ? (
             <>
-              <StatusPill label={latestDraft.status} tone={latestDraft.status === "APPROVED" ? "done" : latestDraft.status === "REJECTED" ? "warn" : "ok"} />
+              <StatusPill label={eInvoiceStatusLabel(latestDraft.status)} tone={latestDraft.status === "APPROVED" ? "done" : latestDraft.status === "REJECTED" ? "warn" : "ok"} />
               <TableShell>
                 <table className="tbl">
                   <thead><tr><th>Compte</th><th>Libellé</th><th className="r">Débit</th><th className="r">Crédit</th></tr></thead>
@@ -143,7 +144,7 @@ export default function FactureEntranteDetail() {
               <tbody>
                 {matches.map((match) => (
                   <tr key={`${match.entityType}-${match.entityId}`}>
-                    <td><Link to={match.href}>{match.label}</Link><div className="sub">{match.entityType}</div></td>
+                    <td><Link to={match.href}>{match.label}</Link><div className="sub">{entityTypeLabel(match.entityType)}</div></td>
                     <td>{match.date ?? "—"}</td>
                     <td>{match.amount ? formatEuro(match.amount) : "—"}</td>
                     <td>{match.score}</td>
@@ -165,14 +166,6 @@ export default function FactureEntranteDetail() {
       </Main>
     </AppShell>
   );
-}
-
-function statusLabel(status: string) {
-  if (status === "ACCOUNTED") return "Comptabilisée";
-  if (status === "ACCOUNTING_DRAFT") return "Brouillon prêt";
-  if (status === "MATCHED") return "Rapprochée";
-  if (status === "ERROR") return "Erreur";
-  return status;
 }
 
 function draftLines(value: unknown): Array<{ account: string; accountLabel: string; debit: number; credit: number }> {

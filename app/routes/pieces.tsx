@@ -5,6 +5,7 @@ import { AppShell, KpiCard, Main, StatusPill, TableShell } from "~/components/ui
 import { requireCompanyWorkspace } from "~/modules/company-workspace/company-workspace.server";
 import { AttachmentCenter } from "~/modules/evidence/attachment-center.server";
 import { EvidenceControlCenter } from "~/modules/evidence/evidence-control-center.server";
+import { eInvoiceStatusLabel } from "~/modules/ui-labels";
 
 export async function loader(args: LoaderFunctionArgs) {
   const workspace = await requireCompanyWorkspace(args);
@@ -92,7 +93,7 @@ export default function Pieces() {
                 <tr key={attachment.id}>
                   <td>{attachment.originalFilename}<div className="sub">{formatBytes(attachment.sizeBytes)}</div></td>
                   <td><StatusPill label={statusLabel(attachment.status)} tone={statusTone(attachment.status)} /></td>
-                <td>{attachment.eInvoiceStatus ? <StatusPill label={attachment.eInvoiceStatus} tone={attachment.eInvoiceStatus === "ERROR" ? "error" : "info"} /> : "—"}</td>
+                <td>{attachment.eInvoiceStatus ? <StatusPill label={eInvoiceStatusLabel(attachment.eInvoiceStatus)} tone={attachment.eInvoiceStatus === "ERROR" ? "error" : "info"} /> : "—"}</td>
                 <td>{attachment.supplierName ?? "—"}</td>
                 <td>{attachment.invoiceDate ?? "—"}</td>
                 <td>{attachment.amountTtc ? formatEuro(attachment.amountTtc) : "—"}</td>

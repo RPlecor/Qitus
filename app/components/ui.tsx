@@ -116,7 +116,7 @@ export function AppShell({ children, active = "dashboard" }: { children: ReactNo
           <span className="s-brand-name"><span className="q">Q</span>itus</span>
         </div>
         <div className="s-id">
-          <strong>{shell?.companyName ?? "ACME DIGITAL"}</strong>
+          <strong>{shell?.companyName ?? "Qitus Démo"}</strong>
           <span>
             {shell ? `${shell.companyStatus} · Exercice ${shell.fiscalYearLabel}` : "SASU · Exercice 01/01 – 31/12/2025"}
           </span>

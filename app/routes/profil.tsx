@@ -4,6 +4,7 @@ import { AppShell, Main, TableShell } from "~/components/ui";
 import { requireCompanyWorkspace } from "~/modules/company-workspace/company-workspace.server";
 import { CompanyProfile } from "~/modules/company-workspace/company-profile.server";
 import { PrivacyCenter } from "~/modules/privacy/privacy-center.server";
+import { privacyRequestKindLabel, privacyRequestStatusLabel } from "~/modules/ui-labels";
 import { VatLedgerReadinessCenter } from "~/modules/vat/vat-ledger-readiness-center.server";
 
 export async function loader(args: LoaderFunctionArgs) {
@@ -94,8 +95,8 @@ export default function Profil() {
               <tbody>
                 {privacy.requests.map((request) => (
                   <tr key={request.id}>
-                    <td>{request.kind}</td>
-                    <td>{request.status}</td>
+                    <td>{privacyRequestKindLabel(request.kind)}</td>
+                    <td>{privacyRequestStatusLabel(request.status)}</td>
                     <td className="mono">{new Date(request.requestedAt).toLocaleString("fr-FR")}</td>
                   </tr>
                 ))}

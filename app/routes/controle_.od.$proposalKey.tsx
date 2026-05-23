@@ -4,6 +4,7 @@ import { ClosingAdjustmentCenter } from "~/modules/closing-adjustments/closing-a
 import { ClosingAdjustmentReviewWorkflow } from "~/modules/closing-adjustments/closing-adjustment-review-workflow.server";
 import { requireCompanyWorkspace } from "~/modules/company-workspace/company-workspace.server";
 import { AppShell, Main } from "~/components/ui";
+import { closingAdjustmentKindLabel } from "~/modules/ui-labels";
 
 export async function loader(args: LoaderFunctionArgs) {
   const workspace = await requireCompanyWorkspace(args);
@@ -215,22 +216,7 @@ function statusLabel(status: string) {
   return "À valider : relis les lignes avant de créer l'écriture.";
 }
 
-function kindLabel(kind: string) {
-  if (kind === "CCA") return "CCA";
-  if (kind === "DEPRECIATION") return "Amortissement";
-  if (kind === "CORPORATE_TAX") return "IS";
-  if (kind === "FNP") return "FNP";
-  if (kind === "FAE") return "FAE";
-  if (kind === "PCA") return "PCA";
-  if (kind === "STOCK_VARIATION") return "Variation de stock";
-  if (kind === "PROVISION") return "Provision";
-  if (kind === "PROVISION_REVERSAL") return "Reprise provision";
-  if (kind === "LOAN_INTEREST_ACCRUAL") return "Intérêts courus";
-  if (kind === "PAYROLL_ACCRUAL") return "Paie à payer";
-  if (kind === "VAT_SETTLEMENT") return "Régularisation TVA";
-  if (kind === "RECONCILIATION_DIFFERENCE") return "Écart rapprochement";
-  return kind;
-}
+const kindLabel = closingAdjustmentKindLabel;
 
 function formatEuro(value: number) {
   return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(value);

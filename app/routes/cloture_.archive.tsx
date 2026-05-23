@@ -4,6 +4,7 @@ import { AnnualClosingCenter } from "~/modules/annual-closing/annual-closing-cen
 import { requireCompanyWorkspace } from "~/modules/company-workspace/company-workspace.server";
 import { DocumentCatalog } from "~/modules/documents/document-catalog.server";
 import { AppShell, Main } from "~/components/ui";
+import { documentTypeLabel, freshnessLabel } from "~/modules/ui-labels";
 
 export async function loader(args: LoaderFunctionArgs) {
   const workspace = await requireCompanyWorkspace(args);
@@ -25,17 +26,17 @@ export default function ClosingArchive() {
         </div>
         <div className="actions-row">
           <Form method="post" action="/api/cloture/steps/EXPORT_ARCHIVE/run"><button className="btn btn-p">Générer archive finale</button></Form>
-          <a className="btn" href="/api/documents/evidence-bundle">Télécharger manifest</a>
+          <a className="btn" href="/api/documents/evidence-bundle">Télécharger le manifeste</a>
         </div>
         <table className="tbl">
           <thead><tr><th>Type</th><th>Fichier</th><th>Version</th><th>État</th><th></th></tr></thead>
           <tbody>
             {documents.map((document) => (
               <tr key={document.id}>
-                <td>{document.type}</td>
+                <td>{documentTypeLabel(document.type)}</td>
                 <td>{document.filename}</td>
                 <td>{document.scriptVersion ?? "—"}</td>
-                <td>{document.freshness?.statusLabel ?? "À jour"}</td>
+                <td>{freshnessLabel(document.freshness?.statusLabel ?? "À jour")}</td>
                 <td><a className="btn btn-sm" href={`/api/documents/${document.id}/download`}>Télécharger</a></td>
               </tr>
             ))}

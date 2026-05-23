@@ -8,6 +8,7 @@ import { VatLedgerReadinessCenter } from "~/modules/vat/vat-ledger-readiness-cen
 import { VatPositionCenter } from "~/modules/vat/vat-position-center.server";
 import { VatRegularizationCenter } from "~/modules/vat/vat-regularization-center.server";
 import { VatReviewWorkflow } from "~/modules/vat/vat-review-workflow.server";
+import { freshnessLabel, vatDeclarationStatusLabel } from "~/modules/ui-labels";
 
 export async function loader(args: LoaderFunctionArgs) {
   const workspace = await requireCompanyWorkspace(args);
@@ -108,8 +109,8 @@ export default function TvaPage() {
                 <tr key={declaration.id}>
                   <td>{declaration.type}</td>
                   <td>{declaration.periodStart} → {declaration.periodEnd}</td>
-                  <td>{declaration.status}</td>
-                  <td>{declaration.freshness?.statusLabel ?? (declaration.active ? "Active" : "Superseded")}</td>
+                  <td>{vatDeclarationStatusLabel(declaration.status)}</td>
+                  <td>{freshnessLabel(declaration.freshness?.statusLabel ?? (declaration.active ? "Active" : "Superseded"))}</td>
                   <td>{formatEuro(Number((declaration.amounts as { net?: number }).net ?? 0))}</td>
                   <td><Link className="btn btn-sm" to={`/tva/${declaration.id}`}>Ouvrir</Link></td>
                 </tr>

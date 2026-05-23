@@ -3,6 +3,7 @@ import { Form, useLoaderData } from "@remix-run/react";
 import { AppShell, Main, StatusPill, TableShell } from "~/components/ui";
 import { requireCompanyWorkspace } from "~/modules/company-workspace/company-workspace.server";
 import { FiscalYearCenter } from "~/modules/fiscal-years/fiscal-year-center.server";
+import { fiscalYearStatusLabel } from "~/modules/ui-labels";
 
 export async function loader(args: LoaderFunctionArgs) {
   const workspace = await requireCompanyWorkspace(args);
@@ -30,7 +31,7 @@ export default function Exercices() {
               {fiscalYears.map((fiscalYear) => (
                 <tr key={fiscalYear.id}>
                   <td>{formatDate(fiscalYear.startDate)} → {formatDate(fiscalYear.endDate)}</td>
-                  <td><StatusPill label={fiscalYear.active ? "Actif" : fiscalYear.status} tone={fiscalYear.active ? "ok" : "neutral"} /></td>
+                  <td><StatusPill label={fiscalYear.active ? "Actif" : fiscalYearStatusLabel(fiscalYear.status)} tone={fiscalYear.active ? "ok" : "neutral"} /></td>
                   <td className="mono">{fiscalYear.counters.imports}</td>
                   <td className="mono">{fiscalYear.counters.transactions}</td>
                   <td className="mono">{fiscalYear.counters.journalEntries}</td>

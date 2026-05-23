@@ -5,6 +5,7 @@ import { requireCompanyWorkspace } from "~/modules/company-workspace/company-wor
 import { EInvoiceCenter } from "~/modules/e-invoices/e-invoice-center.server";
 import { EInvoiceProviderCenter } from "~/modules/e-invoices/e-invoice-provider-center.server";
 import { getRuntimeConfig } from "~/modules/runtime-config.server";
+import { eInvoiceFormatLabel, eInvoiceProviderStatusLabel, eInvoiceStatusLabel } from "~/modules/ui-labels";
 
 export async function loader(args: LoaderFunctionArgs) {
   const workspace = await requireCompanyWorkspace(args);
@@ -50,7 +51,7 @@ export default function FacturesEntrantes() {
             </div>
           </div>
           <div className="grid two">
-            <div className="kv"><span>Provider</span><strong>{provider.provider === "qonto_pa" ? "Qonto PA" : "Facturation électronique"}</strong></div>
+            <div className="kv"><span>Fournisseur</span><strong>{provider.provider === "qonto_pa" ? "Qonto PA" : "Facturation électronique"}</strong></div>
             <div className="kv"><span>Réception conforme PA</span><strong>{provider.readiness.receptionCompliant ? "Oui" : "Non"}</strong></div>
           </div>
         </section>
@@ -77,12 +78,12 @@ export default function FacturesEntrantes() {
             <tbody>
               {invoices.map((invoice) => (
                 <tr key={invoice.id}>
-                  <td>{invoice.supplierName ?? "—"}<div className="sub">{invoice.attachmentFilename ?? invoice.source}</div></td>
-                  <td>{sourceLabel(invoice, internalTestMode)}<div className="sub">{invoice.providerStatus ? `Statut PA ${invoice.providerStatus}` : "—"}</div></td>
+                  <td>{invoice.supplierName ?? "—"}<div className="sub">{invoice.attachmentFilename ?? sourceLabel(invoice, internalTestMode)}</div></td>
+                  <td>{sourceLabel(invoice, internalTestMode)}<div className="sub">{invoice.providerStatus ? `Statut PA ${eInvoiceProviderStatusLabel(invoice.providerStatus)}` : "—"}</div></td>
                   <td className="mono">{invoice.invoiceNumber ?? "—"}</td>
                   <td className="mono">{invoice.issueDate ?? "—"}</td>
-                  <td>{formatLabel(invoice.format)}</td>
-                  <td><StatusPill label={statusLabel(invoice.status)} tone={statusTone(invoice.status)} /></td>
+                  <td>{eInvoiceFormatLabel(invoice.format)}</td>
+                  <td><StatusPill label={eInvoiceStatusLabel(invoice.status)} tone={statusTone(invoice.status)} /></td>
                   <td className="r mono">{invoice.amountHt ? formatEuro(invoice.amountHt) : "—"}</td>
                   <td className="r mono">{invoice.amountVat ? formatEuro(invoice.amountVat) : "—"}</td>
                   <td className="r mono">{invoice.amountTtc ? formatEuro(invoice.amountTtc) : "—"}</td>
@@ -98,19 +99,6 @@ export default function FacturesEntrantes() {
   );
 }
 
-function statusLabel(status: string) {
-  const labels: Record<string, string> = {
-    RECEIVED: "Reçue",
-    PARSED: "Parsée",
-    MATCHED: "Rapprochée",
-    ACCOUNTING_DRAFT: "Brouillon",
-    ACCOUNTED: "Comptabilisée",
-    NEEDS_REVIEW: "À revoir",
-    ERROR: "Erreur",
-  };
-  return labels[status] ?? status;
-}
-
 function statusTone(status: string): "ok" | "done" | "warn" | "error" | "neutral" {
   if (status === "ACCOUNTED") return "done";
   if (status === "ERROR") return "error";
@@ -119,18 +107,13 @@ function statusTone(status: string): "ok" | "done" | "warn" | "error" | "neutral
   return "neutral";
 }
 
-function formatLabel(value: string) {
-  if (value === "FACTUR_X") return "Factur-X";
-  return value;
-}
-
 function sourceLabel(invoice: { source: string; providerLabel?: string | null }, internalTestMode: boolean) {
   if (invoice.source === "UPLOAD") return "Upload manuel";
   const providerLabel = invoice.providerLabel?.toLowerCase() ?? "";
   if (providerLabel.includes("qonto")) return "Qonto PA";
   if (internalTestMode && (providerLabel.includes("sandbox") || providerLabel.includes("mock"))) return "Test interne";
   if (providerLabel.includes("sandbox") || providerLabel.includes("mock")) return "Facturation électronique";
-  return invoice.providerLabel ? `PA ${invoice.providerLabel}` : "Provider PA";
+  return invoice.providerLabel ? `PA ${invoice.providerLabel}` : "Plateforme agréée";
 }
 
 function formatEuro(value: string) {

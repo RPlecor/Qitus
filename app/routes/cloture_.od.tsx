@@ -6,6 +6,7 @@ import { ClosingWorkpaperCenter } from "~/modules/closing-workpapers/closing-wor
 import { ClosingWorkpaperWorkflow } from "~/modules/closing-workpapers/closing-workpaper-workflow.server";
 import { requireCompanyWorkspace } from "~/modules/company-workspace/company-workspace.server";
 import { AppShell, KpiCard, Main, StatusPill, TableShell, type StatusTone } from "~/components/ui";
+import { closingAdjustmentKindLabel, closingAdjustmentStatusLabel, workpaperStatusLabel } from "~/modules/ui-labels";
 
 export async function loader(args: LoaderFunctionArgs) {
   const workspace = await requireCompanyWorkspace(args);
@@ -38,7 +39,7 @@ export default function ClosingAdjustmentsCockpit() {
     <AppShell active="cloture">
       <Main
         title="OD de clôture"
-        subtitle="Workpapers et propositions validables"
+        subtitle="Feuilles de travail et propositions validables"
         action={
           <div className="form-actions">
             <Form method="post" action="/api/closing-adjustments/generate"><button className="btn btn-p" type="submit">Générer / mettre à jour</button></Form>
@@ -47,7 +48,7 @@ export default function ClosingAdjustmentsCockpit() {
         }
       >
         <div className="kpi-grid">
-          <KpiCard label="Workpapers" value={String(workpaperSummary.total)} hint={`${workpaperSummary.ready} prêts · ${workpaperSummary.draft} brouillons`} />
+          <KpiCard label="Feuilles de travail" value={String(workpaperSummary.total)} hint={`${workpaperSummary.ready} prêtes · ${workpaperSummary.draft} brouillons`} />
           <KpiCard label="OD à relire" value={String(adjustmentSummary.draft)} hint={`${adjustmentSummary.ready} validables · ${adjustmentSummary.stale} à recalculer`} />
           <KpiCard label="OD validées" value={String(adjustmentSummary.approved)} hint="Écritures créées" />
           <KpiCard label="Pièces manquantes" value={String(adjustmentSummary.evidenceMissing)} hint="Validation bloquée" />
@@ -55,11 +56,11 @@ export default function ClosingAdjustmentsCockpit() {
 
         <div className="alert blue">
           <strong>Aucune OD automatique.</strong>
-          <span>Les workpapers portent les hypothèses ; les propositions portent les lignes ; seule la validation utilisateur crée une écriture OD.</span>
+          <span>Les feuilles de travail portent les hypothèses ; les propositions portent les lignes ; seule la validation utilisateur crée une écriture OD.</span>
         </div>
 
         <div className="segmented">
-          <Link className={`seg ${tab === "workpapers" ? "active" : ""}`} to="/cloture/od?tab=workpapers">Workpapers</Link>
+          <Link className={`seg ${tab === "workpapers" ? "active" : ""}`} to="/cloture/od?tab=workpapers">Feuilles de travail</Link>
           <Link className={`seg ${tab === "review" ? "active" : ""}`} to="/cloture/od?tab=review">OD à relire</Link>
           <Link className={`seg ${tab === "approved" ? "active" : ""}`} to="/cloture/od?tab=approved">Validées</Link>
           <Link className={`seg ${tab === "rejected" ? "active" : ""}`} to="/cloture/od?tab=rejected">Rejetées</Link>
@@ -74,9 +75,9 @@ export default function ClosingAdjustmentsCockpit() {
                 <div className="card" key={kind.kind}>
                   <div className="card-head">
                     <div><strong>{kind.title}</strong><div className="sub">{kind.description}</div></div>
-                    <Link className="btn btn-sm" to={`/cloture/workpapers/${kind.kind}`}>Workpapers</Link>
+                    <Link className="btn btn-sm" to={`/cloture/workpapers/${kind.kind}`}>Feuilles de travail</Link>
                   </div>
-                  <div className="sub">{kind.workpapers.length} workpaper(s) · {kind.proposals.length} OD</div>
+                  <div className="sub">{kind.workpapers.length} feuille(s) de travail · {kind.proposals.length} OD</div>
                   {kind.workpapers.length > 0 ? (
                     <TableShell>
                       <table className="tbl compact">
@@ -84,14 +85,14 @@ export default function ClosingAdjustmentsCockpit() {
                           {kind.workpapers.slice(0, 3).map((review) => (
                             <tr key={review.workpaper.workpaperKey}>
                               <td>{review.workpaper.title}</td>
-                              <td><StatusPill label={review.workpaper.status} tone={statusTone(review.workpaper.status)} /></td>
+                              <td><StatusPill label={workpaperStatusLabel(review.workpaper.status)} tone={statusTone(review.workpaper.status)} /></td>
                               <td>{review.hasProposal ? "OD générée" : "Sans OD"}</td>
                             </tr>
                           ))}
                         </tbody>
                       </table>
                     </TableShell>
-                  ) : <p className="sub">Aucun workpaper pour ce domaine.</p>}
+                  ) : <p className="sub">Aucune feuille de travail pour ce domaine.</p>}
                 </div>
               ))}
             </div>
@@ -118,8 +119,8 @@ function AdjustmentTable({ reviews, empty }: { reviews: ClosingAdjustmentReview[
             {reviews.map((review) => (
               <tr key={review.proposal.proposalKey}>
                 <td><strong>{review.proposal.label}</strong><div className="sub mono wrap-anywhere">{review.proposal.proposalKey}</div></td>
-                <td>{review.proposal.kind}</td>
-                <td><StatusPill label={review.proposal.status} tone={statusTone(review.proposal.status)} /></td>
+                <td>{closingAdjustmentKindLabel(review.proposal.kind)}</td>
+                <td><StatusPill label={closingAdjustmentStatusLabel(review.proposal.status)} tone={statusTone(review.proposal.status)} /></td>
                 <td>{review.freshness.statusLabel}</td>
                 <td>{review.evidence.missing ? "Pièce requise" : review.evidence.required ? "OK" : "Recommandée"}</td>
                 <td><Link className="btn btn-sm" to={`/controle/od/${encodeURIComponent(review.proposal.proposalKey)}`}>Relire</Link></td>

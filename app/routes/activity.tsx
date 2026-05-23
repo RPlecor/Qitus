@@ -3,6 +3,7 @@ import { Form, Link, useLoaderData } from "@remix-run/react";
 import { AppShell, Main, TableShell } from "~/components/ui";
 import { ActivityLogCenter } from "~/modules/activity-log/activity-log-center.server";
 import { requireCompanyWorkspace } from "~/modules/company-workspace/company-workspace.server";
+import { activityEntityTypeLabel } from "~/modules/ui-labels";
 
 export async function loader(args: LoaderFunctionArgs) {
   const { request } = args;
@@ -32,7 +33,7 @@ export default function Activity() {
     <AppShell active="activity">
       <Main title="Activité" subtitle="Journal des événements" action={<Link className="btn" to={exportUrl}>Exporter CSV</Link>}>
         <div className="sec-head">
-          <h2>Timeline</h2>
+          <h2>Historique</h2>
           <div>
             <Link className="btn btn-sm" to="/activity">Tout</Link>{" "}
             <Link className="btn btn-sm" to="/activity?type=document">Documents</Link>{" "}
@@ -49,13 +50,13 @@ export default function Activity() {
         </Form>
         <TableShell>
           <table className="tbl">
-            <thead><tr><th>Date</th><th>Action</th><th>Type</th><th>Exercice</th><th>Détail</th><th>Metadata</th></tr></thead>
+            <thead><tr><th>Date</th><th>Action</th><th>Type</th><th>Exercice</th><th>Détail</th><th>Données techniques</th></tr></thead>
             <tbody>
               {activity.map((item) => (
                 <tr key={item.id}>
                   <td className="mono">{formatDateTime(item.createdAt)}</td>
                   <td>{item.label}</td>
-                  <td>{item.entityType ?? "—"}</td>
+                  <td>{activityEntityTypeLabel(item.entityType)}</td>
                   <td className="mono">{item.fiscalYearId ? item.fiscalYearId.slice(-6) : "—"}</td>
                   <td>{item.detail || "—"}</td>
                   <td className="mono metadata-cell wrap-anywhere">{item.metadataText || "—"}</td>

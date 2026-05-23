@@ -65,7 +65,7 @@ export default function ControleDetail() {
             </div>
           ))}
           {issues.length === 0 ? (
-            <div className="card"><span className="sub">Aucune issue suivable pour ce contrôle.</span></div>
+            <div className="card"><span className="sub">Aucun point de suivi pour ce contrôle.</span></div>
           ) : null}
         </div>
       </Main>

@@ -31,7 +31,7 @@ export default function ImportMapping() {
 
   return (
     <AppShell active="imports">
-      <Main title="Mapping CSV" subtitle={importRow.originalFilename ?? "Import CSV"}>
+      <Main title="Association des colonnes CSV" subtitle={importRow.originalFilename ?? "Import CSV"}>
         {error ? <div className="alert red">{error}</div> : null}
         <div className="card" style={{ maxWidth: 820 }}>
           <div className="sec-head" style={{ marginTop: 0 }}>
@@ -50,7 +50,7 @@ export default function ImportMapping() {
               <MappingSelect name="sourceCategory" label="Catégorie" columns={importRow.columns} value={mapping.sourceCategory} />
             </div>
             <div className="form-actions">
-              <button className="btn btn-p" type="submit">Appliquer le mapping</button>
+              <button className="btn btn-p" type="submit">Appliquer l'association</button>
               <Link className="btn" to="/imports">Retour imports</Link>
             </div>
           </Form>

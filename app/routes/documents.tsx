@@ -6,6 +6,7 @@ import { requireCompanyWorkspace } from "~/modules/company-workspace/company-wor
 import { DocumentCatalog } from "~/modules/documents/document-catalog.server";
 import { DocumentGenerationAuditCenter } from "~/modules/documents/document-generation-audit-center.server";
 import { DocumentFreshnessCenter } from "~/modules/documents/document-freshness-center.server";
+import { documentFormatLabel, documentTypeLabel, freshnessLabel } from "~/modules/ui-labels";
 
 export async function loader(args: LoaderFunctionArgs) {
   const { request } = args;
@@ -65,7 +66,7 @@ export default function Documents() {
             <>
               <h3>{generationAudit.label}</h3>
               <p className="sub">
-                {generationAudit.types.join(", ")} · {generationAudit.filenames.join(", ") || "Aucun fichier"} · {generationAudit.durationMs ?? 0} ms
+                {generationAudit.types.map(documentTypeLabel).join(", ")} · {generationAudit.filenames.join(", ") || "Aucun fichier"} · {generationAudit.durationMs ?? 0} ms
               </p>
               <p className="sub">{generationAudit.userMessage ?? "Audit disponible via le journal d'activité."}</p>
             </>
@@ -81,13 +82,13 @@ export default function Documents() {
               {documents.map((document) => (
                 <tr key={document.id}>
                   <td className="mono">{formatDate(document.generatedAt)}</td>
-                  <td>{document.type}</td>
+                  <td>{documentTypeLabel(document.type)}</td>
                   <td>{document.filename}</td>
-                  <td>{document.freshness?.statusLabel ?? "À jour"}</td>
-                  <td>{document.format}</td>
+                  <td>{freshnessLabel(document.freshness?.statusLabel ?? "À jour")}</td>
+                  <td>{documentFormatLabel(document.format)}</td>
                   <td className="r mono">{formatBytes(document.sizeBytes)}</td>
                   <td className="mono">{document.entriesCount ?? "—"}</td>
-                  <td className="mono wrap-anywhere">{document.scriptVersion ?? "unknown"}</td>
+                  <td className="mono wrap-anywhere">{document.scriptVersion ?? "Non renseigné"}</td>
                   <td>{document.generatedBy}</td>
                   <td><a className="btn btn-sm" href={`/api/documents/${document.id}/download`} download={document.filename}>Télécharger</a></td>
                 </tr>

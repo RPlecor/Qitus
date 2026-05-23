@@ -3,6 +3,7 @@ import { Link, useLoaderData } from "@remix-run/react";
 import { AppShell, Main, StatusPill, TableShell } from "~/components/ui";
 import { requireCompanyWorkspace } from "~/modules/company-workspace/company-workspace.server";
 import { DossierSnapshotReviewCenter } from "~/modules/expert-dossier/dossier-snapshot-review-center.server";
+import { dossierSectionStatusLabel, riskLabel, snapshotStatusLabel } from "~/modules/ui-labels";
 
 export async function loader(args: LoaderFunctionArgs) {
   const workspace = await requireCompanyWorkspace(args);
@@ -19,26 +20,26 @@ export default function DossierSnapshotsPage() {
   const { state, detail, diff } = useLoaderData<typeof loader>();
   return (
     <AppShell active="dossier-ec">
-      <Main title="Snapshots dossier EC" subtitle="Historique des états transmis au cabinet" action={<Link className="btn" to="/dossier-ec">Retour dossier</Link>}>
+      <Main title="États transmis du dossier EC" subtitle="Historique des états transmis au cabinet" action={<Link className="btn" to="/dossier-ec">Retour dossier</Link>}>
         <div className={`alert ${state.latest?.freshness.isStale ? "orange" : state.latest ? "blue" : "red"}`}>
           <strong>{state.label}</strong>
-          <span>{state.total} snapshot(s) · {state.stale} obsolète(s)</span>
+          <span>{state.total} état(s) transmis · {state.stale} obsolète(s)</span>
         </div>
 
         <TableShell>
           <table className="tbl">
-            <thead><tr><th>Snapshot</th><th>Statut</th><th>Fraîcheur</th><th>Créé le</th><th></th></tr></thead>
+            <thead><tr><th>État transmis</th><th>Statut</th><th>Fraîcheur</th><th>Créé le</th><th></th></tr></thead>
             <tbody>
               {state.snapshots.map((snapshot) => (
                 <tr key={snapshot.id}>
                   <td><strong>{snapshot.snapshotKey}</strong><div className="sub mono">{snapshot.id}</div></td>
-                  <td>{snapshot.status}</td>
+                  <td>{snapshotStatusLabel(snapshot.status)}</td>
                   <td><StatusPill label={snapshot.freshness.statusLabel} tone={snapshot.freshness.isStale ? "warn" : "ok"} /></td>
                   <td>{formatDateTime(snapshot.createdAt)}</td>
                   <td><Link className="btn btn-sm" to={`/dossier-ec/snapshots?id=${snapshot.id}`}>Voir</Link></td>
                 </tr>
               ))}
-              {state.snapshots.length === 0 ? <tr><td colSpan={5} className="sub">Aucun snapshot préparé.</td></tr> : null}
+              {state.snapshots.length === 0 ? <tr><td colSpan={5} className="sub">Aucun état transmis préparé.</td></tr> : null}
             </tbody>
           </table>
         </TableShell>
@@ -46,12 +47,12 @@ export default function DossierSnapshotsPage() {
         {detail ? (
           <div className="card">
             <h2>Détail</h2>
-            <p>{detail.snapshotKey} · {detail.status} · {detail.freshness.statusLabel}</p>
+            <p>{detail.snapshotKey} · {snapshotStatusLabel(detail.status)} · {detail.freshness.statusLabel}</p>
             {detail.freshness.reasons.length > 0 ? (
               <ul>
                 {detail.freshness.reasons.map((reason) => <li key={`${reason.code}-${reason.at}`}>{reason.label} · {formatDateTime(reason.at)}</li>)}
               </ul>
-            ) : <p className="sub">Aucun changement postérieur au snapshot.</p>}
+            ) : <p className="sub">Aucun changement postérieur à l'état transmis.</p>}
           </div>
         ) : null}
 
@@ -66,9 +67,9 @@ export default function DossierSnapshotsPage() {
                   {diff.changedSections.map((section) => (
                     <tr key={section.code}>
                       <td>{section.title}</td>
-                      <td>{section.previousStatus ?? "—"}</td>
-                      <td>{section.currentStatus}</td>
-                      <td>{section.previousRisk ?? "—"} → {section.currentRisk}</td>
+                      <td>{section.previousStatus ? dossierSectionStatusLabel(section.previousStatus) : "—"}</td>
+                      <td>{dossierSectionStatusLabel(section.currentStatus)}</td>
+                      <td>{section.previousRisk ? riskLabel(section.previousRisk) : "—"} → {riskLabel(section.currentRisk)}</td>
                     </tr>
                   ))}
                   {diff.changedSections.length === 0 ? <tr><td colSpan={4} className="sub">Aucune différence de section.</td></tr> : null}

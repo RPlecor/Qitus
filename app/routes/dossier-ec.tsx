@@ -8,6 +8,7 @@ import { ExpertReviewShareCenter } from "~/modules/expert-review/expert-review-s
 import { ExpertReviewWorkflow } from "~/modules/expert-dossier/expert-review-workflow.server";
 import { requireCompanyWorkspace } from "~/modules/company-workspace/company-workspace.server";
 import { jsonOrRedirectError } from "~/modules/route-errors.server";
+import { expertReviewStatusLabel, readinessStatusLabel } from "~/modules/ui-labels";
 
 export async function loader(args: LoaderFunctionArgs) {
   const url = new URL(args.request.url);
@@ -65,7 +66,7 @@ export default function ExpertDossierPage() {
         action={<a className="btn" href="/api/expert-dossier/export">Exporter dossier final</a>}
       >
         {error ? <div className="alert red">{error}</div> : null}
-        {prepared ? <div className="alert blue">Snapshot de dossier préparé.</div> : null}
+        {prepared ? <div className="alert blue">État transmis du dossier préparé.</div> : null}
         {createdShareUrl ? <div className="alert blue">Lien cabinet créé : <a href={createdShareUrl}>{createdShareUrl}</a></div> : null}
 
         <div className={`alert ${overview.readiness.status === "blocked" ? "red" : overview.readiness.status === "ready_for_final_export" ? "blue" : "orange"}`}>
@@ -77,16 +78,16 @@ export default function ExpertDossierPage() {
           <KpiCard label="Score dossier" value={`${overview.readiness.score}%`} hint={overview.readiness.label} />
           <KpiCard label="Sections prêtes" value={String(overview.readiness.ready)} hint={`${overview.sections.length} sections`} />
           <KpiCard label="Blocages" value={String(readiness.blockingItems.length)} hint="À résoudre avant partage/export" />
-          <KpiCard label="Revue EC" value={review?.status ?? "À créer"} hint={review ? `${review.summary.open} demande(s) ouvertes` : "Aucune revue active"} />
+          <KpiCard label="Revue EC" value={expertReviewStatusLabel(review?.status)} hint={review ? `${review.summary.open} demande(s) ouvertes` : "Aucune revue active"} />
         </div>
 
         <div className="card">
           <div className="card-head">
             <div>
-              <strong>File readiness dossier</strong>
-              <div className="sub">{readiness.blockingItems.length} blocage(s) · {readiness.warnings.length} point(s) à surveiller · snapshot {readiness.snapshotState.label}</div>
+              <strong>Points à traiter du dossier</strong>
+              <div className="sub">{readiness.blockingItems.length} blocage(s) · {readiness.warnings.length} point(s) à surveiller · état transmis {readiness.snapshotState.label}</div>
             </div>
-            <Link className="btn btn-sm" to="/dossier-ec/snapshots">Snapshots</Link>
+            <Link className="btn btn-sm" to="/dossier-ec/snapshots">États transmis</Link>
           </div>
           {readiness.items.length > 0 ? (
             <TableShell>
@@ -106,7 +107,7 @@ export default function ExpertDossierPage() {
         </div>
 
         <div className={`alert ${exportVerification.verification.status === "blocked" ? "red" : exportVerification.verification.status === "warning" ? "orange" : "blue"}`}>
-          <strong>Vérification export : {exportVerification.verification.status}</strong>
+          <strong>Vérification export : {readinessStatusLabel(exportVerification.verification.status)}</strong>
           <span>{exportVerification.verification.blockingCount} blocage(s) · {exportVerification.verification.warningCount} avertissement(s)</span>
         </div>
 
@@ -114,7 +115,7 @@ export default function ExpertDossierPage() {
           <div className="card-head">
             <div>
               <strong>Préparer et partager</strong>
-              <div className="sub">Le snapshot fige l'état transmis. Toute modification comptable rendra le dossier obsolète.</div>
+              <div className="sub">L'état transmis fige le dossier envoyé. Toute modification comptable rendra le dossier obsolète.</div>
             </div>
             <Form method="post"><input type="hidden" name="intent" value="prepare" /><button className="btn" type="submit">Préparer le dossier</button></Form>
           </div>
