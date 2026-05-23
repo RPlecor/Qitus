@@ -34,6 +34,70 @@ Qitus n'est **pas sous-traitant** de l'expert-comptable. L'EC accède à un doss
 
 **Point d'attention USA :** Clerk, Render, Stripe et Anthropic sont basés aux USA ou peuvent impliquer des transferts hors UE selon la configuration. Depuis l'invalidation du Privacy Shield (Schrems II, 2020), le transfert vers les USA nécessite des SCCs (Standard Contractual Clauses) et une évaluation d'impact du transfert (TIA). Le EU-US Data Privacy Framework (DPF) adopté en juillet 2023 couvre les entreprises certifiées — vérifier la certification DPF de chaque sous-traitant US. Le passage à Clever Cloud avant beta ouverte réduit le risque de transfert hors UE sur l'hébergement et la base de données, mais ne supprime pas les transferts liés à l'authentification, la facturation ou l'IA.
 
+### 1.3 Focus Clerk — authentification USA
+
+Clerk est utilisable pour la pré-beta et la beta fermée, mais constitue un risque RGPD moyen terme à surveiller car les données d'authentification sont traitées aux États-Unis sans résidence de données EU confirmée pour Qitus.
+
+**Rôle juridique :**
+
+- Pour les données d'authentification des utilisateurs Qitus, Clerk agit principalement comme sous-traitant de Qitus.
+- Pour certaines `Account Information` liées à la relation entre Qitus et Clerk, Clerk indique dans son DPA agir comme responsable de traitement indépendant.
+- Qitus doit donc documenter Clerk à la fois comme sous-traitant d'authentification et comme destinataire indépendant limité pour les données nécessaires au fonctionnement du service Clerk.
+
+**Données autorisées dans Clerk :**
+
+| Donnée | Autorisée | Commentaire |
+|---|---:|---|
+| Email utilisateur | Oui | Nécessaire à l'authentification |
+| Nom affiché | Oui | Optionnel, à minimiser |
+| Identifiant Clerk | Oui | Identifiant technique d'authentification |
+| Téléphone / MFA | Oui si activé | Seulement si la fonctionnalité est utilisée |
+| Métadonnées de session et sécurité | Oui | Limitées au fonctionnement de l'auth |
+| SIREN / SIRET / adresse entreprise | Non | Donnée métier Qitus, ne doit pas être synchronisée dans Clerk |
+| IBAN / données bancaires | Non | Donnée financière interdite dans Clerk |
+| Transactions / écritures / pièces | Non | Données comptables interdites dans Clerk |
+| Statuts comptables ou dossier EC | Non | Données métier interdites dans Clerk metadata |
+
+**Sous-traitants Clerk à documenter :** Qitus doit conserver un export ou lien daté vers la liste officielle des sous-traitants Clerk avant beta ouverte, notamment les services d'hébergement, logs, emails, webhooks, monitoring et paiement utilisés par Clerk.
+
+**Garanties à vérifier avant beta ouverte :**
+
+- DPA Clerk signé ou accepté formellement.
+- Certification DPF Clerk vérifiée.
+- SCCs incluses comme mécanisme de secours si le DPF est invalidé.
+- SOC 2 Type II disponible ou consultable.
+- Représentant UE identifié.
+- Politique de confidentialité Qitus mentionnant Clerk, les données concernées, la localisation USA et les garanties DPF/SCCs.
+
+**TIA simplifiée Clerk :**
+
+| Critère | Évaluation |
+|---|---|
+| Nature des données | Identité et authentification, pas de données comptables si la minimisation est respectée |
+| Volume beta | Faible à moyen |
+| Sensibilité | Moyenne |
+| Pays tiers | États-Unis |
+| Garanties | DPF, DPA, SCCs, chiffrement, SOC 2 |
+| Risque résiduel | Moyen, principalement dépendant de la stabilité du DPF |
+| Mesure Qitus | Minimisation stricte, pas de données métier dans Clerk, plan de sortie documenté |
+
+**Risque réglementaire à surveiller :** le DPF a été confirmé par le Tribunal de l'Union européenne en 2025, mais fait l'objet d'un appel devant la CJUE (`C-703/25 P`). Qitus doit surveiller cette procédure. Si le DPF est invalidé et que Clerk ne propose pas de résidence EU ou de garanties jugées suffisantes, Qitus devra déclencher le plan de sortie auth.
+
+**Plan de sortie Clerk :**
+
+| Déclencheur | Action |
+|---|---|
+| Invalidation du DPF sans solution Clerk EU sous 6 mois | Lancer migration vers une auth hébergée EU |
+| Prospect ou client beta bloque explicitement sur auth USA | Évaluer migration avant ouverture plus large |
+| Passage production avec exigences fortes EC/compta | Refaire l'analyse auth et arbitrer Clerk vs alternative EU |
+
+**Alternatives à évaluer :**
+
+- Ory self-hosted en EU.
+- Supabase Auth en région EU si garanties suffisantes.
+- Keycloak / Ory sur Clever Cloud.
+- Auth maison minimale email + mot de passe + session si le périmètre reste volontairement réduit.
+
 ---
 
 ## 2. Cartographie des données personnelles
@@ -322,6 +386,8 @@ En cas de violation de données personnelles :
 
 - [ ] Signer les DPA avec Clerk, Render et Clever Cloud selon les environnements utilisés.
 - [ ] Vérifier la certification DPF de Clerk, Render, Stripe, Anthropic.
+- [ ] Documenter la TIA simplifiée Clerk et archiver la liste des sous-traitants Clerk.
+- [ ] Vérifier qu'aucune donnée métier Qitus n'est synchronisée dans Clerk metadata.
 - [ ] Migrer la beta ouverte sur Clever Cloud avec hébergement applicatif et PostgreSQL localisés en France.
 - [ ] Publier la politique de confidentialité sur `/privacy`.
 - [ ] Ajouter le lien vers la politique de confidentialité sur `/signup`.
@@ -334,6 +400,7 @@ En cas de violation de données personnelles :
 ### P1 — Fortement recommandé avant beta ouverte
 
 - [ ] Configurer S3-compatible avec SSE pour les pièces et documents.
+- [ ] Préparer le plan de sortie Clerk vers une solution auth EU ou self-hosted.
 - [ ] Implémenter le flag `aiSuggestionsDisabled` sur Company (droit d'opposition).
 - [ ] Implémenter le `PurgeScheduler` (ShareLink expirés, Notifications anciennes, WebhookEvents > 90 jours).
 - [ ] Réaliser l'AIPD simplifiée (outil PIA de la CNIL).
@@ -379,3 +446,4 @@ En cas de violation de données personnelles :
 4. **Analytics :** si ajout d'analytics, utiliser un outil EU-only (Plausible, Matomo) pour éviter le consentement cookie complexe.
 5. **Anthropic zero-retention :** confirmer contractuellement que le mode zero-retention est activé et documenté dans le DPA.
 6. **Plan Clever Cloud PostgreSQL :** quel plan pour le chiffrement at rest, les backups, la restauration et la rétention ?
+7. **Auth long terme :** garder Clerk après beta ouverte ou migrer vers Ory, Supabase Auth EU, Keycloak/Ory sur Clever Cloud, ou une auth maison minimale ?
