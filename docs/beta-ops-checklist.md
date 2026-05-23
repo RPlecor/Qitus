@@ -9,6 +9,12 @@
 - `/api/system/status` ne contient aucun secret brut.
 - `/api/storage/audit` ne signale pas d'artefact critique manquant.
 - `/api/metrics/catalog` expose les métriques attendues.
+- `/privacy` est accessible sans authentification.
+- `/api/privacy/export` fonctionne pour un utilisateur authentifié.
+- Les DPA Clerk, Render et Clever Cloud sont vérifiés selon l'environnement utilisé.
+- La TIA simplifiée Clerk et la liste des sous-traitants Clerk sont archivées.
+- Aucun secret, token, IBAN complet ou donnée métier Clerk interdite n'apparaît dans les logs ou statuts.
+- Avant beta ouverte avec données réelles : l'app et PostgreSQL sont prêts sur Clever Cloud France, backups et restauration inclus.
 
 ## Web et workers
 
@@ -29,6 +35,13 @@
 - Dev : `OBJECT_STORAGE_MODE=local`.
 - Beta S3-compatible : endpoint, région, buckets documents/evidence et credentials configurés.
 - Si retour arrière, repasser en local et vérifier `/api/storage/audit`.
+
+## Confidentialité et conservation
+
+- Les actions utilisateur disponibles : export RGPD, anonymisation, demande de suppression.
+- Les données comptables ne sont jamais purgées automatiquement.
+- Les purges automatiques ne concernent que liens expirés, notifications anciennes, webhooks anciens, exports temporaires et workdirs.
+- Les exports RGPD temporaires doivent être supprimés après leur durée utile.
 
 ## Rollback local
 

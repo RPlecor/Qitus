@@ -29,6 +29,19 @@ export class PrivacyCenter {
     };
   }
 
+  async requestDataExport(workspace: CompanyWorkspace, input: { format?: string | null } = {}) {
+    const now = new Date();
+    const request = await this.createRequest(workspace, "EXPORT", { format: input.format ?? "json" });
+    await prisma.privacyRequest.update({ where: { id: request.id }, data: { status: "DONE", processedAt: now } });
+    await this.activity.recordActivity(workspace, {
+      action: "privacy.export_requested",
+      entityType: "privacy",
+      entityId: request.id,
+      metadata: { kind: "EXPORT", format: input.format ?? "json" },
+    });
+    return request;
+  }
+
   async requestSoftDelete(workspace: CompanyWorkspace, input: { reason?: string | null } = {}) {
     const now = new Date();
     const request = await this.createRequest(workspace, "SOFT_DELETE", { reason: input.reason ?? null });
@@ -93,6 +106,12 @@ export class PrivacyCenter {
     }
     const request = await this.createRequest(workspace, "PURGE", { confirmed: true });
     await prisma.company.delete({ where: { id: workspace.company.id } });
+    await this.activity.recordActivity(workspace, {
+      action: "privacy.purged",
+      entityType: "privacy",
+      entityId: request.id,
+      metadata: { kind: "PURGE" },
+    });
     return request;
   }
 

@@ -30,6 +30,8 @@ Configuration livrée par défaut :
 
 Cette configuration sert à obtenir une URL Render staging avec de vrais comptes Clerk, sans activer encore Stripe, Open Banking ou S3. Elle n'est pas une configuration production complète.
 
+Render reste l'environnement de pré-beta tant que Qitus n'est pas ouvert à des utilisateurs externes avec données réelles. Avant une beta ouverte, l'application web et PostgreSQL doivent être migrés vers Clever Cloud avec une région France confirmée, afin de réduire le périmètre des transferts hors UE aux services qui restent nécessaires comme Clerk, Stripe ou l'IA.
+
 Avant de tester l'interface, renseigner dans Render :
 
 - `CLERK_PUBLISHABLE_KEY`
@@ -75,10 +77,23 @@ Important : en Blueprint staging, les documents et pièces utilisent `/tmp/qitus
 Pour exposer à de vrais utilisateurs :
 
 - conserver `AUTH_MODE=clerk` et renseigner Clerk ;
+- migrer l'hébergement applicatif et PostgreSQL vers Clever Cloud France avant données réelles externes ;
 - passer `BILLING_MODE=stripe` si abonnement réel ;
 - passer `OBJECT_STORAGE_MODE=s3` ;
 - configurer `PUBLIC_APP_URL` avec le domaine réel ;
 - configurer Open Banking uniquement quand le provider est prêt.
+
+## RGPD et hébergement beta
+
+Avant beta ouverte :
+
+- vérifier les DPA Clerk, Render et Clever Cloud selon les environnements effectivement utilisés ;
+- archiver la liste des sous-traitants Clerk et la TIA simplifiée Clerk ;
+- vérifier qu'aucune donnée métier Qitus n'est synchronisée dans Clerk metadata ;
+- publier `/privacy` et lier cette page depuis `/login`, `/signup` et les paramètres du compte ;
+- vérifier `GET /api/privacy/export` ;
+- vérifier que les logs, statuts et ActivityLog ne contiennent aucun secret, token ou IBAN complet ;
+- confirmer chiffrement at rest, fréquence de backup, rétention et restauration PostgreSQL Clever Cloud.
 
 ## Variables critiques
 

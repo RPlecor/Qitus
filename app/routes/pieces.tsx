@@ -131,7 +131,7 @@ function UploadZone() {
           <line x1="12" y1="3" x2="12" y2="15" />
         </svg>
         <div className="upload-label">Glissez un fichier ici ou <span>parcourir</span></div>
-        <div className="upload-hint">PDF, PNG, JPG, TXT ou XML · 10 Mo max · factures électroniques détectées automatiquement</div>
+        <div className="upload-hint">PDF, PNG, JPG, TXT ou XML · 10 Mo max · fichiers stockés de manière sécurisée · <Link to="/privacy">confidentialité</Link></div>
         {fileName ? <div className="upload-selected">📎 {fileName}</div> : null}
         <input
           type="file"

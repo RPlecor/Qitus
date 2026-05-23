@@ -14,6 +14,7 @@ export default function Onboarding() {
       <Form method="post" action="/api/companies" className="ob-card">
         <h1>Configurons votre entreprise.</h1>
         <p className="sub">Ces informations alimentent les écritures, les documents et les contrôles Qitus.</p>
+        <p className="sub">Si votre entreprise est une entreprise individuelle, l'adresse renseignée peut correspondre à votre domicile. Qitus la traite comme une donnée protégée. <Link to="/privacy">Lire la politique de confidentialité</Link></p>
         <div className="field">
           <label>Nom de l'entreprise</label>
           <input name="name" defaultValue="ACME Digital" required />

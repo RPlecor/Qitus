@@ -14,7 +14,7 @@ export default function Signup() {
     return (
       <AuthLayout
         title="Créer mon espace Qitus"
-        footer={<p>Déjà inscrit ? <Link to="/login">Se connecter à Qitus</Link></p>}
+        footer={<p>Déjà inscrit ? <Link to="/login">Se connecter à Qitus</Link> · <Link to="/privacy">Confidentialité</Link></p>}
       >
         <SignUp
           routing="path"
@@ -30,7 +30,7 @@ export default function Signup() {
   return (
     <AuthLayout
       title="Créer mon espace Qitus"
-      footer={<p>Déjà inscrit ? <Link to="/login">Retour connexion</Link></p>}
+      footer={<p>Déjà inscrit ? <Link to="/login">Retour connexion</Link> · <Link to="/privacy">Confidentialité</Link></p>}
     >
       <p className="sub">En développement local, Qitus utilise le compte démo intégré.</p>
       <div className="form-actions">

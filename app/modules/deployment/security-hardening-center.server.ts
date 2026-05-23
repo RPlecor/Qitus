@@ -32,9 +32,22 @@ export class SecurityHardeningCenter {
   }
 
   redact(input: Record<string, unknown>) {
-    return Object.fromEntries(Object.entries(input).map(([key, value]) => [
+    return redactSensitive(input) as Record<string, unknown>;
+  }
+}
+
+export function redactSensitive(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(redactSensitive);
+  if (value && typeof value === "object") {
+    return Object.fromEntries(Object.entries(value).map(([key, item]) => [
       key,
-      /secret|token|password|key/i.test(key) ? "[redacted]" : value,
+      /secret|token|password|key|authorization|iban/i.test(key) ? "[redacted]" : redactSensitive(item),
     ]));
   }
+  if (typeof value !== "string") return value;
+  return value
+    .replace(/\b[A-Z]{2}\d{2}[A-Z0-9]{11,30}\b/g, "[redacted-iban]")
+    .replace(/(sk_(live|test)_[a-zA-Z0-9]+)/g, "[redacted-secret]")
+    .replace(/(whsec_[a-zA-Z0-9_=-]+)/g, "[redacted-secret]")
+    .replace(/(Bearer\s+)[A-Za-z0-9._=-]+/gi, "$1[redacted-token]");
 }

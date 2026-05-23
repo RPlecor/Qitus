@@ -128,6 +128,11 @@
 - **PrivacyRequest**: one user data request such as export, soft delete, anonymization or purge, tracked for RGPD audit.
 - **PrivacyCenter**: the Module that handles soft deletion, anonymization and protected purge decisions.
 - **DataExportCenter**: the Module that builds the complete user/company JSON export for portability.
+- **PrivacyRoadmap**: the transverse beta checklist that turns RGPD requirements into product, ops and documentation gates before real external user data.
+- **PrivacyExport**: the user-facing portability export, exposed through `/api/privacy/export`, containing identity, company, accounting, evidence references, activity and privacy request data.
+- **PrivacyPolicy**: the public Qitus privacy notice available without authentication, explaining processing purposes, processors, retention, transfers and user rights.
+- **ClerkTransferAssessment**: the simplified TIA for Clerk authentication data, including DPF/SCC safeguards, no-business-data metadata rules and an EU-auth exit plan.
+- **DataRetentionPolicy**: the rule set distinguishing non-accounting data that can be purged automatically from accounting evidence that must never be silently purged.
 - **ExpertReviewShare**: a read-only external review of one Company/FiscalYear dossier through a tokenized ShareLink.
 - **ShareLink**: a hashed-token access grant for external read-only review, with expiration, revocation and optional expert validation.
 - **ExpertValidation**: the reviewer name, note and timestamp proving that an external expert-comptable reviewed the shared dossier.

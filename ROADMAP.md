@@ -1071,6 +1071,64 @@ Objectif : stabiliser le socle Phase 16 avant les extensions post-beta, avec rea
 
 Cette phase ne choisit pas encore un provider bancaire live. Le mock Open Banking reste la preuve automatisée. Après readiness beta verte, la Phase 17 peut démarrer sur les extensions métier sans rouvrir les Seams d'infrastructure.
 
+## Sous-roadmap RGPD beta — transverse avant ouverture beta
+
+Objectif : rendre Qitus exploitable en beta sans angle mort privacy. Cette sous-roadmap ne remplace pas les phases produit ; elle ajoute les prérequis conformité, sécurité et information avant toute beta ouverte avec données réelles.
+
+Décisions :
+
+- Render reste l'environnement pré-beta/staging tant que la beta n'est pas ouverte.
+- La beta ouverte avec données réelles migre vers Clever Cloud France pour l'app et PostgreSQL.
+- Clerk est conservé pour la beta, avec TIA simplifiée, DPA/DPF/SCCs et plan de sortie.
+- Les données comptables, bancaires et justificatifs restent hors Clerk.
+- Le cadrage source de vérité est `docs/cadrage-rgpd-qitus.md`.
+
+### RGPD-0 — Cadrage et registre de conformité — en cours
+
+- Stabiliser le registre des traitements article 30, le registre sous-traitants, la TIA Clerk, la TIA Anthropic si l'IA est activée, et la décision Render pré-beta → Clever Cloud beta ouverte.
+- Maintenir `CONTEXT.md` avec les concepts privacy : `PrivacyRoadmap`, `PrivacyExport`, `PrivacyPolicy`, `ClerkTransferAssessment`, `DataRetentionPolicy`.
+- Statut beta : prêt quand les documents sont datés, versionnés et cohérents avec le déploiement réel.
+
+### RGPD-1 — Information utilisateur et documents publics — à faire
+
+- Publier `/privacy` ou `/politique-de-confidentialite` sans authentification.
+- Ajouter les liens privacy sur signup/login, onboarding, upload justificatifs, partage dossier EC et paramètres RGPD.
+- Couvrir responsable de traitement, contact privacy, finalités, bases légales, sous-traitants, transferts USA, Clerk, Clever Cloud, durées de conservation, droits utilisateurs, CNIL et IA suggestion-only.
+
+### RGPD-2 — Droits utilisateurs et export RGPD — à faire
+
+- Finaliser `GET /api/privacy/export` comme point d'entrée RGPD stable.
+- L'export doit couvrir profil, entreprise, exercices, transactions, écritures, FEC si disponible, justificatifs référencés, documents générés, activité et demandes RGPD.
+- Les actions restent dans Compte/Paramètres : exporter, anonymiser, demander suppression.
+- Les données comptables conservées par obligation légale doivent être expliquées clairement dans l'UI.
+
+### RGPD-3 — Sécurité, logs et minimisation — à faire
+
+- Auditer `ActivityLog.metadata`, logs serveur et erreurs utilisateur : aucun secret, IBAN complet, clé API, token partagé ou donnée bancaire brute inutile.
+- Ajouter des tests de redaction pour secrets, tokens et IBAN.
+- Vérifier cookies `HttpOnly`, `Secure`, `SameSite`, webhooks signés et rate limits endpoints sensibles.
+- Documenter fréquence, rétention, restauration et chiffrement at rest des backups Clever Cloud.
+
+### RGPD-4 — Conservation et purge automatique — à faire
+
+- Définir `DataRetentionPolicy`.
+- Purger seulement les données non comptables : liens partagés expirés/révoqués, notifications anciennes, webhook events anciens, exports temporaires et workdirs.
+- Ne jamais purger automatiquement écritures, FEC, documents comptables, justificatifs, preuves de clôture ou dossier EC final.
+- Toute purge doit être auditée.
+
+### RGPD-5 — Clerk, transferts USA et plan de sortie — en cours
+
+- Garder Clerk pour beta, mais vérifier DPA, DPF, SCCs, sous-traitants, TIA et politique Qitus avant beta ouverte.
+- Auditer qu'aucune donnée métier Qitus n'est envoyée dans Clerk metadata.
+- Déclencher le plan de sortie si DPF invalidé sans solution EU sous 6 mois, si un client bloque sur auth USA, ou avant production avec exigence forte EC/compta.
+- Alternatives à évaluer : Ory self-hosted EU, Keycloak/Ory sur Clever Cloud, Supabase Auth EU, auth maison minimale.
+
+### RGPD-6 — AIPD simplifiée et Go/No-Go beta — à faire
+
+- Réaliser une AIPD simplifiée avant données réelles : banque, justificatifs, IA suggestion-only, connecteurs, dossier EC partagé, transferts USA, Clever Cloud.
+- Go/No-Go beta RGPD : `/privacy` publié, export RGPD fonctionnel, DPA prioritaires vérifiés, Clever Cloud prêt, logs sans secrets, TIA Clerk documentée, plan de sortie auth documenté, backups/restauration vérifiés.
+- Validations à ajouter : `npm run validate:privacy`, `npm run validate:privacy-export`, `npm run validate:privacy-redaction`.
+
 ## Phase 17 — Mise à jour automatique des règles comptables officielles
 
 Objectif : automatiser la veille et l'activation des règles comptables Qitus à partir de sources officielles, sans action demandée à l'utilisateur final.

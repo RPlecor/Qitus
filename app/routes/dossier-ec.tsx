@@ -115,7 +115,7 @@ export default function ExpertDossierPage() {
           <div className="card-head">
             <div>
               <strong>Préparer et partager</strong>
-              <div className="sub">L'état transmis fige le dossier envoyé. Toute modification comptable demandera de préparer un nouvel état.</div>
+              <div className="sub">L'état transmis fige le dossier envoyé. Le lien donne un accès en lecture seule, expire automatiquement et peut être révoqué. <Link to="/privacy">Confidentialité</Link></div>
             </div>
             <Form method="post"><input type="hidden" name="intent" value="prepare" /><button className="btn" type="submit">Préparer le dossier</button></Form>
           </div>

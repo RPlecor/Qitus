@@ -78,8 +78,9 @@ export default function Profil() {
         <section className="card" >
           <h2>RGPD et portabilité</h2>
           <p className="sub">L'export contient les données métier, l'activité, les documents référencés, le chat et le billing. L'anonymisation conserve les montants et écritures pour l'audit comptable.</p>
+          <p className="sub">Certaines données comptables peuvent être conservées pour respecter les obligations légales. <Link to="/privacy">Lire la politique de confidentialité</Link></p>
           <div className="form-actions">
-            <Link className="btn btn-p" to="/api/exports/all">Exporter mes données</Link>
+            <Link className="btn btn-p" to="/api/privacy/export">Exporter mes données</Link>
             <Form method="post" action="/api/privacy/anonymize">
               <input type="hidden" name="reason" value="Demande utilisateur locale" />
               <button className="btn" type="submit">Anonymiser localement</button>

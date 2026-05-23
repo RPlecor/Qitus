@@ -44,6 +44,12 @@ const SETTINGS_CARDS = [
     href: "/activity",
     action: "Voir l'activité",
   },
+  {
+    title: "Confidentialité",
+    description: "Exporter vos données, consulter la politique de confidentialité et gérer les demandes RGPD.",
+    href: "/profil",
+    action: "Gérer mes données",
+  },
 ];
 
 export default function Parametres() {
