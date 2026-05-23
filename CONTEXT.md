@@ -154,7 +154,11 @@
 - **ChatContext**: the compact business snapshot supplied to AccountingChat, built from Dashboard, AccountingReview, ClosingAdjustment, JournalAudit, DocumentFreshness and AnnualClosing Modules.
 - **ChatReadOnlyPolicy**: the deterministic guard that blocks mutation-like chat requests before they reach an IA provider.
 - **ChatSafetyPolicy**: the broader chat guard that keeps the P0 assistant Qitus-only, blocks mutations, blocks personalized accounting advice and returns a safe refusal before provider calls.
-- **QitusKnowledgeCenter**: the deterministic local knowledge retrieval Module for the P0 chat, built from Qitus product concepts, routes, actions, labels and help text; it excludes BOFiP, PCG, CGI and general accounting doctrine.
+- **QitusUserGuide**: the canonical user-facing Markdown guide for Qitus, written with the vocabulary shown in the UI and used as the single source of truth for chatbot knowledge.
+- **QitusUserGuideCenter**: the Module that exposes guide sections, guide-derived knowledge sources and coverage checks without requiring routes or chat callers to parse Markdown.
+- **QitusKnowledgeSource**: one generated chatbot source chunk derived from QitusUserGuide, with stable sourceId, title, surface, href and user-facing content.
+- **GuideCoverageValidation**: the CI check that ensures every main Qitus surface has a guide section and that user-visible guide text does not drift into backend jargon.
+- **QitusKnowledgeCenter**: the deterministic local knowledge retrieval Module for the P0 chat, built from generated QitusUserGuide chunks; it excludes BOFiP, PCG, CGI and general accounting doctrine.
 - **ChatResolutionCenter**: the orchestration Module that combines chat safety, Qitus knowledge retrieval and the provider adapter, calling an IA provider only when enough Qitus sources are available.
 - **ChatAnswerGrounding**: the Module that attaches product references to chat context and replies so answers point back to concrete Qitus screens.
 - **ChatReadiness**: the runtime reading of chat provider, model, read-only state and current quota availability.
