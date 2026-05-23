@@ -85,7 +85,7 @@ export class DossierSnapshotCenter {
       document ? reason("document_generated", `Document généré : ${document.type}`, document.generatedAt) : null,
       attachment ? reason("attachment_updated", `Pièce modifiée : ${attachment.originalFilename}`, attachment.updatedAt) : null,
       reconciliation?.startedAt ? reason("reconciliation_run", `Rapprochement relancé : ${reconciliation.kind}`, reconciliation.startedAt) : null,
-      workpaper ? reason("workpaper_updated", `Workpaper modifié : ${workpaper.title}`, workpaper.updatedAt) : null,
+      workpaper ? reason("workpaper_updated", `Feuille de travail modifiée : ${workpaper.title}`, workpaper.updatedAt) : null,
       closing ? reason("annual_closing_updated", `Clôture modifiée : ${closing.status}`, closing.updatedAt) : null,
       vatDeclaration ? reason("vat_declaration_updated", `Déclaration TVA modifiée : ${vatDeclaration.type}`, vatDeclaration.updatedAt) : null,
     ].filter((item): item is { code: string; label: string; at: string } => Boolean(item));

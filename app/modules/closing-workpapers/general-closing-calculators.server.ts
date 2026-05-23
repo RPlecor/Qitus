@@ -57,7 +57,7 @@ export const CLOSING_KIND_DEFINITIONS: ClosingKindDefinition[] = [
   {
     kind: "STOCK_VARIATION",
     title: "Variation de stock",
-    description: "Écart entre stock initial et stock final saisi en workpaper.",
+    description: "Écart entre stock initial et stock final saisi dans la feuille de travail.",
     defaultDebitAccount: "37",
     defaultCreditAccount: "6037",
     defaultAmount: 1000,

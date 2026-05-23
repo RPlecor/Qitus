@@ -287,10 +287,10 @@ function buildCoverageAreas(snapshot: AccountingCoverageSnapshot): CoverageArea[
       "Clôture",
       snapshot.closingRunStatus === "CLOSED" ? "covered" : snapshot.closingRunCount > 0 || snapshot.approvedClosingAdjustments > 0 || snapshot.closingWorkpaperCount > 0 ? "partial" : "missing",
       snapshot.closingRequiredEvidenceMissing > 0 || snapshot.draftClosingAdjustments > 0 || (snapshot.closingAdjustmentStaleCount ?? 0) > 0 ? "high" : snapshot.closingRunStatus === "CLOSED" ? "low" : "medium",
-      snapshot.closingRunStatus === "CLOSED" ? "Exercice clôturé" : `${snapshot.closingWorkpaperCount} workpaper(s), ${snapshot.approvedClosingAdjustments} OD validée(s)`,
+      snapshot.closingRunStatus === "CLOSED" ? "Exercice clôturé" : `${snapshot.closingWorkpaperCount} feuille(s) de travail, ${snapshot.approvedClosingAdjustments} OD validée(s)`,
       [
         ...(snapshot.closingRunCount > 0 ? ["Run de clôture présent"] : []),
-        ...(snapshot.closingWorkpaperCount > 0 ? [`${snapshot.closingWorkpaperCount} workpaper(s)`] : []),
+        ...(snapshot.closingWorkpaperCount > 0 ? [`${snapshot.closingWorkpaperCount} feuille(s) de travail`] : []),
         ...(snapshot.approvedClosingAdjustments > 0 ? [`${snapshot.approvedClosingAdjustments} OD validée(s)`] : []),
       ],
       [
@@ -298,7 +298,7 @@ function buildCoverageAreas(snapshot: AccountingCoverageSnapshot): CoverageArea[
         ...(snapshot.draftClosingAdjustments > 0 ? [`${snapshot.draftClosingAdjustments} OD à valider ou rejeter`] : []),
         ...(snapshot.rejectedClosingAdjustments > 0 ? [`${snapshot.rejectedClosingAdjustments} OD rejetée(s) avec note`] : []),
         ...((snapshot.closingAdjustmentStaleCount ?? 0) > 0 ? [`${snapshot.closingAdjustmentStaleCount} OD à recalculer`] : []),
-        ...(snapshot.closingWorkpaperDraftCount > 0 ? [`${snapshot.closingWorkpaperDraftCount} workpaper(s) en brouillon`] : []),
+        ...(snapshot.closingWorkpaperDraftCount > 0 ? [`${snapshot.closingWorkpaperDraftCount} feuille(s) de travail en brouillon`] : []),
         ...(snapshot.closingRequiredEvidenceMissing > 0 ? [`${snapshot.closingRequiredEvidenceMissing} pièce(s) requise(s) pour OD`] : []),
       ],
       "Phase 14",

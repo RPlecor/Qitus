@@ -54,7 +54,7 @@ export class ClosingWorkpaperWorkflow {
 
   async markReady(workspace: CompanyWorkspace, workpaperKey: string) {
     const workpaper = await this.center.getWorkpaper(workspace, workpaperKey);
-    if (workpaper.status === "ARCHIVED") throw new ExpectedRouteError("Un workpaper archivé ne peut pas être marqué prêt.", 409);
+    if (workpaper.status === "ARCHIVED") throw new ExpectedRouteError("Une feuille de travail archivée ne peut pas être marquée prête.", 409);
     const updated = await this.center.saveWorkpaper(workspace, {
       workpaperKey,
       kind: workpaper.kind,

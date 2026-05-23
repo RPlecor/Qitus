@@ -132,7 +132,7 @@ export class ClosingAdjustmentFreshnessCenter {
     if (!workpaper || workpaper.updatedAt <= calculatedAt) return [];
     return [{
       code: "workpaper_updated",
-      label: `Workpaper modifié après le calcul : ${workpaper.title}.`,
+      label: `Feuille de travail modifiée après le calcul : ${workpaper.title}.`,
       happenedAt: workpaper.updatedAt.toISOString(),
     }];
   }

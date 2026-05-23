@@ -277,7 +277,7 @@ class ClosingNotificationSource implements NotificationSource {
       closingWorkpapers.draft > 0 ? {
         type: "CLOSING_BLOCKER" as const,
         severity: "INFO" as const,
-        title: `${closingWorkpapers.draft} workpaper de clôture incomplet`,
+        title: `${closingWorkpapers.draft} feuille${closingWorkpapers.draft > 1 ? "s" : ""} de travail de clôture incomplète${closingWorkpapers.draft > 1 ? "s" : ""}`,
         body: "Complétez les hypothèses avant de générer les propositions d'OD.",
         href: "/cloture/od",
         primaryActionLabel: "Compléter les feuilles de travail",
@@ -298,7 +298,7 @@ class ClosingNotificationSource implements NotificationSource {
         type: "CLOSING_BLOCKER" as const,
         severity: "WARNING" as const,
         title: `${closingAdjustmentFreshness.staleCount} OD à recalculer`,
-        body: "Des workpapers, pièces ou écritures sont plus récents que les propositions OD.",
+        body: "Des feuilles de travail, pièces ou écritures sont plus récentes que les propositions OD.",
         href: "/cloture/od?tab=review",
         primaryActionLabel: "Recalculer les OD",
         dedupeKey: "closing-adjustments:stale",

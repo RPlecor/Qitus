@@ -345,11 +345,11 @@ export class AnnualClosingCenter {
           : [],
         warnings: [
           ...(drafts > 0 ? [warning("DRAFT_OD", "OD à relire", `${drafts} proposition(s) à valider ou rejeter.`, "/cloture/od")] : []),
-          ...(workpapers.draft > 0 ? [warning("DRAFT_WORKPAPER", "Workpapers incomplets", `${workpapers.draft} workpaper(s) restent en brouillon.`, "/cloture/od")] : []),
+          ...(workpapers.draft > 0 ? [warning("DRAFT_WORKPAPER", "Feuilles de travail incomplètes", `${workpapers.draft} feuille(s) de travail restent en brouillon.`, "/cloture/od")] : []),
         ],
         evidence: [
           { label: "OD validées", value: String(relevant.filter((proposal) => proposal.status === "APPROVED").length), href: "/cloture/od" },
-          { label: "Workpapers", value: `${workpapers.ready} prêt(s) · ${workpapers.draft} brouillon(s)`, href: "/cloture/od" },
+          { label: "Feuilles de travail", value: `${workpapers.ready} prête(s) · ${workpapers.draft} brouillon(s)`, href: "/cloture/od" },
         ],
       };
     }
