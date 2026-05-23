@@ -72,7 +72,7 @@ export default function ClosingAdjustmentDetail() {
           <div className="kpi"><div className="kpi-label">Impact résultat</div><span className="kpi-val">{formatEuro(-total)}</span></div>
           <div className="kpi"><div className="kpi-label">Impact bilan</div><span className="kpi-val">{formatEuro(total)}</span></div>
         </div>
-        <pre className="card mono">{JSON.stringify(proposal.calculation, null, 2)}</pre>
+        <CalculationReadOnly kind={proposal.kind} calculation={proposal.calculation} assumptions={proposal.assumptions} />
 
         <div className="sec-head"><h2>Preuves liées</h2></div>
         <div className="card">
@@ -207,7 +207,169 @@ function Field({ name, label, value, type = "text", step }: { name: string; labe
 }
 
 function AssumptionReadOnly({ assumptions }: { assumptions: Record<string, unknown> }) {
-  return <pre className="card mono">{JSON.stringify(assumptions, null, 2)}</pre>;
+  return <KeyValueCard rows={humanReadableRows(assumptions)} emptyLabel="Aucune hypothèse spécifique." />;
+}
+
+function CalculationReadOnly({ kind, calculation, assumptions }: { kind: string; calculation: Record<string, unknown>; assumptions: Record<string, unknown> }) {
+  return <KeyValueCard rows={calculationRows(kind, calculation, assumptions)} emptyLabel="Aucun détail de calcul disponible." />;
+}
+
+function KeyValueCard({ rows, emptyLabel }: { rows: Array<{ label: string; value: string }>; emptyLabel: string }) {
+  return (
+    <div className="card">
+      {rows.length > 0 ? (
+        <table className="tbl compact-table">
+          <tbody>
+            {rows.map((row) => (
+              <tr key={row.label}>
+                <th>{row.label}</th>
+                <td>{row.value}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      ) : (
+        <p className="sub">{emptyLabel}</p>
+      )}
+    </div>
+  );
+}
+
+function calculationRows(kind: string, calculation: Record<string, unknown>, assumptions: Record<string, unknown>) {
+  if (kind === "CCA") {
+    return [
+      row("Période concernée", formatPeriod(valueAsString(calculation.period))),
+      row("Montant total de la charge", formatEuroValue(calculation.totalAmount)),
+      row("Part reportée sur l'exercice suivant", formatEuroValue(calculation.nextExerciseAmount)),
+    ];
+  }
+  if (kind === "DEPRECIATION") {
+    return [
+      row("Date de mise en service", formatDateOnly(valueAsString(calculation.acquisitionDate))),
+      row("Fin d'exercice", formatDateOnly(valueAsString(calculation.fiscalYearEnd))),
+      row("Base amortissable", formatEuroValue(calculation.baseAmount)),
+      row("Durée retenue", pluralize(calculation.usefulLifeYears, "an", "ans")),
+      row("Prorata", pluralize(calculation.prorataDays, "jour", "jours")),
+      row("Dotation proposée", formatEuroValue(calculation.depreciationAmount)),
+    ];
+  }
+  if (kind === "CORPORATE_TAX") {
+    return [
+      row("Résultat avant impôt", formatEuroValue(calculation.resultBeforeTax)),
+      row("Taux retenu", formatPercentValue(calculation.rate)),
+      row("Impôt proposé", formatEuroValue(calculation.tax)),
+    ];
+  }
+  const readableAssumptions = humanReadableRows(assumptions);
+  return readableAssumptions.length > 0 ? readableAssumptions : humanReadableRows(calculation);
+}
+
+function humanReadableRows(values: Record<string, unknown>) {
+  const rows = Object.entries(values)
+    .filter(([key, value]) => !hiddenTechnicalKeys.has(key) && value !== null && value !== undefined && value !== "")
+    .map(([key, value]) => row(labelForField(key), formatFieldValue(key, value)));
+  return rows.filter((item) => item.value !== "—");
+}
+
+function row(label: string, value: string) {
+  return { label, value };
+}
+
+const hiddenTechnicalKeys = new Set(["accounts", "code", "kind", "source", "sourceEntityId", "sourceEntityType"]);
+
+function labelForField(key: string) {
+  const labels: Record<string, string> = {
+    amount: "Montant",
+    annualRate: "Taux annuel",
+    baseAmount: "Base amortissable",
+    basis: "Base de calcul",
+    capital: "Capital restant dû",
+    chargeAccount: "Compte de charge",
+    creditAccount: "Compte crédit",
+    days: "Jours courus",
+    debitAccount: "Compte débit",
+    depreciationAccount: "Compte amortissement",
+    depreciationAmount: "Dotation proposée",
+    expenseAccount: "Compte de charge",
+    finalStock: "Stock final",
+    fiscalYearEnd: "Fin d'exercice",
+    initialStock: "Stock initial",
+    label: "Libellé",
+    net: "Solde TVA",
+    nextExerciseAmount: "Part reportée sur l'exercice suivant",
+    payableAccount: "Compte État",
+    period: "Période concernée",
+    prepaidExpenseAccount: "Compte CCA",
+    prorataDays: "Prorata",
+    rate: "Taux retenu",
+    requiredEvidence: "Pièce nécessaire",
+    resultBeforeTax: "Résultat avant impôt",
+    tax: "Impôt proposé",
+    totalAmount: "Montant total",
+    usefulLifeYears: "Durée retenue",
+  };
+  return labels[key] ?? key;
+}
+
+function formatFieldValue(key: string, value: unknown) {
+  if (key === "period") return formatPeriod(valueAsString(value));
+  if (key.toLowerCase().includes("date") || key === "fiscalYearEnd") return formatDateOnly(valueAsString(value));
+  if (key.toLowerCase().includes("rate")) return formatPercentValue(value);
+  if (key.toLowerCase().includes("account")) return valueAsString(value);
+  if (key === "requiredEvidence") return value ? "Oui" : "Non";
+  if (typeof value === "number") return moneyLikeKeys.has(key) ? formatEuro(value) : formatNumberValue(value);
+  if (typeof value === "object") return "—";
+  return valueAsString(value);
+}
+
+const moneyLikeKeys = new Set([
+  "amount",
+  "baseAmount",
+  "capital",
+  "depreciationAmount",
+  "finalStock",
+  "initialStock",
+  "net",
+  "nextExerciseAmount",
+  "resultBeforeTax",
+  "tax",
+  "totalAmount",
+]);
+
+function formatEuroValue(value: unknown) {
+  return typeof value === "number" ? formatEuro(value) : "—";
+}
+
+function formatNumberValue(value: unknown) {
+  if (typeof value !== "number") return "—";
+  return new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 2 }).format(value);
+}
+
+function pluralize(value: unknown, singular: string, plural: string) {
+  if (typeof value !== "number") return "—";
+  return `${formatNumberValue(value)} ${value > 1 ? plural : singular}`;
+}
+
+function formatPercentValue(value: unknown) {
+  if (typeof value !== "number") return "—";
+  return new Intl.NumberFormat("fr-FR", { style: "percent", maximumFractionDigits: 2 }).format(value);
+}
+
+function formatPeriod(value: string) {
+  const [start, end] = value.split("/");
+  if (!start || !end) return value || "—";
+  return `du ${formatDateOnly(start)} au ${formatDateOnly(end)}`;
+}
+
+function formatDateOnly(value: string) {
+  if (!value) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" }).format(date);
+}
+
+function valueAsString(value: unknown) {
+  return typeof value === "string" ? value : String(value ?? "");
 }
 
 function statusLabel(status: string) {
