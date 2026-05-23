@@ -3,16 +3,10 @@ import { AppShell, Main } from "~/components/ui";
 
 const SETTINGS_CARDS = [
   {
-    title: "Entreprise",
-    description: "Modifier le nom, le SIREN et les informations utilisées dans les documents.",
+    title: "Entreprise & fiscalité",
+    description: "Modifier le nom, le SIREN, le régime TVA, l'exigibilité et le mode d'imposition.",
     href: "/profil",
     action: "Ouvrir l'entreprise",
-  },
-  {
-    title: "Régime fiscal et TVA",
-    description: "Mettre à jour le régime TVA, l'exigibilité et le mode d'imposition.",
-    href: "/profil",
-    action: "Gérer la fiscalité",
   },
   {
     title: "Exercices",
@@ -43,6 +37,12 @@ const SETTINGS_CARDS = [
     description: "Consulter le plan, l'usage mensuel et les actions de facturation.",
     href: "/abonnement",
     action: "Gérer l'abonnement",
+  },
+  {
+    title: "Activité",
+    description: "Consulter l'historique des actions, imports et modifications dans Qitus.",
+    href: "/activity",
+    action: "Voir l'activité",
   },
 ];
 

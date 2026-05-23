@@ -3,8 +3,6 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { alertClassForGuidanceTone, type ActionableGuidance, type ActionableGuidanceAction } from "~/modules/actionable-guidance";
 import {
   LayoutDashboard,
-  Clock,
-  Upload,
   ArrowLeftRight,
   Settings2,
   Paperclip,
@@ -22,6 +20,9 @@ import {
   LogOut,
   ReceiptText,
   ChevronDown,
+  FileDown,
+  FilePenLine,
+  ChevronLeft,
 } from "lucide-react";
 
 const ICON_SIZE = 16;
@@ -33,12 +34,13 @@ type NavEntry = {
   label: string;
   href: string;
   matchPrefixes?: string[];
+  badge?: number;
 };
 
 type NavSection = {
   id: string;
   label: string;
-  icon: ReactNode;
+  icon?: ReactNode;
   items: NavEntry[];
 };
 
@@ -66,9 +68,8 @@ function buildNavigation(showDemo: boolean): NavigationModel {
     {
       id: "operations",
       label: "Opérations",
-      icon: icon(<Upload size={ICON_SIZE} strokeWidth={ICON_STROKE} />),
       items: [
-        { id: "imports", icon: icon(<Upload size={ICON_SIZE} strokeWidth={ICON_STROKE} />), label: "Imports", href: "/imports", matchPrefixes: ["/imports"] },
+        { id: "imports", icon: icon(<FileDown size={ICON_SIZE} strokeWidth={ICON_STROKE} />), label: "Imports", href: "/imports", matchPrefixes: ["/imports"] },
         { id: "transactions", icon: icon(<ArrowLeftRight size={ICON_SIZE} strokeWidth={ICON_STROKE} />), label: "Transactions", href: "/transactions", matchPrefixes: ["/transactions"] },
         { id: "pieces", icon: icon(<Paperclip size={ICON_SIZE} strokeWidth={ICON_STROKE} />), label: "Justificatifs", href: "/pieces", matchPrefixes: ["/pieces"] },
         { id: "factures-entrantes", icon: icon(<ReceiptText size={ICON_SIZE} strokeWidth={ICON_STROKE} />), label: "Factures entrantes", href: "/factures-entrantes", matchPrefixes: ["/factures-entrantes"] },
@@ -77,7 +78,6 @@ function buildNavigation(showDemo: boolean): NavigationModel {
     {
       id: "accounting",
       label: "Comptabilité",
-      icon: icon(<BookOpen size={ICON_SIZE} strokeWidth={ICON_STROKE} />),
       items: [
         { id: "ecritures", icon: icon(<BookOpen size={ICON_SIZE} strokeWidth={ICON_STROKE} />), label: "Écritures", href: "/ecritures", matchPrefixes: ["/ecritures"] },
         { id: "tva", icon: icon(<Percent size={ICON_SIZE} strokeWidth={ICON_STROKE} />), label: "TVA", href: "/tva", matchPrefixes: ["/tva"] },
@@ -88,10 +88,9 @@ function buildNavigation(showDemo: boolean): NavigationModel {
     {
       id: "closing",
       label: "Clôture & export",
-      icon: icon(<Lock size={ICON_SIZE} strokeWidth={ICON_STROKE} />),
       items: [
         { id: "cloture", icon: icon(<Lock size={ICON_SIZE} strokeWidth={ICON_STROKE} />), label: "Clôture", href: "/cloture", matchPrefixes: ["/cloture"] },
-        { id: "cloture-od", icon: icon(<CheckCircle2 size={ICON_SIZE} strokeWidth={ICON_STROKE} />), label: "OD de clôture", href: "/cloture/od", matchPrefixes: ["/cloture/od", "/cloture/workpapers", "/controle/od"] },
+        { id: "cloture-od", icon: icon(<FilePenLine size={ICON_SIZE} strokeWidth={ICON_STROKE} />), label: "OD de clôture", href: "/cloture/od", matchPrefixes: ["/cloture/od", "/cloture/workpapers", "/controle/od"] },
         { id: "immobilisations", icon: icon(<Building2 size={ICON_SIZE} strokeWidth={ICON_STROKE} />), label: "Immobilisations", href: "/immobilisations", matchPrefixes: ["/immobilisations"] },
         { id: "documents", icon: icon(<FileText size={ICON_SIZE} strokeWidth={ICON_STROKE} />), label: "Documents", href: "/documents", matchPrefixes: ["/documents"] },
         { id: "dossier-ec", icon: icon(<FolderCheck size={ICON_SIZE} strokeWidth={ICON_STROKE} />), label: "Dossier expert-comptable", href: "/dossier-ec", matchPrefixes: ["/dossier-ec", "/shared"] },
@@ -99,10 +98,8 @@ function buildNavigation(showDemo: boolean): NavigationModel {
     },
   ];
   const bottom: NavEntry[] = [
-    { id: "parametres", icon: icon(<Settings2 size={ICON_SIZE} strokeWidth={ICON_STROKE} />), label: "Paramètres", href: "/parametres", matchPrefixes: ["/parametres", "/connecteurs", "/corrections", "/regles-comptables", "/abonnement", "/exercices"] },
-    { id: "activity", icon: icon(<Clock size={ICON_SIZE} strokeWidth={ICON_STROKE} />), label: "Activité", href: "/activity", matchPrefixes: ["/activity"] },
+    { id: "parametres", icon: icon(<Settings2 size={ICON_SIZE} strokeWidth={ICON_STROKE} />), label: "Paramètres", href: "/parametres", matchPrefixes: ["/parametres", "/connecteurs", "/corrections", "/regles-comptables", "/abonnement", "/exercices", "/activity", "/profil"] },
     { id: "chat", icon: icon(<MessageCircle size={ICON_SIZE} strokeWidth={ICON_STROKE} />), label: "Aide", href: "/chat", matchPrefixes: ["/chat"] },
-    { id: "profil", icon: icon(<User size={ICON_SIZE} strokeWidth={ICON_STROKE} />), label: "Compte", href: "/profil", matchPrefixes: ["/profil"] },
     ...(showDemo ? [{ id: "demo", icon: icon(<Diamond size={ICON_SIZE} strokeWidth={ICON_STROKE} />), label: "Démo", href: "/demo", matchPrefixes: ["/demo"] }] : []),
   ];
   return { dashboard, sections, bottom };
@@ -169,12 +166,11 @@ export function AppShell({ children, active = "dashboard" }: { children: ReactNo
                 aria-expanded={openSectionId === section.id}
                 onClick={() => toggleSection(section.id)}
               >
-                <span className="ic">{section.icon}</span>
                 <span>{section.label}</span>
                 <ChevronDown className="chev" size={14} strokeWidth={ICON_STROKE} />
               </button>
-              {openSectionId === section.id ? (
-                <div className="s-section-items">
+              <div className={`s-section-items ${openSectionId === section.id ? "open" : ""}`}>
+                <div className="s-section-items-inner">
                   {section.items.map((item) => (
                     <NavLink
                       key={item.id}
@@ -183,10 +179,11 @@ export function AppShell({ children, active = "dashboard" }: { children: ReactNo
                     >
                       <span className="ic">{item.icon}</span>
                       {item.label}
+                      {item.badge != null && item.badge > 0 ? <span className="badge-count">{item.badge}</span> : null}
                     </NavLink>
                   ))}
                 </div>
-              ) : null}
+              </div>
             </div>
           ))}
         </nav>
@@ -195,6 +192,7 @@ export function AppShell({ children, active = "dashboard" }: { children: ReactNo
             <NavLink key={item.id} to={item.href} className={`s-item ${activeId === item.id ? "active" : ""}`}>
               <span className="ic">{item.icon}</span>
               {item.label}
+              {item.badge != null && item.badge > 0 ? <span className="badge-count">{item.badge}</span> : null}
             </NavLink>
           ))}
           {rootData?.authMode === "clerk" ? <SignOutButton /> : null}
@@ -240,17 +238,25 @@ export function Main({
   title,
   subtitle,
   action,
+  backLink,
   children,
 }: {
   title: string;
   subtitle?: string;
   action?: ReactNode;
+  backLink?: { label: string; href: string };
   children: ReactNode;
 }) {
   return (
     <main className="main">
       <div className="topbar">
         <div className="tb-left">
+          {backLink ? (
+            <Link to={backLink.href} className="tb-back">
+              <ChevronLeft size={14} strokeWidth={2} />
+              {backLink.label}
+            </Link>
+          ) : null}
           <b>{title}</b>
           {subtitle ? ` — ${subtitle}` : null}
         </div>

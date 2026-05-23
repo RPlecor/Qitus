@@ -21,7 +21,7 @@ export default function Corrections() {
 
   return (
     <AppShell active="corrections">
-      <Main title="Règles" subtitle="Corrections apprises">
+      <Main title="Règles" subtitle="Corrections apprises" backLink={{ label: "Paramètres", href: "/parametres" }}>
         <div className="alert blue">
           <strong>Deux niveaux de règles</strong>
           <span>Les règles utilisateur ci-dessous restent prioritaires. Les règles globales Qitus sont mises à jour automatiquement depuis les sources officielles pour les futurs imports.</span>

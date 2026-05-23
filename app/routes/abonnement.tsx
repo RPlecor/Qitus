@@ -15,7 +15,7 @@ export default function Abonnement() {
 
   return (
     <AppShell active="abonnement">
-      <Main title="Abonnement" subtitle="Gérer votre plan et votre consommation">
+      <Main title="Abonnement" subtitle="Gérer votre plan et votre consommation" backLink={{ label: "Paramètres", href: "/parametres" }}>
         <div className={`alert ${mode === "stripe" ? "blue" : "orange"}`}>
           <strong>{mode === "stripe" ? "Stripe activé" : "Abonnement stub actif"}</strong>
           <span>{mode === "stripe" ? "Checkout et portail utilisent les clés Stripe configurées." : "Aucun paiement réel n'est déclenché en mode démo."}</span>

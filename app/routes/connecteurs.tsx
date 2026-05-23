@@ -30,7 +30,7 @@ export default function Connecteurs() {
 
   return (
     <AppShell active="connecteurs">
-      <Main title="Connecteurs" subtitle="Qonto, Stripe, Open Banking et facturation électronique">
+      <Main title="Connecteurs" subtitle="Qonto, Stripe, Open Banking et facturation électronique" backLink={{ label: "Paramètres", href: "/parametres" }}>
         {notice ? <div className="alert blue">Open Banking : {noticeLabel(notice)}</div> : null}
         {eInvoiceNotice ? <div className="alert blue">Facturation électronique : {noticeLabel(eInvoiceNotice)}</div> : null}
         {error ? <div className="alert orange">{error}</div> : null}

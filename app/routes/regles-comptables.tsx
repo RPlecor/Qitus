@@ -25,7 +25,7 @@ export default function AccountingRulesPage() {
 
   return (
     <AppShell active="regles-comptables">
-      <Main title="Règles comptables" subtitle="Qitus classe les prochains imports avec les règles actives, sans modifier les écritures déjà créées.">
+      <Main title="Règles comptables" subtitle="Qitus classe les prochains imports avec les règles actives, sans modifier les écritures déjà créées." backLink={{ label: "Paramètres", href: "/parametres" }}>
         <div className="kpi-grid">
           <KpiCard label="Règles utilisées" value={ruleSetName(activePack)} hint={activePack?.summary ?? "Aucune règle active pour le moment"} />
           <KpiCard label="État" value={statusLabel(status.status)} hint="Utilisées pour les prochains imports" />

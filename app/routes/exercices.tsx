@@ -14,7 +14,7 @@ export default function Exercices() {
   const { fiscalYears } = useLoaderData<typeof loader>();
   return (
     <AppShell active="exercices">
-      <Main title="Exercices" subtitle="Multi-exercice mono-company">
+      <Main title="Exercices" subtitle="Multi-exercice mono-company" backLink={{ label: "Paramètres", href: "/parametres" }}>
         <section className="card">
           <h2>Créer un exercice</h2>
           <Form method="post" action="/api/fiscal-years" className="filter-bar">

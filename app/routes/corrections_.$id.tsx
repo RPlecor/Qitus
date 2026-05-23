@@ -16,8 +16,7 @@ export default function CorrectionRuleDetail() {
 
   return (
     <AppShell active="corrections">
-      <Main title="Règle" subtitle={rule ? rule.counterparty : "Impact"}>
-        <Link className="btn btn-ghost" to="/corrections">← Retour aux règles</Link>
+      <Main title="Règle" subtitle={rule ? rule.counterparty : "Impact"} backLink={{ label: "Règles", href: "/corrections" }}>
 
         {rule ? (
           <>

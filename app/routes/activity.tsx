@@ -31,7 +31,7 @@ export default function Activity() {
 
   return (
     <AppShell active="activity">
-      <Main title="Activité" subtitle="Historique des actions Qitus" action={<Link className="btn" to={exportUrl}>Exporter CSV</Link>}>
+      <Main title="Activité" subtitle="Historique des actions Qitus" backLink={{ label: "Paramètres", href: "/parametres" }} action={<Link className="btn" to={exportUrl}>Exporter CSV</Link>}>
         <div className="sec-head">
           <h2>Historique</h2>
           <div>

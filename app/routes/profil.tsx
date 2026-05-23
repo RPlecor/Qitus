@@ -22,7 +22,7 @@ export default function Profil() {
 
   return (
     <AppShell active="profil">
-      <Main title="Profil" subtitle="Informations entreprise">
+      <Main title="Entreprise" subtitle="Informations et paramètres de l'entreprise" backLink={{ label: "Paramètres", href: "/parametres" }}>
         {ledgerReadiness.status !== "ok" ? (
           <div className={`alert ${ledgerReadiness.status === "action_required" ? "orange" : "blue"}`} >
             <strong>{ledgerReadiness.title}</strong>
