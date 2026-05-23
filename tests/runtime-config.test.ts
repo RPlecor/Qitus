@@ -20,7 +20,16 @@ describe("RuntimeConfig", () => {
       cronMode: "disabled",
       openBankingProvider: "disabled",
       changeImpactsMode: "shadow",
+      automationMode: "safe_auto",
     });
+  });
+
+  it("defaults automation to assistive in production and safe auto elsewhere", () => {
+    expect(getRuntimeConfig({ DATABASE_URL: "postgresql://localhost:5432/paperasse" }).automationMode).toBe("safe_auto");
+    expect(getRuntimeConfig({ APP_ENV: "staging", DATABASE_URL: "postgresql://localhost:5432/paperasse" }).automationMode).toBe("safe_auto");
+    expect(getRuntimeConfig({ APP_ENV: "production", DATABASE_URL: "postgresql://localhost:5432/paperasse" }).automationMode).toBe("assistive");
+    expect(getRuntimeConfig({ DATABASE_URL: "postgresql://localhost:5432/paperasse", AUTOMATION_MODE: "off" }).automationMode).toBe("off");
+    expect(() => getRuntimeConfig({ DATABASE_URL: "postgresql://localhost:5432/paperasse", AUTOMATION_MODE: "magic" })).toThrow("AUTOMATION_MODE");
   });
 
   it("supports the change impacts migration mode", () => {

@@ -1,5 +1,5 @@
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
-import { Link, useLoaderData } from "@remix-run/react";
+import { Link, useFetcher, useLoaderData } from "@remix-run/react";
 import { AppShell, ButtonLink, KpiCard, Main, StatusBadge, TableShell } from "~/components/ui";
 import { requireCompanyWorkspace } from "~/modules/company-workspace/company-workspace.server";
 import { DashboardOverview } from "~/modules/dashboard/dashboard-overview.server";
@@ -25,6 +25,7 @@ export async function loader(args: LoaderFunctionArgs) {
 
 export default function Dashboard() {
   const { companyName, fiscalYearLabel, demoMessage, overview, consistency } = useLoaderData<typeof loader>();
+  const automationFetcher = useFetcher<{ completed: number; failed: number; skipped: number }>();
   const issueCount = consistency.checks.filter((check) => !check.ok).length;
 
   return (
@@ -91,6 +92,40 @@ export default function Dashboard() {
                   <span>{impact.message}</span>
                 </div>
                 <Link className="btn btn-sm" to={impact.primaryAction.href}>{impact.primaryAction.label}</Link>
+              </div>
+            ))}
+          </div>
+        ) : null}
+
+        {overview.automation && overview.automation.total > 0 ? (
+          <div className="card impact-card">
+            <div className="sec-head">
+              <div>
+                <h2>Automatisations disponibles</h2>
+                <span className="sub">
+                  {overview.automation.safeRunnable} sûre(s) · {overview.automation.suggestions} suggestion(s) · {overview.automation.validationRequired} à valider
+                </span>
+              </div>
+              {overview.automation.safeRunnable > 0 ? (
+                <automationFetcher.Form method="post" action="/api/automation/run-safe">
+                  <button className="btn btn-sm" type="submit" disabled={automationFetcher.state !== "idle"}>
+                    {automationFetcher.state === "idle" ? "Exécuter le sûr" : "Exécution..."}
+                  </button>
+                </automationFetcher.Form>
+              ) : null}
+            </div>
+            {automationFetcher.data ? (
+              <div className={automationFetcher.data.failed > 0 ? "alert orange" : "alert green"}>
+                {automationFetcher.data.completed} automatisation(s) terminée(s), {automationFetcher.data.skipped} ignorée(s), {automationFetcher.data.failed} échouée(s).
+              </div>
+            ) : null}
+            {overview.automation.opportunities.slice(0, 4).map((item) => (
+              <div key={item.opportunityKey} className={`impact-row ${item.category === 1 ? "warning" : item.category === 2 ? "info" : "blocking"}`}>
+                <div className="impact-content">
+                  <strong>{item.title}</strong>
+                  <span>{item.detail}</span>
+                </div>
+                <Link className="btn btn-sm" to={item.href}>{item.requiresUserValidation ? "Ouvrir" : "Voir"}</Link>
               </div>
             ))}
           </div>

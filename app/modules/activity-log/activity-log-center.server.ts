@@ -252,6 +252,17 @@ function activityLabel(action: string) {
     "open_banking.webhook_processed": "Webhook Open Banking traité",
     "open_banking.sync_completed": "Synchronisation bancaire terminée",
     "open_banking.sync_failed": "Synchronisation bancaire échouée",
+    "automation.safe_run_started": "Automatisation sûre lancée",
+    "automation.safe_run_completed": "Automatisation sûre terminée",
+    "automation.safe_run_failed": "Automatisation sûre échouée",
+    "transaction.auto_categorized": "Transaction catégorisée automatiquement",
+    "attachment.link_suggested": "Rattachement pièce suggéré",
+    "vat.declaration_draft_auto_generated": "Brouillon TVA généré automatiquement",
+    "document.auto_regenerated": "Document régénéré automatiquement",
+    "reconciliation.auto_matched": "Match de rapprochement automatique",
+    "closing_adjustment.draft_auto_generated": "Brouillon OD généré automatiquement",
+    "e_invoice.accounting_draft_auto_generated": "Brouillon facture généré automatiquement",
+    "expert_dossier.snapshot_auto_prepared": "État transmis EC préparé automatiquement",
   };
   return labels[action] ?? action;
 }
@@ -294,6 +305,11 @@ function activityDetail(row: ActivityLogSummary) {
   if (row.action.startsWith("webhook.") && typeof metadata?.type === "string") return metadata.type;
   if (row.action.startsWith("open_banking.") && typeof metadata?.provider === "string") return metadata.provider;
   if (row.action.startsWith("open_banking.") && typeof metadata?.message === "string") return metadata.message;
+  if (row.action.startsWith("automation.") && typeof metadata?.title === "string") return metadata.title;
+  if (row.action.startsWith("automation.") && typeof metadata?.count === "number") return `${metadata.count} opportunité(s)`;
+  if (row.action.startsWith("automation.") && typeof metadata?.attempted === "number") return `${metadata.attempted} tentative(s)`;
+  if (row.action === "transaction.auto_categorized" && typeof metadata?.source === "string") return metadata.source;
+  if (row.action === "document.auto_regenerated" && Array.isArray(metadata?.types)) return metadata.types.join(", ");
   if (row.action.startsWith("monitoring.") && typeof metadata?.name === "string") return metadata.name;
   if (row.action.startsWith("cron.") && typeof metadata?.count === "number") return `${metadata.count}`;
   return row.entityId ?? "";

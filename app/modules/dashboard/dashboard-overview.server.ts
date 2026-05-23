@@ -1,6 +1,7 @@
 import type { DocumentType } from "@prisma/client";
 import { AccountingReviewCenter, type AccountingReview } from "../accounting-review/accounting-review-center.server";
 import { AccountingCoverageCenter, type AccountingCoverageOverview } from "../accounting-coverage/accounting-coverage-center.server";
+import { AutomationOpportunityCenter, summarizeAutomationOpportunities, type AutomationOpportunity } from "../automation/automation-opportunity-center.server";
 import { ChangeImpactCenter, type ChangeImpactOverview } from "../change-impacts/change-impact-center.server";
 import { ClosingAdjustmentCenter } from "../closing-adjustments/closing-adjustment-center.server";
 import type { CompanyWorkspace } from "../company-workspace/company-workspace.server";
@@ -40,6 +41,14 @@ export type DashboardOverviewResult = {
   closingAdjustments: { draft: number; approved: number; rejected: number } | null;
   coverage: { score: number; label: string; highRisk: number } | null;
   changeImpacts: Pick<ChangeImpactOverview, "mode" | "status" | "total" | "blocking" | "actionRequired" | "warning" | "impacts" | "performanceBudget"> | null;
+  automation: {
+    mode: string;
+    total: number;
+    safeRunnable: number;
+    suggestions: number;
+    validationRequired: number;
+    opportunities: AutomationOpportunity[];
+  } | null;
   transactionState: { reviewCount: number };
   recentTransactions: DashboardTransaction[];
 };
@@ -60,8 +69,8 @@ export class DashboardOverview {
       }),
     ]);
     const changeImpactMode = getRuntimeConfig().changeImpactsMode;
-    const [accountingReview, freshness, closingAdjustments, coverage, comparison, changeImpacts] = typeof input === "string"
-      ? [null, null, null, null, null, null] as const
+    const [accountingReview, freshness, closingAdjustments, coverage, comparison, changeImpacts, automationData] = typeof input === "string"
+      ? [null, null, null, null, null, null, null] as const
       : await Promise.all([
           new AccountingReviewCenter().getReview(input),
           new DocumentFreshnessCenter().getFreshness(input),
@@ -69,6 +78,7 @@ export class DashboardOverview {
           new AccountingCoverageCenter().getCoverageOverview(input),
           this.getComparison(input),
           changeImpactMode === "off" ? null : new ChangeImpactCenter().getImpactOverview(input, { surface: "dashboard" }),
+          this.getAutomation(input),
         ]);
     const alerts = buildDashboardAlerts(reviewCount, importCount, documents.map((document) => document.type), accountingReview, {
       staleDocuments: freshness?.staleCount ?? 0,
@@ -93,6 +103,7 @@ export class DashboardOverview {
         impacts: changeImpacts.impacts,
         performanceBudget: changeImpacts.performanceBudget,
       } : null,
+      automation: automationData,
       transactionState: { reviewCount },
       recentTransactions: transactions.map((transaction) => ({
         id: transaction.id,
@@ -128,6 +139,20 @@ export class DashboardOverview {
       revenueDelta: current.revenue - previous.revenue,
       expensesDelta: current.expenses - previous.expenses,
       resultDelta: current.result - previous.result,
+    };
+  }
+
+  private async getAutomation(workspace: CompanyWorkspace): Promise<DashboardOverviewResult["automation"]> {
+    const center = new AutomationOpportunityCenter();
+    const allOpportunities = await center.getOpportunities(workspace);
+    const summary = summarizeAutomationOpportunities(getRuntimeConfig().automationMode, allOpportunities);
+    return {
+      mode: summary.mode,
+      total: summary.total,
+      safeRunnable: summary.safeRunnable,
+      suggestions: summary.suggestions,
+      validationRequired: summary.validationRequired,
+      opportunities: allOpportunities.slice(0, 5),
     };
   }
 }

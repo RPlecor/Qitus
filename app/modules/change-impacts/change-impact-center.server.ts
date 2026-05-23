@@ -1,6 +1,7 @@
 import type { FiscalYearStatus } from "@prisma/client";
 import { ClosingAdjustmentFreshnessCenter } from "../closing-adjustments/closing-adjustment-freshness-center.server";
 import { RuleApplicationWorkflow } from "../accounting-rules/rule-application-workflow.server";
+import { AutomationOpportunityCenter } from "../automation/automation-opportunity-center.server";
 import type { CompanyWorkspace } from "../company-workspace/company-workspace.server";
 import { prisma } from "../db.server";
 import { DocumentFreshnessCenter } from "../documents/document-freshness-center.server";
@@ -84,7 +85,7 @@ export type ChangeImpactSource = {
   listImpacts(workspace: CompanyWorkspace, options?: ChangeImpactSourceOptions): Promise<ChangeImpact[]>;
 };
 
-const DASHBOARD_SOURCE_KEYS = new Set(["accounting-rules", "imports-ledger", "documents", "fec", "vat", "e-invoices", "reconciliations", "closing"]);
+const DASHBOARD_SOURCE_KEYS = new Set(["accounting-rules", "imports-ledger", "documents", "fec", "vat", "e-invoices", "reconciliations", "closing", "automation"]);
 const HEAVY_SOURCE_KEYS = new Set(["evidence", "expert-dossier", "connectors"]);
 
 export class ChangeImpactCenter {
@@ -664,6 +665,32 @@ export class ClosedFiscalYearImpactSource implements ChangeImpactSource {
   }
 }
 
+export class AutomationImpactSource implements ChangeImpactSource {
+  readonly sourceKey = "automation";
+  readonly surfaces: ChangeImpactSurface[] = ["dashboard", "imports", "documents", "tva", "cloture", "couverture", "dossier_ec"];
+
+  constructor(private readonly automation = new AutomationOpportunityCenter()) {}
+
+  async listImpacts(workspace: CompanyWorkspace): Promise<ChangeImpact[]> {
+    const summary = await this.automation.summarizeAutomationReadiness(workspace);
+    if (summary.total === 0) return [];
+    return [impact({
+      code: "automation.opportunities_available",
+      source: this.sourceKey,
+      status: summary.validationRequired > 0 || summary.safeRunnable > 0 ? "action_required" : "warning",
+      severity: "warning",
+      title: "Automatisations disponibles",
+      message: `${summary.safeRunnable} automatisation(s) sûre(s), ${summary.suggestions} suggestion(s), ${summary.validationRequired} action(s) à valider.`,
+      why: ["Qitus automatise seulement les opérations déterministes et garde les validations comptables dans les workflows métier."],
+      surfaces: this.surfaces,
+      blockingCapabilities: [],
+      affectedArtifacts: ["Imports", "TVA", "Rapprochements", "Documents", "Dossier EC"],
+      primaryAction: { label: "Voir le tableau de bord", href: "/dashboard" },
+      metadata: summary,
+    })];
+  }
+}
+
 export function defaultChangeImpactSources(): ChangeImpactSource[] {
   return [
     new ClosedFiscalYearImpactSource(),
@@ -675,6 +702,7 @@ export function defaultChangeImpactSources(): ChangeImpactSource[] {
     new EInvoiceImpactSource(),
     new ReconciliationImpactSource(),
     new ClosingImpactSource(),
+    new AutomationImpactSource(),
     new EvidenceImpactSource(),
     new ExpertDossierImpactSource(),
     new ConnectorImpactSource(),

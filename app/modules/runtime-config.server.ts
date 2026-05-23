@@ -14,6 +14,7 @@ export type ObservabilityMode = "disabled" | "local" | "sentry" | "otel";
 export type CronMode = "disabled" | "local" | "worker";
 export type OpenBankingProviderMode = "disabled" | "mock" | "bridge" | "powens" | "gocardless" | "tink" | "yapily";
 export type ChangeImpactsMode = "off" | "shadow" | "active";
+export type AutomationMode = "off" | "assistive" | "safe_auto";
 export type EInvoiceProviderMode = "disabled" | "mock" | "generic_pa" | string;
 
 export type RuntimeConfig = {
@@ -69,6 +70,7 @@ export type RuntimeConfig = {
   openBankingBaseUrl?: string;
   providerSecretEncryptionKey?: string;
   changeImpactsMode: ChangeImpactsMode;
+  automationMode: AutomationMode;
   qitusInternalTestMode: boolean;
   eInvoiceProvider: EInvoiceProviderMode;
   eInvoiceProviderBaseUrl?: string;
@@ -135,6 +137,7 @@ export function getRuntimeConfig(env: Record<string, string | undefined> = proce
     openBankingBaseUrl: env.OPEN_BANKING_BASE_URL,
     providerSecretEncryptionKey: env.PROVIDER_SECRET_ENCRYPTION_KEY,
     changeImpactsMode: parseChangeImpactsMode(env.CHANGE_IMPACTS_MODE),
+    automationMode: parseAutomationMode(env.AUTOMATION_MODE, parseAppEnvironment(env.APP_ENV)),
     qitusInternalTestMode: parseBoolean(env.QITUS_INTERNAL_TEST_MODE, false),
     eInvoiceProvider: parseEInvoiceProvider(env.E_INVOICE_PROVIDER),
     eInvoiceProviderBaseUrl: env.E_INVOICE_PROVIDER_BASE_URL,
@@ -233,6 +236,7 @@ export function sanitizedRuntimeConfig(config = getRuntimeConfig()) {
     cronMode: config.cronMode,
     openBankingProvider: config.openBankingProvider,
     changeImpactsMode: config.changeImpactsMode,
+    automationMode: config.automationMode,
     qitusInternalTestMode: config.qitusInternalTestMode,
     eInvoiceProvider: config.eInvoiceProvider,
     enablePdfGeneration: config.enablePdfGeneration,
@@ -325,6 +329,12 @@ export function parseChangeImpactsMode(value: string | undefined): ChangeImpacts
   const mode = value?.toLowerCase() ?? "shadow";
   if (mode === "off" || mode === "shadow" || mode === "active") return mode;
   throw new Error(`Unsupported CHANGE_IMPACTS_MODE value: ${value}`);
+}
+
+export function parseAutomationMode(value: string | undefined, appEnv: AppEnvironment = "local"): AutomationMode {
+  const mode = value?.toLowerCase() ?? (appEnv === "production" ? "assistive" : "safe_auto");
+  if (mode === "off" || mode === "assistive" || mode === "safe_auto") return mode;
+  throw new Error(`Unsupported AUTOMATION_MODE value: ${value}`);
 }
 
 export function parseEInvoiceProvider(value: string | undefined): EInvoiceProviderMode {
