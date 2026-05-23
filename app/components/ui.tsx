@@ -1,9 +1,8 @@
-import { Form, Link, NavLink, useRouteLoaderData } from "@remix-run/react";
-import type { ReactNode } from "react";
+import { Form, Link, NavLink, useLocation, useRouteLoaderData } from "@remix-run/react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { alertClassForGuidanceTone, type ActionableGuidance, type ActionableGuidanceAction } from "~/modules/actionable-guidance";
 import {
   LayoutDashboard,
-  Bell,
   Clock,
   Upload,
   ArrowLeftRight,
@@ -13,20 +12,16 @@ import {
   Percent,
   GitCompareArrows,
   CheckCircle2,
-  Shield,
   Lock,
   Building2,
   FileText,
   MessageCircle,
-  CreditCard,
-  CalendarDays,
   User,
   Diamond,
   FolderCheck,
-  Plug,
   LogOut,
-  LibraryBig,
   ReceiptText,
+  ChevronDown,
 } from "lucide-react";
 
 const ICON_SIZE = 16;
@@ -37,78 +32,107 @@ type NavEntry = {
   icon: ReactNode;
   label: string;
   href: string;
+  matchPrefixes?: string[];
 };
 
 type NavSection = {
+  id: string;
   label: string;
+  icon: ReactNode;
   items: NavEntry[];
 };
 
-function buildNav(showDemo: boolean): NavSection[] {
-  return [
+type NavigationModel = {
+  dashboard: NavEntry;
+  sections: NavSection[];
+  bottom: NavEntry[];
+};
+
+const SIDEBAR_OPEN_SECTION_KEY = "qitus.sidebar.openSection";
+
+function icon(node: ReactNode) {
+  return node;
+}
+
+function buildNavigation(showDemo: boolean): NavigationModel {
+  const dashboard: NavEntry = {
+    id: "dashboard",
+    icon: icon(<LayoutDashboard size={ICON_SIZE} strokeWidth={ICON_STROKE} />),
+    label: "Tableau de bord",
+    href: "/dashboard",
+    matchPrefixes: ["/dashboard", "/"],
+  };
+  const sections: NavSection[] = [
     {
-      label: "Pilotage",
-      items: [
-        { id: "dashboard", icon: <LayoutDashboard size={ICON_SIZE} strokeWidth={ICON_STROKE} />, label: "Tableau de bord", href: "/dashboard" },
-        { id: "notifications", icon: <Bell size={ICON_SIZE} strokeWidth={ICON_STROKE} />, label: "Notifications", href: "/notifications" },
-        { id: "activity", icon: <Clock size={ICON_SIZE} strokeWidth={ICON_STROKE} />, label: "Activité", href: "/activity" },
-      ],
-    },
-    {
+      id: "operations",
       label: "Opérations",
+      icon: icon(<Upload size={ICON_SIZE} strokeWidth={ICON_STROKE} />),
       items: [
-        { id: "imports", icon: <Upload size={ICON_SIZE} strokeWidth={ICON_STROKE} />, label: "Imports", href: "/imports" },
-        { id: "connecteurs", icon: <Plug size={ICON_SIZE} strokeWidth={ICON_STROKE} />, label: "Connecteurs", href: "/connecteurs" },
-        { id: "transactions", icon: <ArrowLeftRight size={ICON_SIZE} strokeWidth={ICON_STROKE} />, label: "Transactions", href: "/transactions" },
-        { id: "corrections", icon: <Settings2 size={ICON_SIZE} strokeWidth={ICON_STROKE} />, label: "Règles", href: "/corrections" },
-        ...(showDemo
-          ? [{ id: "regles-comptables", icon: <LibraryBig size={ICON_SIZE} strokeWidth={ICON_STROKE} />, label: "Règles comptables", href: "/regles-comptables" }]
-          : []),
-        { id: "pieces", icon: <Paperclip size={ICON_SIZE} strokeWidth={ICON_STROKE} />, label: "Pièces", href: "/pieces" },
-        { id: "factures-entrantes", icon: <ReceiptText size={ICON_SIZE} strokeWidth={ICON_STROKE} />, label: "Factures entrantes", href: "/factures-entrantes" },
+        { id: "imports", icon: icon(<Upload size={ICON_SIZE} strokeWidth={ICON_STROKE} />), label: "Imports", href: "/imports", matchPrefixes: ["/imports"] },
+        { id: "transactions", icon: icon(<ArrowLeftRight size={ICON_SIZE} strokeWidth={ICON_STROKE} />), label: "Transactions", href: "/transactions", matchPrefixes: ["/transactions"] },
+        { id: "pieces", icon: icon(<Paperclip size={ICON_SIZE} strokeWidth={ICON_STROKE} />), label: "Justificatifs", href: "/pieces", matchPrefixes: ["/pieces"] },
+        { id: "factures-entrantes", icon: icon(<ReceiptText size={ICON_SIZE} strokeWidth={ICON_STROKE} />), label: "Factures entrantes", href: "/factures-entrantes", matchPrefixes: ["/factures-entrantes"] },
       ],
     },
     {
+      id: "accounting",
       label: "Comptabilité",
+      icon: icon(<BookOpen size={ICON_SIZE} strokeWidth={ICON_STROKE} />),
       items: [
-        { id: "ecritures", icon: <BookOpen size={ICON_SIZE} strokeWidth={ICON_STROKE} />, label: "Écritures", href: "/ecritures" },
-        { id: "tva", icon: <Percent size={ICON_SIZE} strokeWidth={ICON_STROKE} />, label: "TVA", href: "/tva" },
-        { id: "rapprochements", icon: <GitCompareArrows size={ICON_SIZE} strokeWidth={ICON_STROKE} />, label: "Rapprochements", href: "/rapprochements" },
-        { id: "controle", icon: <CheckCircle2 size={ICON_SIZE} strokeWidth={ICON_STROKE} />, label: "Contrôle", href: "/controle" },
-        { id: "couverture", icon: <Shield size={ICON_SIZE} strokeWidth={ICON_STROKE} />, label: "Couverture EC", href: "/couverture" },
+        { id: "ecritures", icon: icon(<BookOpen size={ICON_SIZE} strokeWidth={ICON_STROKE} />), label: "Écritures", href: "/ecritures", matchPrefixes: ["/ecritures"] },
+        { id: "tva", icon: icon(<Percent size={ICON_SIZE} strokeWidth={ICON_STROKE} />), label: "TVA", href: "/tva", matchPrefixes: ["/tva"] },
+        { id: "rapprochements", icon: icon(<GitCompareArrows size={ICON_SIZE} strokeWidth={ICON_STROKE} />), label: "Rapprochements", href: "/rapprochements", matchPrefixes: ["/rapprochements"] },
+        { id: "controle", icon: icon(<CheckCircle2 size={ICON_SIZE} strokeWidth={ICON_STROKE} />), label: "Contrôle", href: "/controle", matchPrefixes: ["/controle"] },
       ],
     },
     {
-      label: "Clôture",
+      id: "closing",
+      label: "Clôture & export",
+      icon: icon(<Lock size={ICON_SIZE} strokeWidth={ICON_STROKE} />),
       items: [
-        { id: "cloture", icon: <Lock size={ICON_SIZE} strokeWidth={ICON_STROKE} />, label: "Clôture", href: "/cloture" },
-        { id: "immobilisations", icon: <Building2 size={ICON_SIZE} strokeWidth={ICON_STROKE} />, label: "Immobilisations", href: "/immobilisations" },
-        { id: "documents", icon: <FileText size={ICON_SIZE} strokeWidth={ICON_STROKE} />, label: "Documents", href: "/documents" },
-        { id: "dossier-ec", icon: <FolderCheck size={ICON_SIZE} strokeWidth={ICON_STROKE} />, label: "Dossier EC", href: "/dossier-ec" },
-      ],
-    },
-    {
-      label: "Administration",
-      items: [
-        { id: "chat", icon: <MessageCircle size={ICON_SIZE} strokeWidth={ICON_STROKE} />, label: "Chat", href: "/chat" },
-        { id: "abonnement", icon: <CreditCard size={ICON_SIZE} strokeWidth={ICON_STROKE} />, label: "Abonnement", href: "/abonnement" },
-        { id: "exercices", icon: <CalendarDays size={ICON_SIZE} strokeWidth={ICON_STROKE} />, label: "Exercices", href: "/exercices" },
-        ...(showDemo
-          ? [{ id: "demo", icon: <Diamond size={ICON_SIZE} strokeWidth={ICON_STROKE} />, label: "Démo", href: "/demo" }]
-          : []),
+        { id: "cloture", icon: icon(<Lock size={ICON_SIZE} strokeWidth={ICON_STROKE} />), label: "Clôture", href: "/cloture", matchPrefixes: ["/cloture"] },
+        { id: "cloture-od", icon: icon(<CheckCircle2 size={ICON_SIZE} strokeWidth={ICON_STROKE} />), label: "OD de clôture", href: "/cloture/od", matchPrefixes: ["/cloture/od", "/cloture/workpapers", "/controle/od"] },
+        { id: "immobilisations", icon: icon(<Building2 size={ICON_SIZE} strokeWidth={ICON_STROKE} />), label: "Immobilisations", href: "/immobilisations", matchPrefixes: ["/immobilisations"] },
+        { id: "documents", icon: icon(<FileText size={ICON_SIZE} strokeWidth={ICON_STROKE} />), label: "Documents", href: "/documents", matchPrefixes: ["/documents"] },
+        { id: "dossier-ec", icon: icon(<FolderCheck size={ICON_SIZE} strokeWidth={ICON_STROKE} />), label: "Dossier expert-comptable", href: "/dossier-ec", matchPrefixes: ["/dossier-ec", "/shared"] },
       ],
     },
   ];
+  const bottom: NavEntry[] = [
+    { id: "parametres", icon: icon(<Settings2 size={ICON_SIZE} strokeWidth={ICON_STROKE} />), label: "Paramètres", href: "/parametres", matchPrefixes: ["/parametres", "/connecteurs", "/corrections", "/regles-comptables", "/abonnement", "/exercices"] },
+    { id: "activity", icon: icon(<Clock size={ICON_SIZE} strokeWidth={ICON_STROKE} />), label: "Activité", href: "/activity", matchPrefixes: ["/activity"] },
+    { id: "chat", icon: icon(<MessageCircle size={ICON_SIZE} strokeWidth={ICON_STROKE} />), label: "Aide", href: "/chat", matchPrefixes: ["/chat"] },
+    { id: "profil", icon: icon(<User size={ICON_SIZE} strokeWidth={ICON_STROKE} />), label: "Compte", href: "/profil", matchPrefixes: ["/profil"] },
+    ...(showDemo ? [{ id: "demo", icon: icon(<Diamond size={ICON_SIZE} strokeWidth={ICON_STROKE} />), label: "Démo", href: "/demo", matchPrefixes: ["/demo"] }] : []),
+  ];
+  return { dashboard, sections, bottom };
 }
 
 export function AppShell({ children, active = "dashboard" }: { children: ReactNode; active?: string }) {
+  const location = useLocation();
   const rootData = useRouteLoaderData("root") as {
     authMode?: string;
     shell?: { companyName: string; companyStatus: string; fiscalYearLabel: string; onboardingComplete: boolean } | null;
   } | undefined;
   const showDemo = rootData?.authMode === "dev";
   const shell = rootData?.shell;
-  const sections = buildNav(showDemo);
+  const navigation = useMemo(() => buildNavigation(showDemo), [showDemo]);
+  const activeId = findActiveEntryId(navigation, location.pathname, active);
+  const activeSectionId = findSectionForEntry(navigation.sections, activeId);
+  const [rememberedSectionId, setRememberedSectionId] = useState<string | null>(null);
+  const openSectionId = activeSectionId ?? (location.pathname === "/dashboard" ? null : rememberedSectionId);
+
+  useEffect(() => {
+    const stored = window.localStorage.getItem(SIDEBAR_OPEN_SECTION_KEY);
+    if (stored && navigation.sections.some((section) => section.id === stored)) setRememberedSectionId(stored);
+  }, [navigation.sections]);
+
+  function toggleSection(sectionId: string) {
+    const next = openSectionId === sectionId && activeSectionId !== sectionId ? null : sectionId;
+    setRememberedSectionId(next);
+    if (next) window.localStorage.setItem(SIDEBAR_OPEN_SECTION_KEY, next);
+    else window.localStorage.removeItem(SIDEBAR_OPEN_SECTION_KEY);
+  }
 
   return (
     <div className="shell">
@@ -124,35 +148,65 @@ export function AppShell({ children, active = "dashboard" }: { children: ReactNo
           {shell && !shell.onboardingComplete ? <span>Configuration à terminer</span> : null}
         </div>
         <nav className="s-nav">
-          {sections.map((section) => (
-            <div key={section.label}>
-              <div className="s-section-label">{section.label}</div>
-              {section.items.map((item) => (
-                <NavLink
-                  key={item.id}
-                  to={item.href}
-                  className={`s-item ${active === item.id ? "active" : ""}`}
-                >
-                  <span className="ic">{item.icon}</span>
-                  {item.label}
-                </NavLink>
-              ))}
+          <NavLink to={navigation.dashboard.href} className={`s-item s-main-item ${activeId === navigation.dashboard.id ? "active" : ""}`}>
+            <span className="ic">{navigation.dashboard.icon}</span>
+            {navigation.dashboard.label}
+          </NavLink>
+          {navigation.sections.map((section) => (
+            <div className="s-section" key={section.id}>
+              <button
+                type="button"
+                className={`s-section-trigger ${openSectionId === section.id ? "open" : ""} ${activeSectionId === section.id ? "active" : ""}`}
+                aria-expanded={openSectionId === section.id}
+                onClick={() => toggleSection(section.id)}
+              >
+                <span className="ic">{section.icon}</span>
+                <span>{section.label}</span>
+                <ChevronDown className="chev" size={14} strokeWidth={ICON_STROKE} />
+              </button>
+              {openSectionId === section.id ? (
+                <div className="s-section-items">
+                  {section.items.map((item) => (
+                    <NavLink
+                      key={item.id}
+                      to={item.href}
+                      className={`s-item ${activeId === item.id ? "active" : ""}`}
+                    >
+                      <span className="ic">{item.icon}</span>
+                      {item.label}
+                    </NavLink>
+                  ))}
+                </div>
+              ) : null}
             </div>
           ))}
         </nav>
         <div className="s-bot">
-          <NavLink to="/profil" className={`s-item ${active === "profil" ? "active" : ""}`}>
-            <span className="ic">
-              <User size={ICON_SIZE} strokeWidth={ICON_STROKE} />
-            </span>
-            Profil
-          </NavLink>
+          {navigation.bottom.map((item) => (
+            <NavLink key={item.id} to={item.href} className={`s-item ${activeId === item.id ? "active" : ""}`}>
+              <span className="ic">{item.icon}</span>
+              {item.label}
+            </NavLink>
+          ))}
           {rootData?.authMode === "clerk" ? <SignOutButton /> : null}
         </div>
       </aside>
       {children}
     </div>
   );
+}
+
+function findActiveEntryId(navigation: NavigationModel, pathname: string, fallbackId: string) {
+  const entries = [navigation.dashboard, ...navigation.sections.flatMap((section) => section.items), ...navigation.bottom];
+  const sorted = entries
+    .flatMap((entry) => (entry.matchPrefixes ?? [entry.href]).map((prefix) => ({ entry, prefix })))
+    .sort((a, b) => b.prefix.length - a.prefix.length);
+  const match = sorted.find(({ prefix }) => pathname === prefix || (prefix !== "/" && pathname.startsWith(`${prefix}/`)));
+  return match?.entry.id ?? fallbackId;
+}
+
+function findSectionForEntry(sections: NavSection[], activeId: string) {
+  return sections.find((section) => section.items.some((item) => item.id === activeId))?.id ?? null;
 }
 
 function SignOutButton() {
