@@ -9,7 +9,7 @@ const categorizationSchema = z.object({
       transactionId: z.string(),
       accountDebit: z.string(),
       accountDebitLabel: z.string().optional(),
-      accountCredit: z.string().default("5121"),
+      accountCredit: z.string(),
       accountCreditLabel: z.string().optional(),
       journal: z.string().default("BQ"),
       ecritureLabel: z.string(),
@@ -22,13 +22,13 @@ const categorizationSchema = z.object({
 });
 
 export class FakeCategorizationProvider implements AiCategorizationProvider {
-  async categorize(transactions: CategorizationTransaction[], _context?: CategorizationContext): Promise<CategorizationSuggestion[]> {
+  async categorize(transactions: CategorizationTransaction[], context: CategorizationContext): Promise<CategorizationSuggestion[]> {
     return transactions.map((transaction) => ({
       transactionId: transaction.id,
-      accountDebit: transaction.amount > 0 ? "706" : "471",
-      accountDebitLabel: transaction.amount > 0 ? "Prestations de services" : "Compte d'attente",
-      accountCredit: transaction.amount > 0 ? "706" : "5121",
-      accountCreditLabel: transaction.amount > 0 ? "Prestations de services" : "Banque",
+      accountDebit: transaction.type === "CREDIT" ? context.accountRoles.bank.account : context.accountRoles.suspense.account,
+      accountDebitLabel: transaction.type === "CREDIT" ? context.accountRoles.bank.label : context.accountRoles.suspense.label,
+      accountCredit: transaction.type === "CREDIT" ? context.accountRoles.suspense.account : context.accountRoles.bank.account,
+      accountCreditLabel: transaction.type === "CREDIT" ? context.accountRoles.suspense.label : context.accountRoles.bank.label,
       journal: "BQ",
       ecritureLabel: `${transaction.counterparty ?? "Transaction"} - ${transaction.label}`,
       confidence: "LOW",
@@ -56,7 +56,9 @@ export class OpenAIResponsesCategorizationAdapter implements AiCategorizationPro
         "Tu es le module de catégorisation comptable française de Qitus.",
         "Retourne uniquement des écritures bancaires BQ au format JSON demandé.",
         "Utilise le Plan Comptable Général français.",
-        "Si le libellé est opaque ou insuffisant, confidence=LOW et accountDebit=471.",
+        `Compte banque de référence: ${context.accountRoles.bank.account} (${context.accountRoles.bank.label}).`,
+        `Compte d'attente de référence: ${context.accountRoles.suspense.account} (${context.accountRoles.suspense.label}).`,
+        "Si le libellé est opaque ou insuffisant, confidence=LOW et utilise le compte d'attente de référence.",
       ].join("\n"),
       input: [
         {
@@ -65,7 +67,9 @@ export class OpenAIResponsesCategorizationAdapter implements AiCategorizationPro
             company: {
               name: context.companyName,
               legalForm: context.legalForm,
+              incomeRegime: context.incomeRegime,
               vatRegime: context.vatRegime,
+              companyTier: context.companyTier,
             },
             transactions,
           }),

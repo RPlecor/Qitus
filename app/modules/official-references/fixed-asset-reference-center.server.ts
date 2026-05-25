@@ -4,20 +4,21 @@ import type { FixedAssetReferencePayload } from "./official-reference-data.serve
 export class FixedAssetReferenceCenter {
   constructor(private readonly references = new OfficialReferenceCenter()) {}
 
-  getActiveReference() {
-    return this.references.getActiveReference<FixedAssetReferencePayload>("fixed_assets");
+  async getActiveReference() {
+    return this.references.getActiveReferenceAsync<FixedAssetReferencePayload>("fixed_assets");
   }
 
-  assertReady() {
-    this.references.assertReferenceReady("calculate_fixed_assets");
+  async assertReady() {
+    await this.references.assertReferenceReadyAsync("calculate_fixed_assets");
   }
 
-  listFamilies() {
-    return [...this.getActiveReference().payloadJson.families];
+  async listFamilies() {
+    return [...(await this.getActiveReference()).payloadJson.families];
   }
 
-  getDefaultFamily() {
-    return this.listFamilies().find((family) => family.key === "office_it") ?? this.listFamilies()[0];
+  async getDefaultFamily() {
+    const families = await this.listFamilies();
+    return families.find((family) => family.key === "office_it") ?? families[0];
   }
 
   validateUsefulLifeYears(value: number) {

@@ -47,6 +47,8 @@ function reviewTransaction(id: string): TransactionListItem {
     categorizationStatus: "NEEDS_REVIEW",
     businessStatus: "NEEDS_REVIEW",
     needsReview: true,
+    needsLightReview: false,
+    autoApplied: false,
     hasRule: false,
     journalEntryId: null,
   };

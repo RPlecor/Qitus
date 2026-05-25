@@ -1,5 +1,6 @@
 import type { CompanyWorkspace } from "../company-workspace/company-workspace.server";
 import { prisma } from "../db.server";
+import { ReconciliationPolicyCenter } from "../official-references/reconciliation-policy-center.server";
 import { ExpectedRouteError } from "../route-errors.server";
 
 export type EInvoiceMatchSuggestion = {
@@ -14,6 +15,8 @@ export type EInvoiceMatchSuggestion = {
 };
 
 export class EInvoiceMatchingCenter {
+  constructor(private readonly reconciliationPolicy = new ReconciliationPolicyCenter()) {}
+
   async suggestMatches(workspace: CompanyWorkspace, eInvoiceId: string): Promise<EInvoiceMatchSuggestion[]> {
     const invoice = await prisma.eInvoice.findFirst({
       where: { id: eInvoiceId, companyId: workspace.company.id, fiscalYearId: workspace.fiscalYear.id },
@@ -39,12 +42,13 @@ export class EInvoiceMatchingCenter {
       }),
     ]);
 
+    const exactAmountEpsilon = (await this.reconciliationPolicy.getTolerances()).exactAmountEpsilon;
     const transactionSuggestions = transactions.map((transaction) => {
       const scored = scoreInvoiceAgainstText(invoice, {
         text: `${transaction.label} ${transaction.counterparty ?? ""}`,
         amount: transaction.amount.toNumber(),
         date: transaction.date,
-      });
+      }, exactAmountEpsilon);
       return {
         entityType: "TRANSACTION" as const,
         entityId: transaction.id,
@@ -58,7 +62,7 @@ export class EInvoiceMatchingCenter {
 
     const entrySuggestions = entries.map((entry) => {
       const amount = Math.max(...entry.lines.map((line) => line.debit.toNumber()), ...entry.lines.map((line) => line.credit.toNumber()), 0);
-      const scored = scoreInvoiceAgainstText(invoice, { text: entry.label, amount, date: entry.date });
+      const scored = scoreInvoiceAgainstText(invoice, { text: entry.label, amount, date: entry.date }, exactAmountEpsilon);
       return {
         entityType: "JOURNAL_ENTRY" as const,
         entityId: entry.id,
@@ -97,13 +101,13 @@ export class EInvoiceMatchingCenter {
   }
 }
 
-function scoreInvoiceAgainstText(invoice: { amountTtc: { toNumber(): number } | null; issueDate: Date | null; supplierName: string | null; invoiceNumber: string | null }, fact: { text: string; amount: number; date: Date }) {
+function scoreInvoiceAgainstText(invoice: { amountTtc: { toNumber(): number } | null; issueDate: Date | null; supplierName: string | null; invoiceNumber: string | null }, fact: { text: string; amount: number; date: Date }, exactAmountEpsilon: number) {
   let score = 0;
   const reasons: string[] = [];
   const amountTtc = invoice.amountTtc?.toNumber();
   if (amountTtc != null) {
     const delta = Math.abs(Math.abs(amountTtc) - Math.abs(fact.amount));
-    if (delta < 0.01) {
+    if (delta <= exactAmountEpsilon) {
       score += 50;
       reasons.push("montant exact");
     } else if (delta <= 1) {

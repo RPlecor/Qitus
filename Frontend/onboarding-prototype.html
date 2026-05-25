@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Qitus — Onboarding</title>
+<style>
+/* ═══════════════════════════════════════════════════════
+   QITUS ONBOARDING — Design System v2 tokens
+   ═══════════════════════════════════════════════════════ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --green-900: #0F3D2B;
+  --green-800: #154E36;
+  --green-700: #1B6B4A;
+  --green-600: #237A56;
+  --green-500: #2A8F64;
+  --green-100: #E8F5EE;
+  --green-50:  #F4FAF7;
+  --sand-900: #1C1917;
+  --sand-800: #292524;
+  --sand-700: #44403C;
+  --sand-500: #78716C;
+  --sand-400: #A8A29E;
+  --sand-300: #D6D3D1;
+  --sand-200: #E7E5E4;
+  --sand-100: #F5F5F4;
+  --sand-50:  #FAFAF9;
+  --white:    #FFFFFF;
+  --bg: var(--sand-50);
+  --surface: var(--white);
+  --fg: var(--sand-900);
+  --muted: var(--sand-500);
+  --border: var(--sand-200);
+  --accent: var(--green-700);
+  --accent-lt: var(--green-50);
+  --accent-hv: var(--green-900);
+  --red: #dc2626;
+  --red-bg: #fef2f2;
+  --red-border: #fecaca;
+  --orange: #92400E;
+  --orange-bg: #FEF3E2;
+  --orange-border: #FDE68A;
+  --blue: #075985;
+  --blue-bg: #E0F2FE;
+  --blue-border: #BAE6FD;
+  --font: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-display: "Instrument Serif", "Iowan Old Style", "Apple Garamond", Georgia, serif;
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  --r: 10px;
+  --r-sm: 6px;
+  --r-lg: 16px;
+  --r-xl: 24px;
+  --shadow-xs: 0 1px 2px rgba(28,25,23,0.05);
+  --shadow: 0 1px 3px rgba(28,25,23,0.06), 0 1px 2px rgba(28,25,23,0.04);
+  --shadow-md: 0 4px 12px -2px rgba(28,25,23,0.08), 0 2px 4px -2px rgba(28,25,23,0.05);
+  --shadow-lg: 0 24px 48px -12px rgba(15,61,43,0.18), 0 8px 16px -8px rgba(28,25,23,0.08);
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur: 150ms;
+  --stepper-w: 260px;
+}
+
+html{font-size:16px}
+body{font-family:var(--font);color:var(--fg);background:var(--bg);line-height:1.55;-webkit-font-smoothing:antialiased}
+
+/* ── LAYOUT ── */
+.ob-shell{display:flex;min-height:100vh}
+
+/* Stepper sidebar */
+.ob-side{
+  position:fixed;inset:0 auto 0 0;
+  width:var(--stepper-w);
+  display:flex;flex-direction:column;
+  padding:32px 24px 24px;
+  background:var(--white);
+  border-right:1px solid var(--border);
+  z-index:10;
+}
+.ob-logo{font-family:var(--font-display);font-size:38px;color:var(--sand-900);margin-bottom:40px;line-height:1}
+.ob-logo .q{color:var(--green-700);font-style:italic}
+
+/* Stepper */
+.ob-stepper{flex:1;display:flex;flex-direction:column;gap:0}
+.ob-step{
+  display:flex;align-items:flex-start;gap:12px;
+  padding:10px 0;position:relative;
+  cursor:default;
+}
+.ob-step-dot{
+  width:28px;height:28px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:600;flex-shrink:0;
+  border:2px solid var(--sand-300);color:var(--sand-400);
+  background:var(--white);
+  transition:all 250ms var(--ease);
+  position:relative;z-index:2;
+}
+.ob-step.active .ob-step-dot{border-color:var(--green-700);background:var(--green-700);color:#fff}
+.ob-step.done .ob-step-dot{border-color:var(--green-700);background:var(--green-100);color:var(--green-700)}
+.ob-step-line{
+  position:absolute;left:13px;top:38px;width:2px;height:calc(100% - 18px);
+  background:var(--sand-200);z-index:1;
+}
+.ob-step.done .ob-step-line{background:var(--green-700)}
+.ob-step:last-child .ob-step-line{display:none}
+.ob-step-label{font-size:13px;color:var(--sand-500);padding-top:4px;font-weight:500;transition:color 200ms}
+.ob-step.active .ob-step-label{color:var(--sand-900);font-weight:600}
+.ob-step.done .ob-step-label{color:var(--green-700)}
+
+.ob-side-footer{margin-top:auto;padding-top:16px;border-top:1px solid var(--border)}
+.ob-logout{
+  display:flex;align-items:center;gap:8px;
+  font-size:13px;color:var(--sand-500);background:none;border:none;
+  cursor:pointer;padding:8px 0;font-family:inherit;
+  transition:color var(--dur) var(--ease);
+}
+.ob-logout:hover{color:var(--red)}
+
+/* Main content area */
+.ob-main{
+  flex:1;margin-left:var(--stepper-w);
+  display:flex;flex-direction:column;align-items:center;
+  padding:48px 32px 40px;
+  min-height:100vh;
+}
+.ob-content{width:100%;max-width:640px;animation:ob-fade-in 350ms var(--ease)}
+
+@keyframes ob-fade-in{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+
+/* ── TYPOGRAPHY ── */
+.ob-title{font-size:28px;font-weight:700;color:var(--sand-900);margin-bottom:8px;letter-spacing:-0.01em;line-height:1.2}
+.ob-subtitle{font-size:15px;color:var(--sand-500);margin-bottom:32px;line-height:1.55;max-width:520px}
+
+/* ── FORM ELEMENTS ── */
+.ob-field{margin-bottom:20px}
+.ob-label{display:block;font-size:13px;font-weight:600;color:var(--sand-700);margin-bottom:6px}
+.ob-label .opt{font-weight:400;color:var(--sand-400);margin-left:4px}
+.ob-input{
+  width:100%;padding:10px 14px;font-size:14px;font-family:inherit;
+  border:1px solid var(--sand-300);border-radius:var(--r-sm);
+  background:var(--white);color:var(--fg);
+  transition:border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+  outline:none;
+}
+.ob-input:focus{border-color:var(--green-700);box-shadow:0 0 0 3px var(--green-100)}
+.ob-input.error{border-color:var(--red)}
+.ob-input::placeholder{color:var(--sand-400)}
+textarea.ob-input{resize:vertical;min-height:80px}
+select.ob-input{appearance:none;background-image:url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%2378716C' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:36px}
+.ob-error{font-size:12px;color:var(--red);margin-top:4px;display:none}
+.ob-field.has-error .ob-error{display:block}
+.ob-field.has-error .ob-input{border-color:var(--red)}
+
+.ob-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+
+/* ── CHOICE CARDS ── */
+.ob-choices{display:flex;flex-direction:column;gap:10px;margin-bottom:24px}
+.ob-choice{
+  display:flex;align-items:center;gap:14px;
+  padding:14px 18px;border:1.5px solid var(--sand-200);
+  border-radius:var(--r);background:var(--white);
+  cursor:pointer;transition:all var(--dur) var(--ease);
+  position:relative;
+}
+.ob-choice:hover{border-color:var(--sand-300);background:var(--sand-50)}
+.ob-choice.selected{border-color:var(--green-700);background:var(--green-50)}
+.ob-choice-radio{
+  width:20px;height:20px;border-radius:50%;
+  border:2px solid var(--sand-300);flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  transition:all var(--dur) var(--ease);
+}
+.ob-choice.selected .ob-choice-radio{border-color:var(--green-700)}
+.ob-choice.selected .ob-choice-radio::after{
+  content:'';width:10px;height:10px;border-radius:50%;background:var(--green-700);
+}
+.ob-choice-text{flex:1}
+.ob-choice-title{font-size:14px;font-weight:600;color:var(--sand-900)}
+.ob-choice-desc{font-size:12px;color:var(--sand-500);margin-top:2px}
+.ob-badge{
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;
+  padding:3px 8px;border-radius:10px;
+  background:var(--green-100);color:var(--green-700);
+  white-space:nowrap;
+}
+
+/* Large cards (data start) */
+.ob-cards-grid{display:grid;grid-template-columns:1fr;gap:14px;margin-bottom:24px}
+.ob-card{
+  padding:24px;border:1.5px solid var(--sand-200);border-radius:var(--r-lg);
+  background:var(--white);cursor:pointer;
+  transition:all 200ms var(--ease);
+}
+.ob-card:hover{border-color:var(--green-100);box-shadow:var(--shadow-md);transform:translateY(-1px)}
+.ob-card-icon{font-size:28px;margin-bottom:12px}
+.ob-card h3{font-size:16px;font-weight:700;color:var(--sand-900);margin-bottom:6px}
+.ob-card p{font-size:13px;color:var(--sand-500);line-height:1.5;margin-bottom:14px}
+.ob-card .ob-card-action{
+  font-size:13px;font-weight:600;color:var(--green-700);
+  display:inline-flex;align-items:center;gap:4px;
+}
+
+/* ── HELP BOX ── */
+.ob-help{
+  padding:14px 18px;border-radius:var(--r);
+  background:var(--blue-bg);border:1px solid var(--blue-border);
+  font-size:13px;color:var(--blue);line-height:1.5;
+  margin-bottom:24px;
+}
+.ob-help strong{display:block;margin-bottom:4px;font-weight:600}
+
+.ob-warn{
+  padding:14px 18px;border-radius:var(--r);
+  background:var(--orange-bg);border:1px solid var(--orange-border);
+  font-size:13px;color:var(--orange);line-height:1.5;
+  margin-bottom:24px;
+}
+
+/* ── SUMMARY CARDS ── */
+.ob-summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:28px}
+.ob-summary-card{
+  padding:20px;border:1px solid var(--sand-200);border-radius:var(--r);
+  background:var(--white);
+}
+.ob-summary-card h4{font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:var(--sand-500);font-weight:600;margin-bottom:8px}
+.ob-summary-card p{font-size:14px;color:var(--sand-900);font-weight:500;line-height:1.45}
+.ob-summary-card .ob-edit{font-size:12px;color:var(--green-700);margin-top:8px;cursor:pointer;display:inline-block}
+
+.ob-next-action{
+  padding:20px 24px;border-radius:var(--r);
+  background:var(--green-50);border:1px solid var(--green-100);
+  margin-bottom:28px;
+}
+.ob-next-action h4{font-size:13px;font-weight:700;color:var(--green-900);margin-bottom:4px}
+.ob-next-action p{font-size:13px;color:var(--green-700)}
+
+/* ── FILE UPLOAD ── */
+.ob-upload{
+  border:2px dashed var(--sand-300);border-radius:var(--r-lg);
+  padding:48px 32px;text-align:center;cursor:pointer;
+  transition:all 200ms var(--ease);margin-bottom:24px;
+  background:var(--white);
+}
+.ob-upload:hover{border-color:var(--green-500);background:var(--green-50)}
+.ob-upload.drag-over{border-color:var(--green-700);background:var(--green-100)}
+.ob-upload-icon{font-size:40px;margin-bottom:12px;color:var(--sand-400)}
+.ob-upload p{font-size:14px;color:var(--sand-700);margin-bottom:4px}
+.ob-upload .ob-upload-hint{font-size:12px;color:var(--sand-400)}
+.ob-file-info{
+  display:flex;align-items:center;gap:12px;
+  padding:14px 18px;border:1px solid var(--green-100);
+  border-radius:var(--r);background:var(--green-50);
+  margin-bottom:20px;
+}
+.ob-file-info .name{font-size:14px;font-weight:600;color:var(--sand-900);flex:1}
+.ob-file-info .size{font-size:12px;color:var(--sand-500)}
+
+/* ── BANK SEARCH ── */
+.ob-bank-search{margin-bottom:20px}
+.ob-bank-list{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:24px}
+.ob-bank{
+  display:flex;align-items:center;gap:10px;
+  padding:12px 16px;border:1.5px solid var(--sand-200);
+  border-radius:var(--r);background:var(--white);cursor:pointer;
+  transition:all var(--dur) var(--ease);font-size:14px;font-weight:500;color:var(--sand-900);
+}
+.ob-bank:hover{border-color:var(--sand-300);background:var(--sand-50)}
+.ob-bank.selected{border-color:var(--green-700);background:var(--green-50)}
+.ob-bank-dot{width:8px;height:8px;border-radius:50%;background:var(--green-500);flex-shrink:0}
+.ob-bank-security{
+  display:flex;align-items:center;gap:8px;
+  padding:12px 16px;border-radius:var(--r);
+  background:var(--green-50);font-size:12px;color:var(--green-700);
+  margin-bottom:20px;
+}
+
+/* ── BUTTONS ── */
+.ob-actions{display:flex;align-items:center;gap:12px;margin-top:32px;flex-wrap:wrap}
+.ob-btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  padding:11px 28px;border-radius:var(--r-sm);font-size:14px;font-weight:600;
+  font-family:inherit;cursor:pointer;border:none;
+  transition:all var(--dur) var(--ease);
+}
+.ob-btn-primary{background:var(--green-700);color:#fff}
+.ob-btn-primary:hover{background:var(--green-900)}
+.ob-btn-secondary{background:var(--white);color:var(--sand-700);border:1px solid var(--sand-300)}
+.ob-btn-secondary:hover{background:var(--sand-50);border-color:var(--sand-400)}
+.ob-btn-ghost{background:none;color:var(--sand-500);padding:11px 12px;border:none}
+.ob-btn-ghost:hover{color:var(--sand-700)}
+.ob-actions-right{margin-left:auto;display:flex;gap:12px;align-items:center}
+
+.ob-link{font-size:12px;color:var(--sand-500);text-decoration:underline;cursor:pointer;transition:color var(--dur)}
+.ob-link:hover{color:var(--green-700)}
+
+/* ── WELCOME CHECKLIST ── */
+.ob-checklist{margin:28px 0;display:flex;flex-direction:column;gap:12px}
+.ob-check-item{
+  display:flex;align-items:center;gap:12px;
+  font-size:15px;color:var(--sand-700);
+}
+.ob-check-dot{
+  width:24px;height:24px;border-radius:50%;
+  background:var(--green-100);color:var(--green-700);
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;flex-shrink:0;
+}
+.ob-email-badge{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:8px 16px;border-radius:var(--r);
+  background:var(--green-50);border:1px solid var(--green-100);
+  font-size:13px;color:var(--green-700);margin-bottom:16px;
+}
+
+/* ── CONDITIONAL SECTIONS ── */
+.ob-conditional{
+  margin-top:20px;padding-top:20px;border-top:1px solid var(--sand-100);
+  animation:ob-fade-in 250ms var(--ease);
+}
+
+/* ── SCREENS — all hidden by default ── */
+.ob-screen{display:none}
+.ob-screen.active{display:block}
+
+/* ── RESPONSIVE ── */
+@media(max-width:768px){
+  .ob-side{
+    position:fixed;top:0;left:0;right:0;bottom:auto;
+    width:100%;height:auto;flex-direction:row;align-items:center;
+    padding:12px 16px;border-right:none;border-bottom:1px solid var(--border);
+    gap:16px;
+  }
+  .ob-logo{font-size:24px;margin-bottom:0;flex-shrink:0}
+  .ob-stepper{flex-direction:row;gap:4px;overflow-x:auto;flex:1}
+  .ob-step{padding:6px 8px;gap:6px;flex-shrink:0}
+  .ob-step-dot{width:22px;height:22px;font-size:10px}
+  .ob-step-label{font-size:0;width:0;overflow:hidden;padding:0}
+  .ob-step.active .ob-step-label{font-size:11px;width:auto;padding-top:1px}
+  .ob-step-line{display:none}
+  .ob-side-footer{display:none}
+  .ob-main{margin-left:0;padding:80px 16px 32px}
+  .ob-title{font-size:22px}
+  .ob-row{grid-template-columns:1fr}
+  .ob-summary-grid{grid-template-columns:1fr}
+  .ob-bank-list{grid-template-columns:1fr}
+  .ob-actions{flex-direction:column-reverse;align-items:stretch}
+  .ob-actions-right{margin-left:0;flex-direction:column-reverse}
+}
+</style>
+</head>
+<body>
+
+<div class="ob-shell">
+  <!-- ═══ SIDEBAR STEPPER ═══ -->
+  <aside class="ob-side">
+    <div class="ob-logo"><span class="q">Q</span>itus</div>
+    <div class="ob-stepper" id="stepper">
+      <div class="ob-step" data-group="0"><span class="ob-step-dot">1</span><span class="ob-step-label">Vous</span><span class="ob-step-line"></span></div>
+      <div class="ob-step" data-group="1"><span class="ob-step-dot">2</span><span class="ob-step-label">Entreprise</span><span class="ob-step-line"></span></div>
+      <div class="ob-step" data-group="2"><span class="ob-step-dot">3</span><span class="ob-step-label">Fiscalité</span><span class="ob-step-line"></span></div>
+      <div class="ob-step" data-group="3"><span class="ob-step-dot">4</span><span class="ob-step-label">Exercice</span><span class="ob-step-line"></span></div>
+      <div class="ob-step" data-group="4"><span class="ob-step-dot">5</span><span class="ob-step-label">Démarrage</span><span class="ob-step-line"></span></div>
+    </div>
+    <div class="ob-side-footer">
+      <button class="ob-logout" onclick="alert('Déconnexion')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Se déconnecter
+      </button>
+    </div>
+  </aside>
+
+  <!-- ═══ MAIN ═══ -->
+  <div class="ob-main">
+
+    <!-- ──────── ÉCRAN 0 — BIENVENUE ──────── -->
+    <div class="ob-content ob-screen active" id="screen-0">
+      <h1 class="ob-title">Bienvenue dans Qitus</h1>
+      <p class="ob-subtitle">Quelques informations suffisent pour préparer votre espace comptable et vous guider vers la première action utile.</p>
+      <div class="ob-email-badge">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        Votre adresse email est vérifiée
+      </div>
+      <div class="ob-checklist">
+        <div class="ob-check-item"><span class="ob-check-dot">1</span>Votre entreprise</div>
+        <div class="ob-check-item"><span class="ob-check-dot">2</span>Votre régime fiscal et TVA</div>
+        <div class="ob-check-item"><span class="ob-check-dot">3</span>Votre exercice comptable</div>
+        <div class="ob-check-item"><span class="ob-check-dot">4</span>Votre premier import ou connecteur bancaire</div>
+      </div>
+      <div class="ob-actions">
+        <button class="ob-btn ob-btn-primary" onclick="goTo(1)">Commencer</button>
+        <button class="ob-btn ob-btn-ghost" onclick="alert('Déconnexion')">Me déconnecter</button>
+      </div>
+    </div>
+
+    <!-- ──────── ÉCRAN 1 — VOUS ──────── -->
+    <div class="ob-content ob-screen" id="screen-1">
+      <h1 class="ob-title">Qui êtes-vous ?</h1>
+      <p class="ob-subtitle">Ces informations servent uniquement à personnaliser votre espace et à faciliter les échanges liés à votre dossier.</p>
+      <div class="ob-row">
+        <div class="ob-field">
+          <label class="ob-label">Prénom</label>
+          <input class="ob-input" type="text" placeholder="Jean" id="firstName" maxlength="80">
+          <div class="ob-error">Ce champ est nécessaire pour continuer.</div>
+        </div>
+        <div class="ob-field">
+          <label class="ob-label">Nom</label>
+          <input class="ob-input" type="text" placeholder="Dupont" id="lastName" maxlength="80">
+          <div class="ob-error">Ce champ est nécessaire pour continuer.</div>
+        </div>
+      </div>
+      <div class="ob-field">
+        <label class="ob-label">Téléphone <span class="opt">optionnel</span></label>
+        <input class="ob-input" type="tel" placeholder="+33 6 12 34 56 78" id="phone">
+      </div>
+      <div class="ob-field">
+        <label class="ob-label">Rôle dans l'entreprise <span class="opt">optionnel</span></label>
+        <select class="ob-input" id="role">
+          <option value="">Sélectionner un rôle</option>
+          <option>Dirigeant</option>
+          <option>Indépendant</option>
+          <option>Collaborateur administratif</option>
+          <option>Expert-comptable ou cabinet</option>
+        </select>
+      </div>
+      <div class="ob-field">
+        <label class="ob-label">Comment avez-vous entendu parler de Qitus ? <span class="opt">optionnel</span></label>
+        <input class="ob-input" type="text" placeholder="Bouche à oreille, recherche Google…" id="source">
+      </div>
+      <div class="ob-actions">
+        <button class="ob-btn ob-btn-secondary" onclick="goTo(0)">Retour</button>
+        <div class="ob-actions-right">
+          <a class="ob-link" href="/privacy" target="_blank">Lire la politique de confidentialité</a>
+          <button class="ob-btn ob-btn-primary" onclick="validateAndGo(1,2)">Continuer</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ──────── ÉCRAN 2 — IDENTIFICATION ENTREPRISE ──────── -->
+    <div class="ob-content ob-screen" id="screen-2">
+      <h1 class="ob-title">Votre entreprise</h1>
+      <p class="ob-subtitle">Identifiez votre entreprise pour que Qitus prépare votre espace comptable.</p>
+      <div class="ob-choices" id="siren-toggle">
+        <div class="ob-choice selected" onclick="toggleSiren(true, this)">
+          <span class="ob-choice-radio"></span>
+          <span class="ob-choice-text"><span class="ob-choice-title">J'ai un SIREN ou SIRET</span></span>
+        </div>
+        <div class="ob-choice" onclick="toggleSiren(false, this)">
+          <span class="ob-choice-radio"></span>
+          <span class="ob-choice-text"><span class="ob-choice-title">Je n'ai pas encore de numéro</span></span>
+        </div>
+      </div>
+      <div id="siren-fields">
+        <div class="ob-field">
+          <label class="ob-label">SIREN ou SIRET</label>
+          <input class="ob-input" type="text" placeholder="123 456 789" id="siren" maxlength="14" inputmode="numeric">
+          <div class="ob-error">Le numéro doit contenir 9 chiffres (SIREN) ou 14 chiffres (SIRET).</div>
+        </div>
+        <div class="ob-field">
+          <label class="ob-label">Nom de l'entreprise</label>
+          <input class="ob-input" type="text" placeholder="Ma Société SAS" id="companyName">
+          <div class="ob-error">Ce champ est nécessaire pour continuer.</div>
+        </div>
+      </div>
+      <div id="no-siren-fields" style="display:none">
+        <div class="ob-field">
+          <label class="ob-label">Nom de l'entreprise ou projet</label>
+          <input class="ob-input" type="text" placeholder="Mon projet" id="companyNameAlt">
+          <div class="ob-error">Ce champ est nécessaire pour continuer.</div>
+        </div>
+        <div class="ob-help">Vous pourrez compléter le SIREN ou SIRET plus tard dans Paramètres.</div>
+      </div>
+      <div class="ob-actions">
+        <button class="ob-btn ob-btn-secondary" onclick="goTo(1)">Retour</button>
+        <div class="ob-actions-right">
+          <button class="ob-btn ob-btn-primary" onclick="goTo(3)">Continuer</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ──────── ÉCRAN 3 — FORME JURIDIQUE ──────── -->
+    <div class="ob-content ob-screen" id="screen-3">
+      <h1 class="ob-title">Forme juridique</h1>
+      <p class="ob-subtitle">La forme juridique permet à Qitus de proposer les bons régimes fiscaux et les bons contrôles.</p>
+      <div class="ob-choices" id="legal-form">
+        <div class="ob-choice" onclick="selectChoice('legal-form', this, 'micro')">
+          <span class="ob-choice-radio"></span>
+          <span class="ob-choice-text"><span class="ob-choice-title">Micro-entreprise / auto-entrepreneur</span></span>
+        </div>
+        <div class="ob-choice" onclick="selectChoice('legal-form', this, 'ei')">
+          <span class="ob-choice-radio"></span>
+          <span class="ob-choice-text"><span class="ob-choice-title">Entreprise individuelle</span></span>
+        </div>
+        <div class="ob-choice" onclick="selectChoice('legal-form', this, 'eurl')">
+          <span class="ob-choice-radio"></span>
+          <span class="ob-choice-text"><span class="ob-choice-title">EURL / SARL</span></span>
+        </div>
+        <div class="ob-choice" onclick="selectChoice('legal-form', this, 'sasu')">
+          <span class="ob-choice-radio"></span>
+          <span class="ob-choice-text"><span class="ob-choice-title">SASU / SAS</span></span>
+          <span class="ob-badge">Le plus fréquent</span>
+        </div>
+        <div class="ob-choice" onclick="selectChoice('legal-form', this, 'sci')">
+          <span class="ob-choice-radio"></span>
+          <span class="ob-choice-text"><span class="ob-choice-title">SCI</span></span>
+        </div>
+        <div class="ob-choice" onclick="selectChoice('legal-form', this, 'other')">
+          <span class="ob-choice-radio"></span>
+          <span class="ob-choice-text"><span class="ob-choice-title">Autre forme juridique</span></span>
+        </div>
+      </div>
+      <div id="micro-warn" class="ob-warn" style="display:none">
+        Qitus peut vous aider à suivre vos justificatifs et exports, mais certaines fonctions comptables avancées peuvent ne pas être nécessaires.
+      </div>
+      <div class="ob-help">Vous pourrez modifier cette information plus tard dans Paramètres.</div>
+      <div class="ob-actions">
+        <button class="ob-btn ob-btn-secondary" onclick="goTo(2)">Retour</button>
+        <div class="ob-actions-right">
+          <button class="ob-btn ob-btn-primary" onclick="goTo(4)">Continuer</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ──────── ÉCRAN 4 — ACTIVITÉ ──────── -->
+    <div class="ob-content ob-screen" id="screen-4">
+      <h1 class="ob-title">Nature de votre activité</h1>
+      <p class="ob-subtitle">Qitus utilise cette information pour préparer les règles de classement et les comptes adaptés.</p>
+      <div class="ob-choices" id="activity">
+        <div class="ob-choice" onclick="selectChoice('activity', this, 'services')">
+          <span class="ob-choice-radio"></span>
+          <span class="ob-choice-text">
+            <span class="ob-choice-title">Prestations de services</span>
+            <span class="ob-choice-desc">Conseil, développement, coaching, santé, avocat</span>
+          </span>
+        </div>
+        <div class="ob-choice" onclick="selectChoice('activity', this, 'products')">
+          <span class="ob-choice-radio"></span>
+          <span class="ob-choice-text">
+            <span class="ob-choice-title">Vente de produits</span>
+            <span class="ob-choice-desc">E-commerce, commerce, marchandises</span>
+          </span>
+        </div>
+        <div class="ob-choice" onclick="selectChoice('activity', this, 'mixed')">
+          <span class="ob-choice-radio"></span>
+          <span class="ob-choice-text"><span class="ob-choice-title">Services et produits</span></span>
+        </div>
+        <div class="ob-choice" onclick="selectChoice('activity', this, 'rental')">
+          <span class="ob-choice-radio"></span>
+          <span class="ob-choice-text"><span class="ob-choice-title">Location meublée</span></span>
+        </div>
+        <div class="ob-choice" onclick="selectChoice('activity', this, 'real-estate')">
+          <span class="ob-choice-radio"></span>
+          <span class="ob-choice-text"><span class="ob-choice-title">Immobilier / SCI</span></span>
+        </div>
+        <div class="ob-choice" onclick="selectChoice('activity', this, 'other')">
+          <span class="ob-choice-radio"></span>
+          <span class="ob-choice-text"><span class="ob-choice-title">Autre activité</span></span>
+        </div>
+      </div>
+      <div class="ob-field">
+        <label class="ob-label">Décrivez votre activité en quelques mots <span class="opt">optionnel</span></label>
+        <input class="ob-input" type="text" placeholder="Ex : Développement web freelance" maxlength="160">
+      </div>
+      <div class="ob-actions">
+        <button class="ob-btn ob-btn-secondary" onclick="goTo(3)">Retour</button>
+        <div class="ob-actions-right">
+          <button class="ob-btn ob-btn-primary" onclick="goTo(5)">Continuer</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ──────── ÉCRAN 5 — IMPOSITION ──────── -->
+    <div class="ob-content ob-screen" id="screen-5">
+      <h1 class="ob-title">Imposition des bénéfices</h1>
+      <p class="ob-subtitle">Comment votre activité est-elle imposée ?</p>
+      <div class="ob-choices" id="tax-regime">
+        <div class="ob-choice" onclick="selectChoice('tax-regime', this, 'is')">
+          <span class="ob-choice-radio"></span>
+          <span class="ob-choice-text"><span class="ob-choice-title">Impôt sur les sociétés (IS)</span></span>
+          <span class="ob-badge">Le plus fréquent</span>
+        </div>
+        <div class="ob-choice" onclick="selectChoice('tax-regime', this, 'ir')">
+          <span class="ob-choice-radio"></span>
+          <span class="ob-choice-text"><span class="ob-choice-title">Impôt sur le revenu (IR)</span></span>
+        </div>
+      </div>
+      <div class="ob-help">
+        <strong>Vous hésitez ?</strong>
+        Choisissez le régime indiqué sur vos documents de création ou demandez à votre expert-comptable. Vous pourrez corriger ce choix avant vos premiers exports.
+      </div>
+      <div class="ob-actions">
+        <button class="ob-btn ob-btn-secondary" onclick="goTo(4)">Retour</button>
+        <div class="ob-actions-right">
+          <button class="ob-btn ob-btn-primary" onclick="goTo(6)">Continuer</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ──────── ÉCRAN 6 — TVA ──────── -->
+    <div class="ob-content ob-screen" id="screen-6">
+      <h1 class="ob-title">TVA</h1>
+      <p class="ob-subtitle">Ces informations permettent à Qitus de calculer les positions TVA et de vous signaler les écritures à revoir.</p>
+      <div class="ob-choices" id="vat-status">
+        <div class="ob-choice" onclick="selectChoice('vat-status', this, 'franchise'); toggleVatDetails(false)">
+          <span class="ob-choice-radio"></span>
+          <span class="ob-choice-text">
+            <span class="ob-choice-title">Non, je suis en franchise de TVA</span>
+            <span class="ob-choice-desc">Aucune déclaration de TVA requise</span>
+          </span>
+        </div>
+        <div class="ob-choice" onclick="selectChoice('vat-status', this, 'yes'); toggleVatDetails(true)">
+          <span class="ob-choice-radio"></span>
+          <span class="ob-choice-text"><span class="ob-choice-title">Oui, je déclare la TVA</span></span>
+        </div>
+      </div>
+      <div id="vat-details" style="display:none" class="ob-conditional">
+        <label class="ob-label" style="margin-bottom:12px">À quelle fréquence déclarez-vous la TVA ?</label>
+        <div class="ob-choices" id="vat-frequency">
+          <div class="ob-choice" onclick="selectChoice('vat-frequency', this, 'monthly')">
+            <span class="ob-choice-radio"></span>
+            <span class="ob-choice-text"><span class="ob-choice-title">Tous les mois</span></span>
+          </div>
+          <div class="ob-choice" onclick="selectChoice('vat-frequency', this, 'quarterly')">
+            <span class="ob-choice-radio"></span>
+            <span class="ob-choice-text"><span class="ob-choice-title">Tous les 3 mois</span></span>
+          </div>
+          <div class="ob-choice" onclick="selectChoice('vat-frequency', this, 'annual')">
+            <span class="ob-choice-radio"></span>
+            <span class="ob-choice-text"><span class="ob-choice-title">Une fois par an</span></span>
+          </div>
+        </div>
+        <label class="ob-label" style="margin-bottom:12px">Quand la TVA devient-elle exigible ?</label>
+        <div class="ob-choices" id="vat-exigibility">
+          <div class="ob-choice" onclick="selectChoice('vat-exigibility', this, 'encaissement')">
+            <span class="ob-choice-radio"></span>
+            <span class="ob-choice-text"><span class="ob-choice-title">À l'encaissement</span></span>
+          </div>
+          <div class="ob-choice" onclick="selectChoice('vat-exigibility', this, 'facturation')">
+            <span class="ob-choice-radio"></span>
+            <span class="ob-choice-text"><span class="ob-choice-title">À la facturation</span></span>
+          </div>
+          <div class="ob-choice" onclick="selectChoice('vat-exigibility', this, 'mixte')">
+            <span class="ob-choice-radio"></span>
+            <span class="ob-choice-text"><span class="ob-choice-title">Mixte</span></span>
+          </div>
+        </div>
+        <div class="ob-help">Pour les prestations de services, l'encaissement est fréquent. Pour les ventes de biens, la facturation est fréquente.</div>
+      </div>
+      <div class="ob-actions">
+        <button class="ob-btn ob-btn-secondary" onclick="goTo(5)">Retour</button>
+        <div class="ob-actions-right">
+          <button class="ob-btn ob-btn-primary" onclick="goTo(7)">Continuer</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ──────── ÉCRAN 7 — EXERCICE COMPTABLE ──────── -->
+    <div class="ob-content ob-screen" id="screen-7">
+      <h1 class="ob-title">Exercice comptable</h1>
+      <p class="ob-subtitle">Quel exercice voulez-vous suivre dans Qitus ?</p>
+      <div class="ob-choices" id="fiscal-year-quick">
+        <div class="ob-choice" onclick="selectFiscalYear('2025', this)">
+          <span class="ob-choice-radio"></span>
+          <span class="ob-choice-text"><span class="ob-choice-title">Exercice 2025</span><span class="ob-choice-desc">01/01/2025 — 31/12/2025</span></span>
+        </div>
+        <div class="ob-choice" onclick="selectFiscalYear('2026', this)">
+          <span class="ob-choice-radio"></span>
+          <span class="ob-choice-text"><span class="ob-choice-title">Exercice 2026</span><span class="ob-choice-desc">01/01/2026 — 31/12/2026</span></span>
+          <span class="ob-badge">Année en cours</span>
+        </div>
+        <div class="ob-choice" onclick="selectFiscalYear('custom', this)">
+          <span class="ob-choice-radio"></span>
+          <span class="ob-choice-text"><span class="ob-choice-title">Autre période</span></span>
+        </div>
+      </div>
+      <div id="custom-fy" style="display:none" class="ob-conditional">
+        <div class="ob-row">
+          <div class="ob-field">
+            <label class="ob-label">Date de début</label>
+            <input class="ob-input" type="date" id="fyStart">
+            <div class="ob-error">Ce champ est nécessaire pour continuer.</div>
+          </div>
+          <div class="ob-field">
+            <label class="ob-label">Date de fin</label>
+            <input class="ob-input" type="date" id="fyEnd">
+            <div class="ob-error">La date de fin doit être après la date de début.</div>
+          </div>
+        </div>
+      </div>
+      <div class="ob-field">
+        <label class="ob-label">Date de création de l'entreprise <span class="opt">optionnel</span></label>
+        <input class="ob-input" type="date" id="creationDate">
+      </div>
+      <div class="ob-help">
+        <strong>Qu'est-ce qu'un exercice comptable ?</strong>
+        C'est la période sur laquelle Qitus organise vos imports, écritures, TVA, documents et clôture. Elle dure généralement 12 mois.
+      </div>
+      <div class="ob-actions">
+        <button class="ob-btn ob-btn-secondary" onclick="goTo(6)">Retour</button>
+        <div class="ob-actions-right">
+          <button class="ob-btn ob-btn-primary" onclick="goTo(8)">Continuer</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ──────── ÉCRAN 8 — ADRESSE & INFOS LÉGALES ──────── -->
+    <div class="ob-content ob-screen" id="screen-8">
+      <h1 class="ob-title">Informations légales</h1>
+      <p class="ob-subtitle">Ces informations apparaissent dans certains documents comptables. Vous pourrez les compléter plus tard dans Paramètres.</p>
+      <div class="ob-field">
+        <label class="ob-label">Adresse <span class="opt">optionnel</span></label>
+        <input class="ob-input" type="text" placeholder="12 rue de la Paix" id="address">
+      </div>
+      <div class="ob-row">
+        <div class="ob-field">
+          <label class="ob-label">Code postal <span class="opt">optionnel</span></label>
+          <input class="ob-input" type="text" placeholder="75002" maxlength="5" inputmode="numeric" id="zipCode">
+        </div>
+        <div class="ob-field">
+          <label class="ob-label">Ville <span class="opt">optionnel</span></label>
+          <input class="ob-input" type="text" placeholder="Paris" id="city">
+        </div>
+      </div>
+      <div class="ob-row">
+        <div class="ob-field">
+          <label class="ob-label">Nom du dirigeant <span class="opt">optionnel</span></label>
+          <input class="ob-input" type="text" placeholder="Jean Dupont" id="ceoName">
+        </div>
+        <div class="ob-field">
+          <label class="ob-label">Rôle du dirigeant <span class="opt">optionnel</span></label>
+          <input class="ob-input" type="text" placeholder="Président" id="ceoRole">
+        </div>
+      </div>
+      <div class="ob-field" id="capital-field">
+        <label class="ob-label">Capital social <span class="opt">optionnel</span></label>
+        <input class="ob-input" type="text" placeholder="1 000 €" id="capital">
+      </div>
+      <div class="ob-actions">
+        <button class="ob-btn ob-btn-secondary" onclick="goTo(7)">Retour</button>
+        <div class="ob-actions-right">
+          <button class="ob-btn ob-btn-ghost" onclick="goTo(9)">Passer cette étape</button>
+          <button class="ob-btn ob-btn-primary" onclick="goTo(9)">Continuer</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ──────── ÉCRAN 9 — DÉMARRAGE ──────── -->
+    <div class="ob-content ob-screen" id="screen-9">
+      <h1 class="ob-title">Comment voulez-vous démarrer ?</h1>
+      <p class="ob-subtitle">Choisissez comment Qitus reçoit ses premières données.</p>
+      <div class="ob-cards-grid">
+        <div class="ob-card" onclick="goTo(10)">
+          <div class="ob-card-icon">🏦</div>
+          <h3>Connecter ma banque</h3>
+          <p>Qitus récupère vos transactions et les classe automatiquement quand c'est fiable.</p>
+          <span class="ob-card-action">Connecter ma banque →</span>
+        </div>
+        <div class="ob-card" onclick="goTo(11)">
+          <div class="ob-card-icon">📄</div>
+          <h3>Importer un relevé CSV</h3>
+          <p>Utilisez un export bancaire si vous ne voulez pas connecter votre banque maintenant.</p>
+          <span class="ob-card-action">Importer un fichier →</span>
+        </div>
+        <div class="ob-card" onclick="goTo(12)">
+          <div class="ob-card-icon">⏭️</div>
+          <h3>Commencer sans données</h3>
+          <p>Vous pourrez importer ou connecter une banque plus tard.</p>
+          <span class="ob-card-action">Configurer plus tard →</span>
+        </div>
+      </div>
+      <div class="ob-actions">
+        <button class="ob-btn ob-btn-secondary" onclick="goTo(8)">Retour</button>
+      </div>
+    </div>
+
+    <!-- ──────── ÉCRAN 10 — CONNEXION BANCAIRE ──────── -->
+    <div class="ob-content ob-screen" id="screen-10">
+      <h1 class="ob-title">Connecter votre banque</h1>
+      <p class="ob-subtitle">La connexion est sécurisée et en lecture seule. Qitus ne peut pas effectuer de paiement.</p>
+      <div class="ob-bank-search ob-field">
+        <input class="ob-input" type="search" placeholder="Rechercher une banque…">
+      </div>
+      <div class="ob-bank-list" id="bank-list">
+        <div class="ob-bank" onclick="selectBank(this)"><span class="ob-bank-dot"></span>Qonto</div>
+        <div class="ob-bank" onclick="selectBank(this)"><span class="ob-bank-dot"></span>Crédit Agricole</div>
+        <div class="ob-bank" onclick="selectBank(this)"><span class="ob-bank-dot"></span>BNP Paribas</div>
+        <div class="ob-bank" onclick="selectBank(this)"><span class="ob-bank-dot"></span>Société Générale</div>
+        <div class="ob-bank" onclick="selectBank(this)"><span class="ob-bank-dot"></span>Boursobank</div>
+        <div class="ob-bank" onclick="selectBank(this)"><span class="ob-bank-dot"></span>Banque Populaire</div>
+        <div class="ob-bank" onclick="selectBank(this)"><span class="ob-bank-dot"></span>Caisse d'Épargne</div>
+        <div class="ob-bank" onclick="selectBank(this)"><span class="ob-bank-dot"></span>CIC</div>
+        <div class="ob-bank" onclick="selectBank(this)"><span class="ob-bank-dot"></span>Revolut</div>
+      </div>
+      <div class="ob-bank-security">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        La connexion est sécurisée. Qitus ne peut pas effectuer de paiement.
+      </div>
+      <div class="ob-actions">
+        <button class="ob-btn ob-btn-secondary" onclick="goTo(9)">Retour</button>
+        <div class="ob-actions-right">
+          <button class="ob-btn ob-btn-ghost" onclick="goTo(11)">Importer un relevé à la place</button>
+          <button class="ob-btn ob-btn-ghost" onclick="goTo(12)">Passer cette étape</button>
+          <button class="ob-btn ob-btn-primary" onclick="goTo(12)">Connecter</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ──────── ÉCRAN 11 — IMPORT CSV ──────── -->
+    <div class="ob-content ob-screen" id="screen-11">
+      <h1 class="ob-title">Importer un relevé bancaire</h1>
+      <p class="ob-subtitle">Vous pouvez importer un export Qonto, BNP Paribas, Société Générale, Boursobank ou utiliser une correspondance de colonnes.</p>
+      <div class="ob-upload" id="upload-zone" onclick="document.getElementById('file-input').click()">
+        <div class="ob-upload-icon">📁</div>
+        <p>Glissez un relevé CSV ou parcourez vos fichiers</p>
+        <span class="ob-upload-hint">Format accepté : .csv</span>
+      </div>
+      <input type="file" id="file-input" accept=".csv" style="display:none" onchange="handleFileSelect(this)">
+      <div id="file-selected" style="display:none">
+        <div class="ob-file-info">
+          <span class="name" id="file-name">releve.csv</span>
+          <span class="size" id="file-size">24 Ko</span>
+        </div>
+      </div>
+      <div class="ob-actions">
+        <button class="ob-btn ob-btn-secondary" onclick="goTo(9)">Retour</button>
+        <div class="ob-actions-right">
+          <button class="ob-btn ob-btn-ghost" onclick="goTo(12)">Passer cette étape</button>
+          <button class="ob-btn ob-btn-primary" onclick="goTo(12)">Importer</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ──────── ÉCRAN 12 — RÉSUMÉ ──────── -->
+    <div class="ob-content ob-screen" id="screen-12">
+      <h1 class="ob-title">Votre espace Qitus est prêt</h1>
+      <p class="ob-subtitle">Voici un résumé de votre configuration. Vous pourrez tout modifier plus tard dans Paramètres.</p>
+      <div class="ob-summary-grid">
+        <div class="ob-summary-card">
+          <h4>Entreprise</h4>
+          <p>Ma Société SAS</p>
+          <p style="font-size:12px;color:var(--sand-500);margin-top:2px">SASU / SAS</p>
+          <span class="ob-edit" onclick="goTo(2)">Modifier</span>
+        </div>
+        <div class="ob-summary-card">
+          <h4>Fiscalité</h4>
+          <p>Impôt sur les sociétés</p>
+          <p style="font-size:12px;color:var(--sand-500);margin-top:2px">TVA réel normal · Encaissement</p>
+          <span class="ob-edit" onclick="goTo(5)">Modifier</span>
+        </div>
+        <div class="ob-summary-card">
+          <h4>Exercice</h4>
+          <p>01/01/2026 — 31/12/2026</p>
+          <span class="ob-edit" onclick="goTo(7)">Modifier</span>
+        </div>
+        <div class="ob-summary-card">
+          <h4>Démarrage</h4>
+          <p>Aucune donnée importée</p>
+          <span class="ob-edit" onclick="goTo(9)">Modifier</span>
+        </div>
+      </div>
+      <div class="ob-next-action">
+        <h4>Prochaine action recommandée</h4>
+        <p>Importer un relevé ou connecter une banque pour commencer à classer vos transactions.</p>
+      </div>
+      <div class="ob-actions">
+        <button class="ob-btn ob-btn-secondary" onclick="goTo(9)">Modifier mes réponses</button>
+        <div class="ob-actions-right">
+          <button class="ob-btn ob-btn-primary" onclick="alert('Redirection vers /dashboard')">Entrer dans Qitus</button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /ob-main -->
+</div><!-- /ob-shell -->
+
+<script>
+/* ═══ NAVIGATION ═══ */
+const STEP_GROUPS = {
+  0: -1, // welcome — no stepper highlight
+  1: 0,  // vous
+  2: 1, 3: 1, 4: 1, // entreprise group
+  5: 2, 6: 2,       // fiscalité group
+  7: 3, 8: 3,       // exercice group
+  9: 4, 10: 4, 11: 4, 12: 4 // démarrage group
+};
+
+let currentScreen = 0;
+let highestVisited = 0;
+
+function goTo(n) {
+  document.getElementById('screen-' + currentScreen).classList.remove('active');
+  currentScreen = n;
+  if (n > highestVisited) highestVisited = n;
+  const el = document.getElementById('screen-' + n);
+  el.classList.remove('active');
+  void el.offsetWidth; // force reflow for animation
+  el.classList.add('active');
+  updateStepper();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function updateStepper() {
+  const group = STEP_GROUPS[currentScreen];
+  const steps = document.querySelectorAll('.ob-step');
+  steps.forEach((step, i) => {
+    step.classList.remove('active', 'done');
+    if (i < group) step.classList.add('done');
+    else if (i === group) step.classList.add('active');
+  });
+}
+
+/* ═══ VALIDATION HELPERS ═══ */
+function validateAndGo(fromScreen, toScreen) {
+  let valid = true;
+  if (fromScreen === 1) {
+    const fn = document.getElementById('firstName');
+    const ln = document.getElementById('lastName');
+    [fn, ln].forEach(el => {
+      const field = el.closest('.ob-field');
+      if (!el.value.trim()) { field.classList.add('has-error'); valid = false; }
+      else field.classList.remove('has-error');
+    });
+  }
+  if (valid) goTo(toScreen);
+}
+
+/* ═══ CHOICE SELECTION ═══ */
+function selectChoice(groupId, el, value) {
+  const parent = document.getElementById(groupId);
+  parent.querySelectorAll('.ob-choice').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+
+  // Micro-enterprise warning
+  if (groupId === 'legal-form') {
+    document.getElementById('micro-warn').style.display = value === 'micro' ? 'block' : 'none';
+  }
+}
+
+/* ═══ SIREN TOGGLE ═══ */
+function toggleSiren(hasSiren, el) {
+  const toggle = document.getElementById('siren-toggle');
+  toggle.querySelectorAll('.ob-choice').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('siren-fields').style.display = hasSiren ? 'block' : 'none';
+  document.getElementById('no-siren-fields').style.display = hasSiren ? 'none' : 'block';
+}
+
+/* ═══ TVA DETAILS ═══ */
+function toggleVatDetails(show) {
+  document.getElementById('vat-details').style.display = show ? 'block' : 'none';
+}
+
+/* ═══ FISCAL YEAR ═══ */
+function selectFiscalYear(value, el) {
+  const parent = document.getElementById('fiscal-year-quick');
+  parent.querySelectorAll('.ob-choice').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('custom-fy').style.display = value === 'custom' ? 'block' : 'none';
+  if (value === '2025') {
+    document.getElementById('fyStart') && (document.getElementById('fyStart').value = '2025-01-01');
+    document.getElementById('fyEnd') && (document.getElementById('fyEnd').value = '2025-12-31');
+  } else if (value === '2026') {
+    document.getElementById('fyStart') && (document.getElementById('fyStart').value = '2026-01-01');
+    document.getElementById('fyEnd') && (document.getElementById('fyEnd').value = '2026-12-31');
+  }
+}
+
+/* ═══ BANK SELECTION ═══ */
+function selectBank(el) {
+  document.querySelectorAll('.ob-bank').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+/* ═══ FILE UPLOAD ═══ */
+function handleFileSelect(input) {
+  if (input.files.length > 0) {
+    const file = input.files[0];
+    document.getElementById('file-name').textContent = file.name;
+    document.getElementById('file-size').textContent = (file.size / 1024).toFixed(0) + ' Ko';
+    document.getElementById('file-selected').style.display = 'block';
+    document.getElementById('upload-zone').style.display = 'none';
+  }
+}
+
+// Drag & drop
+const uploadZone = document.getElementById('upload-zone');
+if (uploadZone) {
+  uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
+  uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
+  uploadZone.addEventListener('drop', e => {
+    e.preventDefault();
+    uploadZone.classList.remove('drag-over');
+    if (e.dataTransfer.files.length > 0) {
+      const input = document.getElementById('file-input');
+      input.files = e.dataTransfer.files;
+      handleFileSelect(input);
+    }
+  });
+}
+
+/* ═══ CLEAR ERRORS ON INPUT ═══ */
+document.querySelectorAll('.ob-input').forEach(input => {
+  input.addEventListener('input', () => {
+    input.closest('.ob-field')?.classList.remove('has-error');
+  });
+});
+</script>
+</body>
+</html>

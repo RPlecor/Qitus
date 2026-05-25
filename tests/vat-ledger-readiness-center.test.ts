@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { buildVatLedgerReadiness } from "../app/modules/vat/vat-ledger-readiness-center.server";
 import { VatNotificationSource } from "../app/modules/notifications/notification-sources.server";
+import { VatReferenceCenter } from "../app/modules/official-references/vat-reference-center.server";
 
 describe("VatLedgerReadinessCenter", () => {
   it("returns ok in franchise", () => {
@@ -12,7 +13,8 @@ describe("VatLedgerReadinessCenter", () => {
     });
   });
 
-  it("requires action in a real VAT regime when import entries have no VAT lines", () => {
+  it("requires action in a real VAT regime when import entries have no VAT lines", async () => {
+    const requiredVatAccounts = await new VatReferenceCenter().getVatAccountCodes();
     const readiness = buildVatLedgerReadiness(snapshot({
       vatRegime: "REEL_NORMAL",
       parsedImports: 1,
@@ -20,10 +22,11 @@ describe("VatLedgerReadinessCenter", () => {
       importEntriesWithVat: 0,
       importEntriesWithoutVat: 40,
       taxableCategorizations: 12,
+      requiredVatAccounts,
     }));
 
     expect(readiness.status).toBe("action_required");
-    expect(readiness.message).toContain("44566");
+    expect(readiness.message).toContain(requiredVatAccounts[0]);
     expect(readiness.actions[0]).toMatchObject({ href: "/imports", primary: true });
   });
 

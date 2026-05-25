@@ -4,39 +4,58 @@ import type { VatReferencePayload } from "./official-reference-data.server";
 export class VatReferenceCenter {
   constructor(private readonly references = new OfficialReferenceCenter()) {}
 
-  getActiveReference() {
-    return this.references.getActiveReference<VatReferencePayload>("vat");
+  async getActiveReference() {
+    return this.references.getActiveReferenceAsync<VatReferencePayload>("vat");
   }
 
-  assertReady() {
-    this.references.assertReferenceReady("generate_vat_declaration");
+  async assertReady() {
+    await this.references.assertReferenceReadyAsync("generate_vat_declaration");
   }
 
-  listRateOptions() {
-    return this.getActiveReference().payloadJson.rates.map((rate) => ({
+  async listRateOptions() {
+    const payload = (await this.getActiveReference()).payloadJson;
+    return payload.rates.map((rate) => ({
       value: rate.value,
       label: rate.label,
       rate: rate.percent === null ? null : rate.percent / 100,
     }));
   }
 
-  listNatureOptions() {
-    return this.getActiveReference().payloadJson.natures.map((nature) => ({
+  async listNatureOptions() {
+    const payload = (await this.getActiveReference()).payloadJson;
+    return payload.natures.map((nature) => ({
       value: nature.value,
       label: nature.label,
     }));
   }
 
-  getVatAccounts() {
-    return this.getActiveReference().payloadJson.accounts;
+  async getVatAccounts() {
+    return (await this.getActiveReference()).payloadJson.accounts;
   }
 
-  getRegime(value: string | null | undefined) {
-    return this.getActiveReference().payloadJson.regimes.find((regime) => regime.value === value) ?? null;
+  async getVatAccountCodes() {
+    return Object.values(await this.getVatAccounts()) as string[];
   }
 
-  validateSelection(input: { rate: string | null | undefined; nature: string | null | undefined }) {
-    const payload = this.getActiveReference().payloadJson;
+  async getVatAccountLabels() {
+    return vatAccountLabels(await this.getVatAccounts());
+  }
+
+  async getLedgerReference() {
+    const accounts = await this.getVatAccounts();
+    return { accounts, labels: vatAccountLabels(accounts) };
+  }
+
+  async getTolerances() {
+    return (await this.getActiveReference()).payloadJson.tolerances;
+  }
+
+  async getRegime(value: string | null | undefined) {
+    return (await this.getActiveReference()).payloadJson.regimes.find((regime) => regime.value === value) ?? null;
+  }
+
+  async validateSelection(input: { rate: string | null | undefined; nature: string | null | undefined }) {
+    const payload = (await this.getActiveReference()).payloadJson;
     const rate = payload.rates.find((item) => item.value === input.rate) ?? null;
     const nature = payload.natures.find((item) => item.value === input.nature) ?? null;
     if (!rate || !nature) return { ok: false, reason: "Taux ou nature TVA inconnu dans le référentiel actif." };
@@ -45,4 +64,14 @@ export class VatReferenceCenter {
     }
     return { ok: true, reason: null };
   }
+}
+
+export function vatAccountLabels(accounts: VatReferencePayload["accounts"]) {
+  return {
+    [accounts.deductible]: "TVA déductible",
+    [accounts.collected]: "TVA collectée",
+    [accounts.reverseCharge]: "TVA intracom/autoliquidation due",
+    [accounts.payable]: "TVA à décaisser",
+    [accounts.credit]: "Crédit de TVA",
+  } as Record<string, string>;
 }

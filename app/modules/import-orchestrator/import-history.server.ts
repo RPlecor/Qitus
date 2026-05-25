@@ -11,6 +11,7 @@ export type ImportSummary = {
   parsedRows: number;
   categorizedRows: number;
   reviewRows: number;
+  lightReviewRows: number;
   currentStep: string | null;
   progress: number;
   durationMs: number | null;
@@ -42,6 +43,7 @@ export class ImportHistory {
       parsedRows: importRow.parsedRows,
       categorizedRows: importRow.categorizedRows,
       reviewRows: importRow.reviewRows,
+      lightReviewRows: importRow.lightReviewRows,
       currentStep: importRow.currentStep,
       progress: importRow.progress,
       durationMs: importRow.durationMs,

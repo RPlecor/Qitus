@@ -8,5 +8,5 @@ export async function action(args: ActionFunctionArgs) {
   await requireCompanyWorkspace(args);
   const kind = args.params.kind;
   if (!isOfficialReferenceKind(kind)) throw new ExpectedRouteError("Référentiel Qitus introuvable.", 404);
-  return json(new OfficialReferenceCenter().validateReferencePack(kind));
+  return json(await new OfficialReferenceCenter().validateReferencePackAsync(kind));
 }

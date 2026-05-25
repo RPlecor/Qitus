@@ -2,8 +2,10 @@ import Decimal from "decimal.js";
 import type { EInvoice } from "@prisma/client";
 import { assertFiscalYearMutable } from "../annual-closing/annual-closing-center.server";
 import { ActivityLogCenter } from "../activity-log/activity-log-center.server";
+import { AccountingReferencePolicyCenter } from "../accounting-reference/accounting-reference-policy-center.server";
 import type { CompanyWorkspace } from "../company-workspace/company-workspace.server";
 import { prisma } from "../db.server";
+import { VatReferenceCenter } from "../official-references/vat-reference-center.server";
 import { ExpectedRouteError } from "../route-errors.server";
 
 type ProposedLine = {
@@ -22,7 +24,11 @@ type ProposedJournalEntry = {
 };
 
 export class EInvoiceAccountingDraftCenter {
-  constructor(private readonly activity = new ActivityLogCenter()) {}
+  constructor(
+    private readonly activity = new ActivityLogCenter(),
+    private readonly vatReference = new VatReferenceCenter(),
+    private readonly accountPolicy = new AccountingReferencePolicyCenter()
+  ) {}
 
   async createDraft(workspace: CompanyWorkspace, eInvoiceId: string) {
     const invoice = await this.requireInvoice(workspace, eInvoiceId);
@@ -33,15 +39,15 @@ export class EInvoiceAccountingDraftCenter {
       data: { status: "SUPERSEDED" },
     });
     const proposed = await this.buildProposedEntry(workspace, invoice);
-    assertBalanced(proposed.lines);
+    if (proposed.ready) assertBalanced(proposed.entry.lines);
     const draft = await prisma.eInvoiceAccountingDraft.create({
       data: {
         companyId: workspace.company.id,
         fiscalYearId: workspace.fiscalYear.id,
         eInvoiceId: invoice.id,
-        status: "READY",
-        proposedJournalEntryJson: proposed,
-        requiredActionJson: { approveCreatesJournalEntry: true, existingEntriesAreNotModified: true },
+        status: proposed.ready ? "READY" : "DRAFT",
+        proposedJournalEntryJson: proposed.entry,
+        requiredActionJson: { approveCreatesJournalEntry: true, existingEntriesAreNotModified: true, missing: proposed.missingReasons },
       },
     });
     await prisma.eInvoice.update({ where: { id: invoice.id }, data: { status: "ACCOUNTING_DRAFT" } });
@@ -62,7 +68,7 @@ export class EInvoiceAccountingDraftCenter {
     });
     if (!draft) throw new ExpectedRouteError("Brouillon comptable introuvable.", 404);
     if (draft.status === "APPROVED" && draft.journalEntryId) return summarizeDraft(draft);
-    if (draft.status !== "READY" && draft.status !== "DRAFT") throw new ExpectedRouteError("Ce brouillon ne peut plus être approuvé.", 409);
+    if (draft.status !== "READY") throw new ExpectedRouteError("Ce brouillon doit être relu et complété avant approbation.", 409);
     const proposed = parseProposedEntry(draft.proposedJournalEntryJson);
     assertBalanced(proposed.lines);
     const maxEntry = await prisma.journalEntry.findFirst({
@@ -157,40 +163,52 @@ export class EInvoiceAccountingDraftCenter {
     return invoice;
   }
 
-  private async buildProposedEntry(workspace: CompanyWorkspace, invoice: EInvoice): Promise<ProposedJournalEntry> {
+  private async buildProposedEntry(workspace: CompanyWorkspace, invoice: EInvoice): Promise<{ entry: ProposedJournalEntry; ready: boolean; missingReasons: string[] }> {
     const mapping = await findVendorMapping(workspace, invoice.supplierName);
     const amountVat = decimal(invoice.amountVat);
     const amountTtc = decimal(invoice.amountTtc);
     const amountHt = invoice.amountHt ? decimal(invoice.amountHt) : amountTtc.minus(amountVat);
     const label = `Facture ${invoice.supplierName ?? "fournisseur"}${invoice.invoiceNumber ? ` ${invoice.invoiceNumber}` : ""}`;
+    const vatAccounts = await this.vatReference.getVatAccounts();
+    const vatLabels = await this.vatReference.getVatAccountLabels();
+    const [supplierRole, reviewRole] = await Promise.all([
+      this.accountPolicy.getAccountRole("supplier"),
+      this.accountPolicy.getAccountRole("e_invoice_purchase_review"),
+    ]);
+    const missingReasons: string[] = [];
+    if (!mapping?.accountDebit) missingReasons.push("Compte d'achat fournisseur à confirmer.");
     const lines: ProposedLine[] = [
       {
-        account: mapping?.accountDebit ?? "607",
-        accountLabel: mapping?.accountLabel ?? "Achats de marchandises",
+        account: mapping?.accountDebit ?? reviewRole.account,
+        accountLabel: mapping?.accountLabel ?? `${reviewRole.label} - compte d'achat à confirmer`,
         debit: amountHt.toDecimalPlaces(2).toNumber(),
         credit: 0,
       },
     ];
     if (amountVat.gt(0)) {
       lines.push({
-        account: "44566",
-        accountLabel: "TVA déductible",
+        account: vatAccounts.deductible,
+        accountLabel: vatLabels[vatAccounts.deductible],
         debit: amountVat.toDecimalPlaces(2).toNumber(),
         credit: 0,
       });
     }
     lines.push({
-      account: "401",
-      accountLabel: `Fournisseur ${invoice.supplierName ?? ""}`.trim(),
+      account: supplierRole.account,
+      accountLabel: invoice.supplierName ? `Fournisseur ${invoice.supplierName}` : supplierRole.label,
       debit: 0,
       credit: amountTtc.toDecimalPlaces(2).toNumber(),
     });
     return {
+      ready: missingReasons.length === 0,
+      missingReasons,
+      entry: {
       date: (invoice.issueDate ?? workspace.fiscalYear.endDate).toISOString().slice(0, 10),
       journal: "AC",
       ref: invoice.invoiceNumber,
       label,
       lines,
+      },
     };
   }
 }

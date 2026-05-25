@@ -2,16 +2,18 @@ import { json, type LoaderFunctionArgs } from "@remix-run/node";
 import { Form, useLoaderData } from "@remix-run/react";
 import { requireCompanyWorkspace } from "~/modules/company-workspace/company-workspace.server";
 import { FixedAssetRegister } from "~/modules/fixed-assets/fixed-asset-register.server";
+import { FixedAssetReferenceCenter } from "~/modules/official-references/fixed-asset-reference-center.server";
 import { AppShell, Main, StatusPill, TableShell } from "~/components/ui";
 
 export async function loader(args: LoaderFunctionArgs) {
   const workspace = await requireCompanyWorkspace(args);
   const assets = await new FixedAssetRegister().listAssets(workspace);
-  return json({ assets });
+  const defaultFamily = await new FixedAssetReferenceCenter().getDefaultFamily();
+  return json({ assets, defaultFamily });
 }
 
 export default function Immobilisations() {
-  const { assets } = useLoaderData<typeof loader>();
+  const { assets, defaultFamily } = useLoaderData<typeof loader>();
   return (
     <AppShell active="immobilisations">
       <Main title="Immobilisations" subtitle="Registre de clôture">
@@ -19,16 +21,16 @@ export default function Immobilisations() {
           <h2>Ajouter une immobilisation</h2>
           <div className="form-row">
             <div className="field"><label>Libellé</label><input name="label" defaultValue="MacBook Pro 14 pouces M3" /></div>
-            <div className="field"><label>Compte</label><input name="account" defaultValue="2183" /></div>
+            <div className="field"><label>Compte</label><input name="account" defaultValue={defaultFamily.assetAccount} /></div>
           </div>
           <div className="form-row">
             <div className="field"><label>Date acquisition</label><input name="acquisitionDate" type="date" defaultValue="2025-02-10" /></div>
             <div className="field"><label>Montant</label><input name="amount" defaultValue="1899.00" /></div>
-            <div className="field"><label>Durée (années)</label><input name="usefulLifeYears" defaultValue="3" /></div>
+            <div className="field"><label>Durée (années)</label><input name="usefulLifeYears" defaultValue={defaultFamily.usefulLifeYears} /></div>
           </div>
           <div className="form-row">
-            <div className="field"><label>Compte amortissement</label><input name="depreciationAccount" defaultValue="28183" /></div>
-            <div className="field"><label>Compte dotation</label><input name="expenseAccount" defaultValue="68112" /></div>
+            <div className="field"><label>Compte amortissement</label><input name="depreciationAccount" defaultValue={defaultFamily.amortizationAccount} /></div>
+            <div className="field"><label>Compte dotation</label><input name="expenseAccount" defaultValue={defaultFamily.expenseAccount} /></div>
           </div>
           <button className="btn btn-p" type="submit">Ajouter</button>
         </Form>

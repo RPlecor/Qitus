@@ -92,7 +92,7 @@ export class VatDeclarationCenter {
   }
 
   async generateDraft(workspace: CompanyWorkspace, input: GenerateVatDeclarationInput = {}) {
-    this.vatReference.assertReady();
+    await this.vatReference.assertReady();
     const period = resolvePeriod(workspace, input);
     const type = resolveDeclarationType(workspace, input.type);
     const review = await this.assertVatDeclarationReady(workspace, {
@@ -115,7 +115,7 @@ export class VatDeclarationCenter {
       dateFrom: period.start.toISOString().slice(0, 10),
       dateTo: period.end.toISOString().slice(0, 10),
     });
-    const source = renderVatDeclarationSource(workspace, type, position, review.controls);
+    const source = renderVatDeclarationSource(workspace, type, position, review.controls, await this.vatReference.getVatAccounts());
     const filename = `${workspace.company.siren ?? "qitus"}-${type}-${position.periodStart}-${position.periodEnd}.md`;
     const storageKey = `${workspace.company.id}/${workspace.fiscalYear.id}/vat/${randomUUID()}-${filename}`;
     const sourcePath = path.join(process.cwd(), "tmp", "vat-declarations", storageKey.replace(/\//g, "_"));
@@ -203,7 +203,7 @@ export class VatDeclarationCenter {
   }
 
   async getVatReview(workspace: CompanyWorkspace, filters: VatPositionFilters = {}): Promise<VatReview> {
-    this.vatReference.assertReady();
+    await this.vatReference.assertReady();
     if (workspace.company.vatRegime === "FRANCHISE") {
       return {
         status: "not_applicable",
@@ -218,7 +218,7 @@ export class VatDeclarationCenter {
       prisma.categorization.count({
         where: {
           fiscalYearId: workspace.fiscalYear.id,
-          status: { not: "NEEDS_REVIEW" },
+          status: { notIn: ["NEEDS_REVIEW", "REVIEW_LIGHT"] },
           transaction: { journalEntryId: { not: null } },
           vatOperationNature: { in: ["DOMESTIC_PURCHASE", "DOMESTIC_SALE", "INTRACOM_PURCHASE", "REVERSE_CHARGE"] },
           vatRate: null,
@@ -227,7 +227,7 @@ export class VatDeclarationCenter {
       prisma.categorization.count({
         where: {
           fiscalYearId: workspace.fiscalYear.id,
-          status: { not: "NEEDS_REVIEW" },
+          status: { notIn: ["NEEDS_REVIEW", "REVIEW_LIGHT"] },
           transaction: { journalEntryId: { not: null } },
           vatRate: { not: null },
           vatOperationNature: null,
@@ -243,7 +243,8 @@ export class VatDeclarationCenter {
     if (position.totals.net !== 0 && declarations.length === 0) controls.push(warning("VAT_DECLARATION_MISSING", "Déclaration TVA absente", "Génère un brouillon CA3/CA12 pour documenter la position TVA.", "/tva"));
     const firstStale = declarationFreshness.declarations.find((declaration) => declaration.isStale);
     if (firstStale) controls.push(warning("VAT_DECLARATION_STALE", "Déclaration TVA obsolète", "Une donnée TVA ou comptable a changé après la génération.", "/tva/revue", `VAT_DECLARATION_STALE:declaration:${firstStale.declarationId}`));
-    if (Math.abs(position.accounts.reduce((sum, account) => sum + account.balance, 0)) > 0.01) {
+    const amountEpsilon = (await this.vatReference.getTolerances()).amountEpsilon;
+    if (Math.abs(position.accounts.reduce((sum, account) => sum + account.balance, 0)) > amountEpsilon) {
       controls.push(info("VAT_ACCOUNTS_OPEN", "Solde comptes TVA ouvert", "Les comptes TVA portent un solde à décaisser ou un crédit de TVA.", "/tva"));
     }
 
@@ -275,7 +276,7 @@ export class VatDeclarationCenter {
     });
     const amounts = declaration.amountsJson as { net?: number };
     const delta = Math.round(((amounts.net ?? 0) - position.totals.net) * 100) / 100;
-    return { declarationNet: amounts.net ?? 0, ledgerNet: position.totals.net, delta, matches: Math.abs(delta) < 0.01 };
+    return { declarationNet: amounts.net ?? 0, ledgerNet: position.totals.net, delta, matches: Math.abs(delta) <= (await this.vatReference.getTolerances()).amountEpsilon };
   }
 
   async getFreshness(workspace: CompanyWorkspace) {
@@ -397,7 +398,8 @@ export function renderVatDeclarationSource(
   workspace: CompanyWorkspace,
   type: VatDeclarationType,
   position: Awaited<ReturnType<VatPositionCenter["getVatPosition"]>>,
-  controls: Array<{ severity: string; title: string; detail: string }>
+  controls: Array<{ severity: string; title: string; detail: string }>,
+  vatAccounts: Awaited<ReturnType<VatReferenceCenter["getVatAccounts"]>>
 ) {
   return [
     `# Déclaration TVA ${type} - brouillon`,
@@ -416,9 +418,9 @@ export function renderVatDeclarationSource(
     "| Case | Libellé | Montant EUR | Source |",
     "|---|---|---:|---|",
     `| A1 | Base HT taxable | ${money(position.totals.baseHt)} | Journal TVA |`,
-    `| TVA_COLLECTEE | TVA collectée | ${money(position.totals.collected)} | 44571 |`,
-    `| TVA_DEDUCTIBLE | TVA déductible | ${money(position.totals.deductible)} | 44566 |`,
-    `| TVA_AUTOLIQUIDEE | TVA due autoliquidation | ${money(position.totals.reverseChargeDue)} | 4452 |`,
+    `| TVA_COLLECTEE | TVA collectée | ${money(position.totals.collected)} | ${vatAccounts.collected} |`,
+    `| TVA_DEDUCTIBLE | TVA déductible | ${money(position.totals.deductible)} | ${vatAccounts.deductible} |`,
+    `| TVA_AUTOLIQUIDEE | TVA due autoliquidation | ${money(position.totals.reverseChargeDue)} | ${vatAccounts.reverseCharge} |`,
     `| TVA_NETTE | TVA nette à décaisser / crédit | ${money(position.totals.net)} | collectée + autoliquidée - déductible |`,
     "",
     "## Ventilation par taux",

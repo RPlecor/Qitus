@@ -1,6 +1,7 @@
 import type { VatOperationNature } from "@prisma/client";
 import type { CompanyWorkspace } from "../company-workspace/company-workspace.server";
 import { prisma } from "../db.server";
+import { VatReferenceCenter } from "../official-references/vat-reference-center.server";
 
 export type VatPositionFilters = {
   dateFrom?: string | null;
@@ -55,11 +56,13 @@ export type VatAccountBalance = {
   balance: number;
 };
 
-const VAT_ACCOUNTS = ["44566", "44571", "4452", "44551", "44567"];
-
 export class VatPositionCenter {
+  constructor(private readonly vatReference = new VatReferenceCenter()) {}
+
   async getVatPosition(workspace: CompanyWorkspace, filters: VatPositionFilters = {}): Promise<VatPosition> {
     const period = resolvePeriod(workspace, filters);
+    const vatAccounts = await this.vatReference.getVatAccountCodes();
+    const accountRoles = await this.vatReference.getVatAccounts();
     const entries = await prisma.journalEntry.findMany({
       where: {
         fiscalYearId: workspace.fiscalYear.id,
@@ -74,14 +77,14 @@ export class VatPositionCenter {
 
     const rows = entries.flatMap((entry) => {
       const categorization = entry.transactions[0]?.categorization ?? null;
-      const vatLines = entry.lines.filter((line) => VAT_ACCOUNTS.includes(line.account));
+      const vatLines = entry.lines.filter((line) => vatAccounts.includes(line.account));
       if (vatLines.length === 0 && !categorization?.vatOperationNature && !categorization?.vatRate) return [];
       const baseHt = entry.lines
-        .filter((line) => !VAT_ACCOUNTS.includes(line.account) && !line.account.startsWith("512"))
+        .filter((line) => !vatAccounts.includes(line.account) && !line.account.startsWith("512"))
         .reduce((sum, line) => sum + Math.max(Number(line.debit), Number(line.credit)), 0);
-      const deductible = vatLines.filter((line) => line.account === "44566").reduce((sum, line) => sum + Number(line.debit) - Number(line.credit), 0);
-      const collected = vatLines.filter((line) => line.account === "44571").reduce((sum, line) => sum + Number(line.credit) - Number(line.debit), 0);
-      const reverseChargeDue = vatLines.filter((line) => line.account === "4452").reduce((sum, line) => sum + Number(line.credit) - Number(line.debit), 0);
+      const deductible = vatLines.filter((line) => line.account === accountRoles.deductible).reduce((sum, line) => sum + Number(line.debit) - Number(line.credit), 0);
+      const collected = vatLines.filter((line) => line.account === accountRoles.collected).reduce((sum, line) => sum + Number(line.credit) - Number(line.debit), 0);
+      const reverseChargeDue = vatLines.filter((line) => line.account === accountRoles.reverseCharge).reduce((sum, line) => sum + Number(line.credit) - Number(line.debit), 0);
       return [{
         entryId: entry.id,
         entryNum: entry.num,
@@ -120,9 +123,11 @@ export class VatPositionCenter {
 
   async getVatAccountsBalance(workspace: CompanyWorkspace, filters: VatPositionFilters = {}): Promise<VatAccountBalance[]> {
     const period = resolvePeriod(workspace, filters);
+    const vatAccounts = await this.vatReference.getVatAccountCodes();
+    const labels = await this.vatReference.getVatAccountLabels();
     const lines = await prisma.journalLine.findMany({
       where: {
-        account: { in: VAT_ACCOUNTS },
+        account: { in: vatAccounts },
         journalEntry: {
           fiscalYearId: workspace.fiscalYear.id,
           date: { gte: period.start, lte: period.end },
@@ -131,11 +136,11 @@ export class VatPositionCenter {
       select: { account: true, accountLabel: true, debit: true, credit: true },
     });
     const byAccount = new Map<string, VatAccountBalance>();
-    for (const account of VAT_ACCOUNTS) {
-      byAccount.set(account, { account, label: vatAccountLabel(account), debit: 0, credit: 0, balance: 0 });
+    for (const account of vatAccounts) {
+      byAccount.set(account, { account, label: labels[account] ?? account, debit: 0, credit: 0, balance: 0 });
     }
     for (const line of lines) {
-      const bucket = byAccount.get(line.account) ?? { account: line.account, label: line.accountLabel ?? line.account, debit: 0, credit: 0, balance: 0 };
+      const bucket = byAccount.get(line.account) ?? { account: line.account, label: line.accountLabel ?? labels[line.account] ?? line.account, debit: 0, credit: 0, balance: 0 };
       bucket.debit = money(bucket.debit + Number(line.debit));
       bucket.credit = money(bucket.credit + Number(line.credit));
       bucket.balance = money(bucket.debit - bucket.credit);
@@ -177,15 +182,6 @@ function totalRows(rows: VatPositionRow[]) {
     reverseChargeDue: money(total.reverseChargeDue + row.reverseChargeDue),
     net: money(total.collected + row.collected + total.reverseChargeDue + row.reverseChargeDue - total.deductible - row.deductible),
   }), { baseHt: 0, deductible: 0, collected: 0, reverseChargeDue: 0, net: 0 });
-}
-
-function vatAccountLabel(account: string) {
-  if (account === "44566") return "TVA déductible";
-  if (account === "44571") return "TVA collectée";
-  if (account === "4452") return "TVA intracom/autoliquidation due";
-  if (account === "44551") return "TVA à décaisser";
-  if (account === "44567") return "Crédit de TVA";
-  return account;
 }
 
 function money(value: number) {

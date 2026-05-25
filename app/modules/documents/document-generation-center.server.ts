@@ -42,8 +42,8 @@ export class DocumentGenerationCenter {
   ) {}
 
   async generateDocuments(workspace: CompanyWorkspace, input: { types: PaperasseDocumentGenerationType[] }): Promise<GeneratedDocumentSummary[]> {
-    if (input.types.includes("fec")) this.fecReference.assertReady();
-    if (input.types.includes("liasse" as PaperasseDocumentGenerationType)) this.taxPackageReference.assertReady();
+    if (input.types.includes("fec")) await this.fecReference.assertReady();
+    if (input.types.includes("liasse" as PaperasseDocumentGenerationType)) await this.taxPackageReference.assertReady();
     for (const type of input.types) await this.accountingReview.assertDocumentsCanBeGenerated(workspace, type);
 
     const [bankAccounts, entries] = await Promise.all([

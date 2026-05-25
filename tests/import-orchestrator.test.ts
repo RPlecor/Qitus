@@ -58,6 +58,7 @@ function importRow(overrides: Partial<Import>): Import {
     parsedRows: 0,
     categorizedRows: 0,
     reviewRows: 0,
+    lightReviewRows: 0,
     errorMessage: null,
     lastErrorCode: null,
     lastErrorMessage: null,

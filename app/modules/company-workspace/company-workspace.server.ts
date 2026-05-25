@@ -1,6 +1,7 @@
 import { redirect, type LoaderFunctionArgs } from "@remix-run/node";
 import { getAuth } from "@clerk/remix/ssr.server";
 import type { BankAccount, Company, FiscalYear, User } from "@prisma/client";
+import { AccountingReferencePolicyCenter } from "../accounting-reference/accounting-reference-policy-center.server";
 import { SubscriptionCenter, tierLimits, type SubscriptionState } from "../billing/subscription-center.server";
 import { prisma } from "../db.server";
 import { resolveActiveFiscalYearId } from "../fiscal-years/fiscal-year-center.server";
@@ -135,6 +136,7 @@ async function getOrCreateWorkspaceForIdentity(
 
   if (!company) {
     const isDev = authMode === "dev";
+    const bankRole = await bankAccountDefaults();
     company = await prisma.company.create({
       data: {
         userId: user.id,
@@ -159,7 +161,7 @@ async function getOrCreateWorkspaceForIdentity(
           create: { startDate: new Date("2025-01-01"), endDate: new Date("2025-12-31") },
         },
         bankAccounts: {
-          create: { bank: "Qonto", label: "Compte principal", pcgAccount: "5121", fecAccount: "51211" },
+          create: { bank: "Qonto", label: "Compte principal", pcgAccount: bankRole.pcgAccount, fecAccount: bankRole.fecAccount },
         },
       },
       include: { fiscalYears: { orderBy: { startDate: "desc" } }, bankAccounts: true },
@@ -171,7 +173,7 @@ async function getOrCreateWorkspaceForIdentity(
     data: { companyId: company.id, startDate: new Date("2025-01-01"), endDate: new Date("2025-12-31") },
   });
   const bankAccount = company.bankAccounts[0] ?? await prisma.bankAccount.create({
-    data: { companyId: company.id, bank: "Qonto", label: "Compte principal", pcgAccount: "5121", fecAccount: "51211" },
+    data: { companyId: company.id, bank: "Qonto", label: "Compte principal", ...(await bankAccountDefaults()) },
   });
   const subscription = await new SubscriptionCenter().getSubscription({ company });
 
@@ -208,4 +210,13 @@ function stringClaim(value: unknown) {
 
 function formatDate(value: Date) {
   return new Intl.DateTimeFormat("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric", timeZone: "UTC" }).format(value);
+}
+
+async function bankAccountDefaults() {
+  const policy = new AccountingReferencePolicyCenter();
+  const [bank, bankFec] = await Promise.all([
+    policy.getAccountRole("bank"),
+    policy.getAccountRole("bank_fec"),
+  ]);
+  return { pcgAccount: bank.account, fecAccount: bankFec.account };
 }

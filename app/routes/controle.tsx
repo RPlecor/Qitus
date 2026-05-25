@@ -3,6 +3,7 @@ import { Link, useLoaderData } from "@remix-run/react";
 import { ActivityLogCenter } from "~/modules/activity-log/activity-log-center.server";
 import { AccountingIssueTracker } from "~/modules/accounting-issues/accounting-issue-tracker.server";
 import { AccountingReviewCenter, type AccountingControl } from "~/modules/accounting-review/accounting-review-center.server";
+import { AccountingCertaintyCenter } from "~/modules/accounting-certainty/accounting-certainty-center.server";
 import { ClosingAdjustmentCenter, type ClosingAdjustmentSummary } from "~/modules/closing-adjustments/closing-adjustment-center.server";
 import { requireCompanyWorkspace } from "~/modules/company-workspace/company-workspace.server";
 import { DocumentFreshnessCenter } from "~/modules/documents/document-freshness-center.server";
@@ -20,18 +21,23 @@ export async function loader(args: LoaderFunctionArgs) {
   const proposals = await closingAdjustments.listProposals(workspace);
   const adjustmentState = await closingAdjustments.summarizeClosingAdjustments(workspace);
   const documentFreshness = await new DocumentFreshnessCenter().getFreshness(workspace);
+  const certaintyCenter = new AccountingCertaintyCenter();
   const evidenceReview = await new EvidenceControlCenter().getEvidenceReview(workspace);
+  const [certaintySummary, certaintyIssues] = await Promise.all([
+    certaintyCenter.getFiscalYearCertaintySummary(workspace),
+    certaintyCenter.getCertaintyIssues(workspace),
+  ]);
   await new ActivityLogCenter().recordActivity(workspace, {
     action: "accounting_review.viewed",
     entityType: "accounting_review",
     entityId: workspace.fiscalYear.id,
     metadata: { status: review.status, blockingCount: review.blockingCount, warningCount: review.warningCount, openIssues: issueState.open, draftAdjustments: adjustmentState.draft },
   });
-  return json({ review, issueState, handledIssues: issues.filter((issue) => issue.status !== "OPEN").slice(0, 8), proposals, adjustmentState, documentFreshness, evidenceReview });
+  return json({ review, issueState, handledIssues: issues.filter((issue) => issue.status !== "OPEN").slice(0, 8), proposals, adjustmentState, documentFreshness, evidenceReview, certaintySummary, certaintyIssues });
 }
 
 export default function Controle() {
-  const { review, issueState, handledIssues, proposals, adjustmentState, documentFreshness, evidenceReview } = useLoaderData<typeof loader>();
+  const { review, issueState, handledIssues, proposals, adjustmentState, documentFreshness, evidenceReview, certaintySummary, certaintyIssues } = useLoaderData<typeof loader>();
   const blocking = review.controls.filter((control) => control.severity === "blocking");
   const warnings = review.controls.filter((control) => control.severity === "warning");
 
@@ -56,6 +62,7 @@ export default function Controle() {
         </div>
 
         <ControlSection title="Blocages" empty="Aucun blocage comptable." controls={blocking} />
+        <CertaintySection summary={certaintySummary} issues={certaintyIssues} />
         <EvidenceSection review={evidenceReview} />
         <ProposalSection proposals={proposals} />
         <DocumentFreshnessSection freshness={documentFreshness} />
@@ -63,6 +70,38 @@ export default function Controle() {
         <HandledIssues issues={handledIssues} />
       </Main>
     </AppShell>
+  );
+}
+
+function CertaintySection({ summary, issues }: {
+  summary: { verified: number; needsReview: number; blocked: number; status: string; primaryAction: { href: string; label: string } };
+  issues: Array<{ key: string; title: string; detail: string; status: string; action: { href: string; label: string } }>;
+}) {
+  return (
+    <>
+      <div className="sec-head"><h2>Certitude du dossier</h2></div>
+      <div className={`alert ${summary.blocked > 0 ? "red" : summary.needsReview > 0 ? "orange" : "green"}`}>
+        <strong>{summary.blocked > 0 ? "Dossier bloqué" : summary.needsReview > 0 ? "Dossier à relire" : "Dossier vérifié"}</strong>
+        <span>{summary.verified} vérifié{summary.verified > 1 ? "s" : ""} · {summary.needsReview} à relire · {summary.blocked} blocage{summary.blocked > 1 ? "s" : ""}</span>
+        <Link className="btn btn-sm" to={summary.primaryAction.href}>{summary.primaryAction.label}</Link>
+      </div>
+      {issues.length > 0 ? (
+        <div className="control-list">
+          {issues.slice(0, 8).map((issue) => (
+            <div key={issue.key} className={`card control-card ${issue.status === "blocked" ? "blocking" : "warning"}`}>
+              <div>
+                <div className="control-title">
+                  <StatusPill label={issue.status === "blocked" ? "Bloqué" : "À relire"} tone={issue.status === "blocked" ? "error" : "warn"} />
+                  <strong>{issue.title}</strong>
+                </div>
+                <p className="sub">{issue.detail}</p>
+              </div>
+              <Link className="btn btn-sm" to={issue.action.href}>{issue.action.label}</Link>
+            </div>
+          ))}
+        </div>
+      ) : null}
+    </>
   );
 }
 

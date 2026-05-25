@@ -49,18 +49,18 @@ export class FixedAssetRegister {
   }
 
   async createAsset(workspace: CompanyWorkspace, input: FixedAssetInput): Promise<FixedAssetSummary> {
-    this.assertAssetInput(input);
+    const defaultFamily = await this.assertAssetInput(input);
     const asset = await prisma.fixedAsset.create({
-      data: toData(workspace.fiscalYear.id, input, this.reference),
+      data: toData(workspace.fiscalYear.id, input, defaultFamily),
     });
     return summarizeAsset(asset, workspace.fiscalYear.endDate);
   }
 
   async updateAsset(workspace: CompanyWorkspace, assetId: string, input: FixedAssetInput): Promise<FixedAssetSummary> {
-    this.assertAssetInput(input);
+    const defaultFamily = await this.assertAssetInput(input);
     const asset = await prisma.fixedAsset.update({
       where: { id: assetId, fiscalYearId: workspace.fiscalYear.id },
-      data: toData(workspace.fiscalYear.id, input, this.reference),
+      data: toData(workspace.fiscalYear.id, input, defaultFamily),
     });
     return summarizeAsset(asset, workspace.fiscalYear.endDate);
   }
@@ -78,16 +78,17 @@ export class FixedAssetRegister {
     return depreciationPreview(asset, workspace.fiscalYear.endDate);
   }
 
-  private assertAssetInput(input: FixedAssetInput) {
-    this.reference.assertReady();
-    if (!this.reference.validateUsefulLifeYears(Number(input.usefulLifeYears || this.reference.getDefaultFamily().usefulLifeYears))) {
+  private async assertAssetInput(input: FixedAssetInput) {
+    await this.reference.assertReady();
+    const defaultFamily = await this.reference.getDefaultFamily();
+    if (!this.reference.validateUsefulLifeYears(Number(input.usefulLifeYears || defaultFamily.usefulLifeYears))) {
       throw new ExpectedRouteError("La durée d'amortissement doit être comprise entre 1 et 50 ans.", 400);
     }
+    return defaultFamily;
   }
 }
 
-function toData(fiscalYearId: string, input: FixedAssetInput, reference = new FixedAssetReferenceCenter()) {
-  const defaultFamily = reference.getDefaultFamily();
+function toData(fiscalYearId: string, input: FixedAssetInput, defaultFamily: Awaited<ReturnType<FixedAssetReferenceCenter["getDefaultFamily"]>>) {
   return {
     fiscalYearId,
     label: String(input.label || "").trim(),

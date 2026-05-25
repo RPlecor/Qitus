@@ -33,7 +33,8 @@ export class FecPrecheckCenter {
   ) {}
 
   async getFecPrecheck(workspace: CompanyWorkspace): Promise<FecPrecheck> {
-    this.fecReference.assertReady();
+    await this.fecReference.assertReady();
+    const expectedVatAccounts = Object.values(await this.vatReference.getVatAccounts());
     const [documents, journal, hasVatLines] = await Promise.all([
       this.documents.listDocuments(workspace),
       this.journalAudit.getAuditSummary(workspace),
@@ -51,7 +52,7 @@ export class FecPrecheckCenter {
         ? [issue("JOURNAL_NOT_EXPORTABLE", "blocking", "Journal non exportable", "Le journal contient des anomalies bloquantes.")]
         : []),
       ...(workspace.company.vatRegime !== VatRegime.FRANCHISE && !hasVatLines
-        ? [issue("MISSING_VAT_ACCOUNTS", "warning", "Comptes TVA non détectés", "Aucune ligne 44566/44571/4452 n'a été trouvée malgré un régime réel.")]
+        ? [issue("MISSING_VAT_ACCOUNTS", "warning", "Comptes TVA non détectés", `Aucune ligne TVA attendue (${expectedVatAccounts.join(", ")}) n'a été trouvée malgré un régime réel.`)]
         : []),
     ];
     const blockingCount = issues.filter((item) => item.severity === "blocking").length;
@@ -87,7 +88,7 @@ export class FecPrecheckCenter {
   }
 
   private async hasVatLines(workspace: CompanyWorkspace) {
-    const vatAccounts = Object.values(this.vatReference.getVatAccounts());
+    const vatAccounts = Object.values(await this.vatReference.getVatAccounts());
     const count = await prisma.journalLine.count({
       where: {
         journalEntry: { fiscalYearId: workspace.fiscalYear.id },

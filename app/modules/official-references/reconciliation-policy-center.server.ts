@@ -4,24 +4,24 @@ import type { ReconciliationReferencePayload } from "./official-reference-data.s
 export class ReconciliationPolicyCenter {
   constructor(private readonly references = new OfficialReferenceCenter()) {}
 
-  getActiveReference() {
-    return this.references.getActiveReference<ReconciliationReferencePayload>("reconciliation");
+  async getActiveReference() {
+    return this.references.getActiveReferenceAsync<ReconciliationReferencePayload>("reconciliation");
   }
 
-  getAccounts() {
-    return this.getActiveReference().payloadJson.accounts;
+  async getAccounts() {
+    return (await this.getActiveReference()).payloadJson.accounts;
   }
 
-  getTolerances() {
-    return this.getActiveReference().payloadJson.tolerances;
+  async getTolerances() {
+    return (await this.getActiveReference()).payloadJson.tolerances;
   }
 
-  isThirdPartyAccount(accountNumber: string | null | undefined) {
+  async isThirdPartyAccount(accountNumber: string | null | undefined) {
     if (!accountNumber) return false;
-    return this.getAccounts().thirdPartyPrefixes.some((prefix) => accountNumber.startsWith(prefix));
+    return (await this.getAccounts()).thirdPartyPrefixes.some((prefix) => accountNumber.startsWith(prefix));
   }
 
-  isExactAmountDifference(amount: number) {
-    return Math.abs(amount) <= this.getTolerances().exactAmountEpsilon;
+  async isExactAmountDifference(amount: number) {
+    return Math.abs(amount) <= (await this.getTolerances()).exactAmountEpsilon;
   }
 }

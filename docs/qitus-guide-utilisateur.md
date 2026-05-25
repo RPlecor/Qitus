@@ -11,6 +11,7 @@ Qitus ne remplace pas l'expert-comptable pour les arbitrages complexes. Il guide
 ### Ce que Qitus fait pour vous
 
 - Qitus centralise les opérations bancaires, les justificatifs, les écritures, les contrôles, la TVA, les documents et le dossier expert-comptable.
+- Qitus catégorise automatiquement les transactions courantes selon le profil de l'entreprise. Les décisions automatiques restent visibles, expliquées et corrigeables.
 - Qitus transforme les transactions importées en écritures lorsque la catégorisation est fiable.
 - Qitus prépare des brouillons et des propositions lorsque l'utilisateur doit relire ou valider.
 - Qitus affiche toujours le prochain clic utile quand une action est attendue.
@@ -51,6 +52,8 @@ La barre latérale regroupe les pages par usage.
 - `À vérifier` : l'utilisateur doit relire ou corriger.
 - `À compléter` : une preuve, une information ou une action améliore le dossier.
 - `À mettre à jour` : un document ou un état ne reflète plus les dernières données.
+- `Appliqué automatiquement` : Qitus a classé une transaction courante sans action requise. L'utilisateur peut toujours corriger.
+- `À relire rapidement` : Qitus a une proposition forte, mais souhaite une vérification légère avant écriture.
 - `Brouillon` : l'élément existe mais n'est pas encore validé.
 - `Validé` : l'utilisateur a approuvé l'élément.
 - `Rejeté` : l'utilisateur a refusé l'élément avec une note ou une raison.
@@ -172,11 +175,11 @@ La page Imports sert à ajouter, suivre, réparer, supprimer ou relancer les imp
 
 ### Automatisations
 
-Qitus détecte les colonnes connues, crée les transactions, applique les règles fiables et prépare les écritures quand la catégorisation est complète.
+Qitus détecte les colonnes connues, crée les transactions, applique les règles fiables et prépare les écritures quand la catégorisation est complète. Le niveau d'automatisation dépend du profil configuré : micro-entreprise, entreprise individuelle au réel, société à l'IS ou entreprise accompagnée par un expert-comptable.
 
 ### Validations utilisateur
 
-L'utilisateur doit associer les colonnes ambiguës, corriger les lignes en revue, confirmer les actions destructives et relancer explicitement une catégorisation déjà produite.
+L'utilisateur doit associer les colonnes ambiguës, corriger les lignes en revue, relire les propositions signalées, confirmer les actions destructives et relancer explicitement une catégorisation déjà produite.
 
 ### Erreurs fréquentes
 

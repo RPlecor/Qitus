@@ -46,7 +46,8 @@ describe("DocumentGenerationCenter", () => {
     const review = { async assertDocumentsCanBeGenerated() { return {}; } };
     const storage = { delete: vi.fn() };
 
-    const created = await new DocumentGenerationCenter(generator as never, review as never, storage as never).generateDocuments(workspace(), { types: ["fec"] });
+    const readyReference = { async assertReady() { return undefined; } };
+    const created = await new DocumentGenerationCenter(generator as never, review as never, storage as never, readyReference as never, readyReference as never).generateDocuments(workspace(), { types: ["fec"] });
 
     expect(prismaMock.document.deleteMany).toHaveBeenCalledWith({ where: { id: { in: ["old_doc"] } } });
     expect(storage.delete).toHaveBeenCalledWith("old/fec.txt");

@@ -135,6 +135,10 @@ function activityLabel(action: string) {
     "import.reset_requested": "Réinitialisation imports demandée",
     "import.reset_completed": "Réinitialisation imports terminée",
     "transaction.categorized": "Transaction corrigée",
+    "transaction.auto_applied": "Catégorisation appliquée automatiquement",
+    "transaction.review_light": "Transaction à relire rapidement",
+    "transaction.needs_review": "Transaction à relire",
+    "transaction.user_corrected_auto_applied": "Catégorisation automatique corrigée",
     "accounting_review.viewed": "Contrôle comptable consulté",
     "accounting_review.blocker_resolved": "Blocage comptable levé",
     "accounting_issue.resolved": "Point de contrôle résolu",
@@ -312,6 +316,7 @@ function activityDetail(row: ActivityLogSummary) {
   if (row.action.startsWith("automation.") && typeof metadata?.count === "number") return `${metadata.count} opportunité(s)`;
   if (row.action.startsWith("automation.") && typeof metadata?.attempted === "number") return `${metadata.attempted} tentative(s)`;
   if (row.action === "transaction.auto_categorized" && typeof metadata?.source === "string") return metadata.source;
+  if (row.action.startsWith("transaction.") && Array.isArray(metadata?.reasons)) return metadata.reasons.slice(0, 2).join(" · ");
   if (row.action === "document.auto_regenerated" && Array.isArray(metadata?.types)) return metadata.types.join(", ");
   if (row.action.startsWith("monitoring.") && typeof metadata?.name === "string") return metadata.name;
   if (row.action.startsWith("cron.") && typeof metadata?.count === "number") return `${metadata.count}`;

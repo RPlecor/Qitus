@@ -1,6 +1,6 @@
 import type { TransactionDirection, TransactionExplorerQuery } from "./transaction-explorer.server";
 
-export type TransactionStatusFilter = "all" | "review" | "categorized" | "confirmed" | "corrected" | "has_rule";
+export type TransactionStatusFilter = "all" | "review" | "review_light" | "auto_applied" | "categorized" | "confirmed" | "corrected" | "has_rule";
 
 export type TransactionFilterState = {
   page: number;
@@ -29,7 +29,7 @@ const defaultState: TransactionFilterState = {
   direction: "all",
 };
 
-const statuses = new Set<TransactionStatusFilter>(["all", "review", "categorized", "confirmed", "corrected", "has_rule"]);
+const statuses = new Set<TransactionStatusFilter>(["all", "review", "review_light", "auto_applied", "categorized", "confirmed", "corrected", "has_rule"]);
 const directions = new Set<TransactionDirection>(["all", "debit", "credit"]);
 const pageSizes = new Set([25, 50, 100]);
 
@@ -132,6 +132,8 @@ function statusLabel(status: TransactionStatusFilter) {
   const labels: Record<TransactionStatusFilter, string> = {
     all: "Toutes",
     review: "À vérifier",
+    review_light: "À relire rapidement",
+    auto_applied: "Appliquées automatiquement",
     categorized: "Catégorisées",
     confirmed: "Confirmées",
     corrected: "Corrigées",

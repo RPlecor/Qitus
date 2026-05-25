@@ -1,12 +1,21 @@
 import type { CompanyWorkspace } from "../company-workspace/company-workspace.server";
+import { AccountingReferencePolicyCenter } from "../accounting-reference/accounting-reference-policy-center.server";
 import { ReconciliationReviewWorkflow } from "../reconciliations/reconciliation-review-workflow.server";
 import { buildGeneralClosingDraft, type ClosingAdjustmentDraftBuildResult } from "./general-closing-calculators.server";
 
 export class ReconciliationAdjustmentCenter {
-  constructor(private readonly reconciliationReview = new ReconciliationReviewWorkflow()) {}
+  constructor(
+    private readonly reconciliationReview = new ReconciliationReviewWorkflow(),
+    private readonly accountPolicy = new AccountingReferencePolicyCenter()
+  ) {}
 
   async listAdjustmentDrafts(workspace: CompanyWorkspace): Promise<ClosingAdjustmentDraftBuildResult[]> {
     const queue = await this.reconciliationReview.getReviewQueue(workspace, { status: "OPEN" });
+    const [suspense, expense, income] = await Promise.all([
+      this.accountPolicy.getAccountRole("suspense"),
+      this.accountPolicy.getAccountRole("reconciliation_expense"),
+      this.accountPolicy.getAccountRole("reconciliation_income"),
+    ]);
     const drafts: ClosingAdjustmentDraftBuildResult[] = [];
     for (const issue of queue.issues) {
       if (!["DIFFERENCE", "SUSPENSE_ACCOUNT_OPEN", "BANK_UNMATCHED_LEDGER_LINE"].some((code) => issue.code.startsWith(code))) continue;
@@ -19,8 +28,10 @@ export class ReconciliationAdjustmentCenter {
         title: `Écart rapprochement - ${issue.code}`,
         assumptions: {
           amount,
-          debitAccount: amount > 0 ? "658" : "471",
-          creditAccount: amount > 0 ? "471" : "758",
+          debitAccount: amount > 0 ? expense.account : suspense.account,
+          creditAccount: amount > 0 ? suspense.account : income.account,
+          debitAccountLabel: amount > 0 ? expense.label : suspense.label,
+          creditAccountLabel: amount > 0 ? suspense.label : income.label,
           basis: issue.note ?? "Écart issu du rapprochement ligne à ligne.",
           requiredEvidence: true,
         },

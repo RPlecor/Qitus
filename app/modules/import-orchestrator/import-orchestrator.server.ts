@@ -37,6 +37,7 @@ export type ImportStatusOverview = {
   parsedRows: number;
   categorizedRows: number;
   reviewRows: number;
+  lightReviewRows: number;
   durationMs: number | null;
   error: { code: string | null; message: string | null };
   actions: {
@@ -201,6 +202,7 @@ export class ImportOrchestrator implements ImportRunner {
     await this.record(workspace, "import.completed", importId, {
       categorizedRows: importRow.categorizedRows,
       reviewRows: importRow.reviewRows,
+      lightReviewRows: importRow.lightReviewRows,
       ledgerEntries: ledger.length,
     });
   }
@@ -255,6 +257,7 @@ export function summarizeImportStatus(importRow: Import): ImportStatusOverview {
     parsedRows: importRow.parsedRows,
     categorizedRows: importRow.categorizedRows,
     reviewRows: importRow.reviewRows,
+    lightReviewRows: importRow.lightReviewRows,
     durationMs: importRow.durationMs,
     error: {
       code: importRow.lastErrorCode,

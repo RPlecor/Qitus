@@ -53,8 +53,11 @@ describe("Phase 15.5 expert dossier freeze", () => {
 
     const verification = await verifier.verifyManifest(workspace(), {
       fec: { status: "ready", fec: { filename: "fec.txt" } },
-      taxPackage: { sourceFilename: "liasse.md" },
-      evidenceBundle: {},
+      taxPackage: {
+        sourceFilename: "liasse.md",
+        completeness: { total: 2, calculated: 1, toComplete: 1, blocked: 0, notApplicable: 0 },
+      },
+      evidenceBundle: { taxPackage: { draft: { form: "2033", tables: [] } } },
       expertReview: [{ status: "SIGNED_OFF", items: [] }],
       activity: [],
       sections: [],

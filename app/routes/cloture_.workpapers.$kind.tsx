@@ -14,7 +14,7 @@ export async function loader(args: LoaderFunctionArgs) {
     new ClosingWorkpaperWorkflow().getReviewQueue(workspace, { kind }),
     center.getAvailableKinds(),
   ]);
-  const definition = kinds.find((item) => item.kind === kind) ?? { kind, title: kind, description: "Feuilles de travail de clôture.", defaultAmount: 0, defaultDebitAccount: "658", defaultCreditAccount: "471", requiredEvidence: true };
+  const definition = kinds.find((item) => item.kind === kind) ?? { kind, title: kind, description: "Feuilles de travail de clôture.", defaultAmount: 0, defaultDebitAccount: "", defaultCreditAccount: "", requiredEvidence: true };
   return json({ kind, definition, reviews });
 }
 

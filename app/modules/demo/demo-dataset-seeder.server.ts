@@ -11,6 +11,7 @@ import { AttachmentCenter } from "../evidence/attachment-center.server";
 import { AttachmentLinkCenter } from "../evidence/attachment-link-center.server";
 import { ClosingWorkpaperCenter } from "../closing-workpapers/closing-workpaper-center.server";
 import { ImportOrchestrator } from "../import-orchestrator/import-orchestrator.server";
+import { OfficialReferenceCenter } from "../official-references/official-reference-center.server";
 import { seedGlobalVendorMappings } from "./vendor-mapping-seed.server";
 
 const execFileAsync = promisify(execFile);
@@ -125,6 +126,7 @@ export class DemoDatasetSeeder {
     const dataset = getDemoDatasetDefinition(input.datasetId);
     assertLocalDemoEnvironment(process.env.DATABASE_URL);
     await assertAiProviderReady();
+    await assertDemoReferencesReady();
 
     await prisma.user.deleteMany({ where: { clerkId: "dev-user" } });
     await removeGeneratedStorage();
@@ -150,6 +152,14 @@ export class DemoDatasetSeeder {
     }
 
     return { dataset, state };
+  }
+}
+
+async function assertDemoReferencesReady() {
+  const readiness = await new OfficialReferenceCenter().getReferenceReadinessAsync();
+  if (readiness.status === "blocked") {
+    const blocked = readiness.items.filter((item) => item.status === "blocked").map((item) => item.label).join(", ");
+    throw new Error(`Référentiels Qitus actifs manquants pour la démo : ${blocked}. Lance npm run bootstrap:official-references puis relance demo:reset.`);
   }
 }
 

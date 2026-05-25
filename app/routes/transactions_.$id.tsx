@@ -3,6 +3,7 @@ import { Form, Link, useLoaderData } from "@remix-run/react";
 import { Upload } from "lucide-react";
 import { useState } from "react";
 import { AppShell, Main } from "~/components/ui";
+import { AccountingCertaintyCenter } from "~/modules/accounting-certainty/accounting-certainty-center.server";
 import { requireCompanyWorkspace } from "~/modules/company-workspace/company-workspace.server";
 import { AttachmentLinkCenter } from "~/modules/evidence/attachment-link-center.server";
 import { TransactionExplorer } from "~/modules/transactions/transaction-explorer.server";
@@ -17,18 +18,19 @@ export async function loader(args: LoaderFunctionArgs) {
   const workspace = await requireCompanyWorkspace(args);
   const filters = new TransactionFilterStateCenter();
   const filterState = filters.parseFromUrl(new URL(request.url));
-  const [transaction, suggestions, navigation, attachmentLinks] = await Promise.all([
+  const [transaction, suggestions, navigation, attachmentLinks, certainty] = await Promise.all([
     new TransactionExplorer().getTransactionDetail(workspace, String(params.id)),
     new TransactionSuggestionCenter().getSuggestions(workspace, String(params.id)),
     new TransactionReviewQueue().getCurrentReview(workspace, String(params.id), filterState),
     new AttachmentLinkCenter().listLinksForEntity(workspace, { entityType: "TRANSACTION", entityId: String(params.id) }),
+    new AccountingCertaintyCenter().getTransactionCertainty(workspace, String(params.id)),
   ]);
   const back = new URL(request.url).search || "";
-  return json({ transaction, suggestions, navigation, attachmentLinks, back });
+  return json({ transaction, suggestions, navigation, attachmentLinks, certainty, back });
 }
 
 export default function TransactionReview() {
-  const { transaction, suggestions, navigation, attachmentLinks, back } = useLoaderData<typeof loader>();
+  const { transaction, suggestions, navigation, attachmentLinks, certainty, back } = useLoaderData<typeof loader>();
   const primary = suggestions[0];
 
   return (
@@ -46,6 +48,12 @@ export default function TransactionReview() {
             <span>{navigation.position ? `${navigation.position} / ${navigation.total} à corriger` : "À corriger hors file filtrée"}</span>
           </div>
         ) : null}
+        {transaction.needsLightReview ? (
+          <div className="alert blue">
+            <strong>À relire rapidement</strong>
+            <span>Qitus a une proposition fiable, mais attend une vérification légère avant de créer l'écriture.</span>
+          </div>
+        ) : null}
 
         <div className="kpi-grid">
           <div className="kpi"><div className="kpi-label">Date</div><span className="kpi-val">{formatShortDate(transaction.date)}</span></div>
@@ -53,6 +61,22 @@ export default function TransactionReview() {
           <div className="kpi"><div className="kpi-label">Compte affiché</div><span className="kpi-val">{transaction.account}</span></div>
           <div className="kpi"><div className="kpi-label">Statut</div><span className="kpi-val">{statusLabel(transaction.businessStatus)}</span></div>
         </div>
+
+        <div className={`alert ${certainty.status === "blocked" ? "red" : certainty.status === "needs_review" ? "orange" : certainty.status === "review_light" ? "blue" : "green"}`}>
+          <strong>Certitude : {certainty.label}</strong>
+          <span>{certainty.reasons[0]?.label ?? "Contrôles Qitus appliqués."}</span>
+          {certainty.primaryAction ? <Link className="btn btn-sm" to={certainty.primaryAction.href}>{certainty.primaryAction.label}</Link> : null}
+        </div>
+        {certainty.reasons.length > 1 ? (
+          <ul className="evidence-list">
+            {certainty.reasons.slice(1, 5).map((item) => (
+              <li key={`${item.source}:${item.label}`}>
+                <span>{item.label}</span>
+                {item.action ? <Link className="btn btn-sm" to={item.action.href}>{item.action.label}</Link> : null}
+              </li>
+            ))}
+          </ul>
+        ) : null}
 
         <div className="card">
           <h2>{transaction.label}</h2>
@@ -126,11 +150,11 @@ export default function TransactionReview() {
           <div className="form-row">
             <div className="field">
               <label>Compte débit</label>
-              <input name="accountDebit" defaultValue={primary?.accountDebit ?? "471"} />
+              <input name="accountDebit" defaultValue={primary?.accountDebit ?? ""} />
             </div>
             <div className="field">
               <label>Compte crédit</label>
-              <input name="accountCredit" defaultValue={primary?.accountCredit ?? "5121"} />
+              <input name="accountCredit" defaultValue={primary?.accountCredit ?? ""} />
             </div>
           </div>
           <div className="field">
@@ -165,6 +189,8 @@ export default function TransactionReview() {
 
 function statusLabel(status: string) {
   if (status === "NEEDS_REVIEW") return "À vérifier";
+  if (status === "REVIEW_LIGHT") return "À relire rapidement";
+  if (status === "AUTO_APPLIED") return "Appliquée automatiquement";
   if (status === "CORRECTED") return "Corrigée";
   if (status === "CONFIRMED") return "Confirmée";
   if (status === "HAS_RULE") return "Avec règle";

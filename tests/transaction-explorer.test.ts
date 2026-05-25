@@ -4,6 +4,8 @@ import { businessStatusFor, ruleMatchesTransaction } from "../app/modules/transa
 describe("TransactionExplorer", () => {
   it("keeps NEEDS_REVIEW as the single review criterion", () => {
     expect(businessStatusFor({ status: "NEEDS_REVIEW", source: "AI" })).toBe("NEEDS_REVIEW");
+    expect(businessStatusFor({ status: "REVIEW_LIGHT", source: "AI" })).toBe("REVIEW_LIGHT");
+    expect(businessStatusFor({ status: "AUTO_APPLIED", source: "AI" })).toBe("AUTO_APPLIED");
   });
 
   it("classifies corrected, confirmed, rule-backed and categorized transactions", () => {

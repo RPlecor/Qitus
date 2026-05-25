@@ -1,6 +1,7 @@
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
 import { Form, Link, useLoaderData } from "@remix-run/react";
-import { AppShell, ButtonLink, KpiCard, Main, TableShell } from "~/components/ui";
+import { AppShell, ButtonLink, KpiCard, Main, StatusPill, TableShell } from "~/components/ui";
+import { AccountingCertaintyCenter } from "~/modules/accounting-certainty/accounting-certainty-center.server";
 import { requireCompanyWorkspace } from "~/modules/company-workspace/company-workspace.server";
 import { EvidenceControlCenter } from "~/modules/evidence/evidence-control-center.server";
 import { entriesWithoutEvidenceLabel, orphanAttachmentsLabel } from "~/modules/evidence/evidence-wording";
@@ -15,11 +16,16 @@ export async function loader(args: LoaderFunctionArgs) {
     new JournalAuditCenter().getAuditSummary(workspace),
     new EvidenceControlCenter().getEvidenceReview(workspace),
   ]);
-  return json({ ...result, audit, evidence, query });
+  const certaintyCenter = new AccountingCertaintyCenter();
+  const certainties = Object.fromEntries(await Promise.all(result.entries.map(async (entry) => {
+    const certainty = await certaintyCenter.getJournalEntryCertainty(workspace, entry.id);
+    return [entry.id, { status: certainty.status, label: certainty.label, tone: certainty.tone }];
+  })));
+  return json({ ...result, audit, evidence, certainties, query });
 }
 
 export default function Ecritures() {
-  const { entries, page, totalPages, summary, facets, audit, evidence, query } = useLoaderData<typeof loader>();
+  const { entries, page, totalPages, summary, facets, audit, evidence, certainties, query } = useLoaderData<typeof loader>();
 
   return (
     <AppShell active="ecritures">
@@ -97,24 +103,28 @@ export default function Ecritures() {
 
         <TableShell>
           <table className="tbl">
-            <thead><tr><th>N°</th><th>Date</th><th>Journal</th><th>Source</th><th>Libellé</th><th>Compte</th><th className="r">Débit</th><th className="r">Crédit</th></tr></thead>
+            <thead><tr><th>N°</th><th>Date</th><th>Journal</th><th>Source</th><th>Libellé</th><th>Certitude</th><th>Compte</th><th className="r">Débit</th><th className="r">Crédit</th></tr></thead>
             <tbody>
               {entries.flatMap((entry) =>
-                entry.lines.map((line) => (
+                entry.lines.map((line) => {
+                  const certainty = certainties[entry.id];
+                  return (
                   <tr key={line.id}>
                     <td className="mono">{entry.num}</td>
                     <td className="mono">{formatShortDate(entry.date)}</td>
                     <td>{entry.journal}</td>
                     <td>{sourceLabel(entry.source)}</td>
                     <td>{entry.label}</td>
+                    <td>{certainty ? <StatusPill label={certainty.label} tone={certaintyTone(certainty.status)} /> : "—"}</td>
                     <td><span className="cpt">{line.account}</span></td>
                     <td className="r mono">{formatLedgerAmount(line.debit)}</td>
                     <td className="r mono">{formatLedgerAmount(line.credit)}</td>
                   </tr>
-                ))
+                  );
+                })
               )}
               {summary.linesCount === 0 ? (
-                <tr><td colSpan={8} className="sub">Aucune écriture générée.</td></tr>
+                <tr><td colSpan={9} className="sub">Aucune écriture générée.</td></tr>
               ) : null}
             </tbody>
           </table>
@@ -161,6 +171,13 @@ function sourceLabel(source: string) {
   if (source === "MANUAL") return "Manuel";
   if (source === "E_INVOICE") return "Facture électronique";
   return "Import";
+}
+
+function certaintyTone(status: string) {
+  if (status === "verified") return "ok" as const;
+  if (status === "blocked") return "error" as const;
+  if (status === "not_applicable") return "info" as const;
+  return "warn" as const;
 }
 
 function formatShortDate(value: string) {

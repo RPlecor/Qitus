@@ -36,7 +36,7 @@ export const CLOSING_STEP_CATALOG: ClosingStepDefinition[] = [
   step("TAX_CALCULATION", 8, "Calcul IS / IR", "Valider la proposition d'impôt déterministe.", "Voir les OD", "/controle"),
   step("CLOSING_ADJUSTMENTS", 9, "Écritures de clôture", "S'assurer que les OD nécessaires sont validées.", "Voir les écritures", "/ecritures?journal=OD"),
   step("FINANCIAL_STATEMENTS", 10, "États financiers", "Générer balance, bilan et compte de résultat.", "Documents", "/documents"),
-  step("TAX_PACKAGE", 11, "Liasse fiscale", "Générer un brouillon local de liasse 2033.", "Voir le détail", "/cloture/TAX_PACKAGE"),
+  step("TAX_PACKAGE", 11, "Liasse fiscale", "Préparer la pré-liasse adaptée au régime fiscal.", "Voir le détail", "/cloture/TAX_PACKAGE"),
   step("EXPORT_ARCHIVE", 12, "Export et archivage", "Préparer FEC et paquet de preuve final.", "Archive", "/cloture/archive"),
 ];
 

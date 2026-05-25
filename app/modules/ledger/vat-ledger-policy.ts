@@ -3,6 +3,7 @@ import type { VatOperationNature } from "@prisma/client";
 import type { CompanyWorkspace } from "../company-workspace/company-workspace.server";
 import { prisma } from "../db.server";
 import { VatReferenceCenter } from "../official-references/vat-reference-center.server";
+import type { VatReferencePayload } from "../official-references/official-reference-data.server";
 
 export type VatRegimeLike = "FRANCHISE" | "REEL_SIMPLIFIE" | "REEL_NORMAL" | string;
 
@@ -30,6 +31,11 @@ export type VatTreatment = {
 
 export type VatOperationNatureLike = VatOperationNature | "DOMESTIC_PURCHASE" | "DOMESTIC_SALE" | "INTRACOM_PURCHASE" | "INTRACOM_SALE" | "REVERSE_CHARGE" | "EXEMPT" | "OUT_OF_SCOPE";
 
+export type VatLedgerReference = {
+  accounts: VatReferencePayload["accounts"];
+  labels: Record<string, string>;
+};
+
 export class VatLedgerPolicy {
   private readonly vatReference = new VatReferenceCenter();
 
@@ -39,16 +45,16 @@ export class VatLedgerPolicy {
   }
 
   buildVatAwareLines(input: VatLedgerLineInput) {
-    return buildVatAwareLines(input);
+    throw new Error("Référentiel TVA requis : utilisez buildVatAwareLines avec une référence TVA active.");
   }
 
   async summarizeVatForFiscalYear(workspace: CompanyWorkspace) {
-    const vatAccounts = Object.values(this.vatReference.getVatAccounts());
+    const vatAccounts = Object.values(await this.vatReference.getVatAccounts());
     const lines = await prisma.journalLine.findMany({
       where: { journalEntry: { fiscalYearId: workspace.fiscalYear.id }, account: { in: vatAccounts } },
       select: { account: true, debit: true, credit: true },
     });
-    return summarizeVatLines(lines.map((line) => ({ account: line.account, debit: Number(line.debit), credit: Number(line.credit) })));
+    return summarizeVatLines(lines.map((line) => ({ account: line.account, debit: Number(line.debit), credit: Number(line.credit) })), (await this.vatReference.getLedgerReference()).accounts);
   }
 }
 
@@ -72,8 +78,9 @@ export function resolveVatTreatment(input: Pick<VatLedgerLineInput, "amount" | "
   return { applies: true, vatRate, nature, amountTtc, amountHt: ht, vatAmount, reason: "applied" };
 }
 
-export function buildVatAwareLines(input: VatLedgerLineInput): Array<{ account: string; accountLabel?: string; debit: number; credit: number }> {
+export function buildVatAwareLines(input: VatLedgerLineInput, reference: VatLedgerReference): Array<{ account: string; accountLabel?: string; debit: number; credit: number }> {
   const treatment = resolveVatTreatment(input);
+  const { accounts, labels } = reference;
   if (!treatment.applies) {
     return [
       { account: input.accountDebit, accountLabel: input.accountDebitLabel, debit: treatment.amountTtc, credit: 0 },
@@ -84,8 +91,8 @@ export function buildVatAwareLines(input: VatLedgerLineInput): Array<{ account: 
   if (treatment.reason === "reverse_charge") {
     return [
       { account: input.accountDebit, accountLabel: input.accountDebitLabel, debit: treatment.amountHt, credit: 0 },
-      { account: "44566", accountLabel: "TVA déductible", debit: treatment.vatAmount, credit: 0 },
-      { account: "4452", accountLabel: "TVA due intracommunautaire / autoliquidation", debit: 0, credit: treatment.vatAmount },
+      { account: accounts.deductible, accountLabel: labels[accounts.deductible], debit: treatment.vatAmount, credit: 0 },
+      { account: accounts.reverseCharge, accountLabel: labels[accounts.reverseCharge], debit: 0, credit: treatment.vatAmount },
       { account: input.accountCredit, accountLabel: input.accountCreditLabel, debit: 0, credit: treatment.amountHt },
     ];
   }
@@ -94,25 +101,25 @@ export function buildVatAwareLines(input: VatLedgerLineInput): Array<{ account: 
     return [
       { account: input.accountDebit, accountLabel: input.accountDebitLabel, debit: treatment.amountTtc, credit: 0 },
       { account: input.accountCredit, accountLabel: input.accountCreditLabel, debit: 0, credit: treatment.amountHt },
-      { account: "44571", accountLabel: "TVA collectée", debit: 0, credit: treatment.vatAmount },
+      { account: accounts.collected, accountLabel: labels[accounts.collected], debit: 0, credit: treatment.vatAmount },
     ];
   }
 
   return [
     { account: input.accountDebit, accountLabel: input.accountDebitLabel, debit: treatment.amountHt, credit: 0 },
-    { account: "44566", accountLabel: "TVA déductible", debit: treatment.vatAmount, credit: 0 },
+    { account: accounts.deductible, accountLabel: labels[accounts.deductible], debit: treatment.vatAmount, credit: 0 },
     { account: input.accountCredit, accountLabel: input.accountCreditLabel, debit: 0, credit: treatment.amountTtc },
   ];
 }
 
-export function summarizeVatLines(lines: Array<{ account: string; debit: number; credit: number }>) {
+export function summarizeVatLines(lines: Array<{ account: string; debit: number; credit: number }>, accounts: VatReferencePayload["accounts"]) {
   const summary = lines.reduce(
     (summary, line) => {
-      if (line.account === "44566") summary.deductible += line.debit - line.credit;
-      if (line.account === "44571") summary.collected += line.credit - line.debit;
-      if (line.account === "4452") summary.reverseChargeDue += line.credit - line.debit;
-      if (line.account === "44551") summary.toPay += line.credit - line.debit;
-      if (line.account === "44567") summary.credit += line.debit - line.credit;
+      if (line.account === accounts.deductible) summary.deductible += line.debit - line.credit;
+      if (line.account === accounts.collected) summary.collected += line.credit - line.debit;
+      if (line.account === accounts.reverseCharge) summary.reverseChargeDue += line.credit - line.debit;
+      if (line.account === accounts.payable) summary.toPay += line.credit - line.debit;
+      if (line.account === accounts.credit) summary.credit += line.debit - line.credit;
       return summary;
     },
     { deductible: 0, collected: 0, reverseChargeDue: 0, toPay: 0, credit: 0, net: 0 }

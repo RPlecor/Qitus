@@ -13,8 +13,8 @@ export class ThirdPartyMatchingCenter {
 
   async runThirdPartyMatching(workspace: CompanyWorkspace) {
     const run = await this.core.getOrCreateRun(workspace, "THIRD_PARTY");
-    const thirdPartyPrefixes = this.policy.getAccounts().thirdPartyPrefixes;
-    const tolerance = this.policy.getTolerances().exactAmountEpsilon;
+    const thirdPartyPrefixes = (await this.policy.getAccounts()).thirdPartyPrefixes;
+    const tolerance = (await this.policy.getTolerances()).exactAmountEpsilon;
     const lines = await prisma.journalLine.findMany({
       where: {
         journalEntry: { fiscalYearId: workspace.fiscalYear.id },

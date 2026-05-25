@@ -6,24 +6,25 @@ export type TaxPackageKind = "tax_package_2033" | "tax_package_2050";
 export class TaxPackageReferenceCenter {
   constructor(private readonly references = new OfficialReferenceCenter()) {}
 
-  getActiveReference(kind: TaxPackageKind) {
-    return this.references.getActiveReference<TaxPackageReferencePayload>(kind);
+  async getActiveReference(kind: TaxPackageKind) {
+    return this.references.getActiveReferenceAsync<TaxPackageReferencePayload>(kind);
   }
 
-  assertReady(kind?: TaxPackageKind) {
-    if (kind) this.references.validateReferencePack(kind);
-    else this.references.assertReferenceReady("generate_tax_package");
+  async assertReady(kind?: TaxPackageKind) {
+    if (kind) await this.references.validateReferencePackAsync(kind);
+    else await this.references.assertReferenceReadyAsync("generate_tax_package");
   }
 
-  listCases(kind: TaxPackageKind) {
-    return this.getActiveReference(kind).payloadJson.cases.map((item) => ({
+  async listCases(kind: TaxPackageKind) {
+    const payload = (await this.getActiveReference(kind)).payloadJson;
+    return payload.cases.map((item) => ({
       ...item,
       completeness: "à compléter" as const,
     }));
   }
 
-  getPackageLabel(kind: TaxPackageKind) {
-    return this.getActiveReference(kind).payloadJson.label;
+  async getPackageLabel(kind: TaxPackageKind) {
+    return (await this.getActiveReference(kind)).payloadJson.label;
   }
 
   pickKind(input: { taxRegime?: string | null; vatRegime?: string | null; legalForm?: string | null }) {

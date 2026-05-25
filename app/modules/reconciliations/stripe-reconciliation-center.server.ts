@@ -3,6 +3,7 @@ import path from "node:path";
 import { Prisma } from "@prisma/client";
 import type { CompanyWorkspace } from "../company-workspace/company-workspace.server";
 import { prisma } from "../db.server";
+import { ReconciliationPolicyCenter } from "../official-references/reconciliation-policy-center.server";
 import { ExpectedRouteError } from "../route-errors.server";
 import { absMoney, daysBetween, money, ReconciliationCore } from "./reconciliation-core.server";
 import type { StripeBalanceTransaction, StripePayoutPayload } from "./stripe-connector-adapter.server";
@@ -14,7 +15,10 @@ type StripeFixture = {
 };
 
 export class StripeReconciliationCenter {
-  constructor(private readonly core = new ReconciliationCore()) {}
+  constructor(
+    private readonly core = new ReconciliationCore(),
+    private readonly reconciliationPolicy = new ReconciliationPolicyCenter()
+  ) {}
 
   async importStripeFixture(workspace: CompanyWorkspace, input: { fixturePath?: string } = {}) {
     const fixturePath = input.fixturePath ?? path.join(process.cwd(), "fixtures", "bank-imports", "stripe-transactions.json");
@@ -177,6 +181,7 @@ export class StripeReconciliationCenter {
     const usedTransactions = new Set<string>();
     const matches = [];
     const issues = [];
+    const exactAmountEpsilon = (await this.reconciliationPolicy.getTolerances()).exactAmountEpsilon;
 
     for (const payout of payouts) {
       const candidate = transactions
@@ -186,7 +191,7 @@ export class StripeReconciliationCenter {
           amountDiff: money(absMoney(transaction.amount) - absMoney(payout.amount)),
           dateDiff: Math.abs(daysBetween(transaction.date, payout.arrivalDate)),
         }))
-        .filter((candidate) => Math.abs(candidate.amountDiff) < 0.01 || /stripe|payout/i.test(candidate.transaction.label))
+        .filter((candidate) => Math.abs(candidate.amountDiff) <= exactAmountEpsilon || /stripe|payout/i.test(candidate.transaction.label))
         .sort((a, b) => Math.abs(a.amountDiff) - Math.abs(b.amountDiff) || a.dateDiff - b.dateDiff)[0];
       if (candidate) {
         usedTransactions.add(candidate.transaction.id);
@@ -197,10 +202,10 @@ export class StripeReconciliationCenter {
           leftEntityId: payout.id,
           rightEntityType: "transaction",
           rightEntityId: candidate.transaction.id,
-          status: Math.abs(candidate.amountDiff) < 0.01 ? "AUTO_MATCHED" as const : "DIFFERENCE" as const,
+          status: Math.abs(candidate.amountDiff) <= exactAmountEpsilon ? "AUTO_MATCHED" as const : "DIFFERENCE" as const,
           amountDifference: new Prisma.Decimal(candidate.amountDiff),
           dateDifferenceDays: candidate.dateDiff,
-          confidence: new Prisma.Decimal(Math.abs(candidate.amountDiff) < 0.01 ? 1 : 0.6),
+          confidence: new Prisma.Decimal(Math.abs(candidate.amountDiff) <= exactAmountEpsilon ? 1 : 0.6),
         });
       } else {
         issues.push({

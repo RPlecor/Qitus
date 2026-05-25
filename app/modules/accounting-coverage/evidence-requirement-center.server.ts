@@ -98,8 +98,8 @@ export class EvidenceRequirementCenter {
     ));
   }
 
-  getEvidencePolicy() {
-    const wording = this.evidencePolicy.getWording();
+  async getEvidencePolicy() {
+    const wording = await this.evidencePolicy.getWording();
     return {
       importEntries: `Les écritures issues d'un import sont suivies comme ${wording.nonBlockingGap} tant qu'aucun justificatif n'est rattaché.`,
       closingAdjustments: "Les OD de clôture doivent être reliées à une décision utilisateur ou à un calcul auditable quand le référentiel l'exige.",

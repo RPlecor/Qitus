@@ -49,6 +49,8 @@ export type OfficialReferencePack<TPayload = unknown> = {
   retrievedAt: string;
   publishedAt?: string;
   effectiveFrom: string;
+  activatedAt?: string;
+  archivedAt?: string;
   summary: string;
   payloadJson: TPayload;
   validationJson: OfficialReferenceValidation;
@@ -66,6 +68,25 @@ export type OfficialReferenceReadinessItem = {
   summary: string;
   issues: string[];
   warnings: string[];
+};
+
+export type OfficialReferenceSnapshot = {
+  kind: OfficialReferenceKind;
+  source: OfficialReferenceSource;
+  sourceUrl: string;
+  retrievedAt: string;
+  checksum: string;
+  publishedAt?: string;
+  title: string;
+  rawMetadataJson?: Record<string, unknown>;
+};
+
+export type OfficialReferenceSourceAdapter = {
+  kind: OfficialReferenceKind;
+  source: OfficialReferenceSource;
+  fetchSnapshot(): Promise<OfficialReferenceSnapshot>;
+  buildDraftPack(snapshot: OfficialReferenceSnapshot): Promise<OfficialReferencePack>;
+  validateDraftPack(pack: OfficialReferencePack): OfficialReferenceValidation;
 };
 
 export type OfficialReferenceReadiness = {

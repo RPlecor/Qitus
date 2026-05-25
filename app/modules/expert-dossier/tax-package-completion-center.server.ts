@@ -13,6 +13,8 @@ export type TaxPackageCompletion = {
   generatedAt: string | null;
   missingSections: string[];
   warnings: string[];
+  packageCode: string | null;
+  completeness: Awaited<ReturnType<TaxPackageDraftCenter["getTaxPackageSummary"]>>["completeness"];
 };
 
 export class TaxPackageCompletionCenter {
@@ -28,23 +30,29 @@ export class TaxPackageCompletionCenter {
     ]);
     const sourceFreshness = summary.documentId ? freshness.documents.find((document) => document.documentId === summary.documentId) : null;
     const pdfFreshness = summary.pdfDocumentId ? freshness.documents.find((document) => document.documentId === summary.pdfDocumentId) : null;
-    const missingSections = summary.status === "missing" ? ["Source structurée de liasse fiscale"] : [];
+    const missingSections = [
+      ...(summary.status === "missing" ? ["Liasse fiscale CERFA non générée"] : []),
+      ...(summary.completeness?.blocked ? [`${summary.completeness.blocked} case(s) CERFA bloquée(s)`] : []),
+    ];
     const warnings = [
       ...(!summary.pdfDocumentId ? ["PDF de liasse absent : rendu optionnel non généré."] : []),
-      ...(sourceFreshness?.isStale ? ["Source structurée de liasse à régénérer."] : []),
+      ...(summary.completeness?.toComplete ? [`${summary.completeness.toComplete} case(s) CERFA à compléter.`] : []),
+      ...(sourceFreshness?.isStale ? ["Liasse CERFA à régénérer."] : []),
       ...(pdfFreshness?.isStale ? ["PDF de liasse à régénérer."] : []),
     ];
     const blocked = missingSections.length > 0 || Boolean(sourceFreshness?.isStale);
     return {
       status: blocked ? "blocked" : warnings.length > 0 ? "warning" : "ready",
-      label: blocked ? "Liasse incomplète" : warnings.length > 0 ? "Liasse prête avec alertes" : "Liasse structurée prête",
+      label: blocked ? "Liasse CERFA bloquée" : warnings.length > 0 ? "Liasse CERFA complète à relire" : "Liasse CERFA complète",
       sourceDocumentId: summary.documentId,
-      sourceFilename: summary.status === "ready" ? summary.filename : null,
+      sourceFilename: summary.status !== "missing" ? summary.filename : null,
       pdfDocumentId: summary.pdfDocumentId,
       pdfFilename: summary.pdfFilename,
       generatedAt: summary.generatedAt,
       missingSections,
       warnings,
+      packageCode: summary.packageCode,
+      completeness: summary.completeness,
     };
   }
 

@@ -12,8 +12,9 @@ const cachedPrismaShape = cachedPrisma as (PrismaClient & {
   dossierSnapshot?: unknown;
   expertReviewRun?: unknown;
   bankConnection?: unknown;
+  officialReferencePack?: unknown;
 }) | undefined;
-const hasCurrentSchema = Boolean(cachedPrismaShape?.subscription && cachedPrismaShape.chatConversation && cachedPrismaShape.attachment && cachedPrismaShape.dossierSnapshot && cachedPrismaShape.expertReviewRun && cachedPrismaShape.bankConnection);
+const hasCurrentSchema = Boolean(cachedPrismaShape?.subscription && cachedPrismaShape.chatConversation && cachedPrismaShape.attachment && cachedPrismaShape.dossierSnapshot && cachedPrismaShape.expertReviewRun && cachedPrismaShape.bankConnection && cachedPrismaShape.officialReferencePack);
 
 if (cachedPrisma && !hasCurrentSchema) {
   cachedPrisma.$disconnect().catch(() => undefined);

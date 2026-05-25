@@ -47,6 +47,9 @@ model Company {
   vatExigibility     VatExigibility @default(ENCAISSEMENTS)
   vatRate            Decimal?      @db.Decimal(5, 4)
   incomeRegime       String?
+  hasAccountant      Boolean       @default(false)
+  accountantEmail    String?
+  revenueEstimate    String?
   onboardingComplete Boolean       @default(false)
   fiscalYears        FiscalYear[]
   bankAccounts       BankAccount[]
@@ -150,6 +153,7 @@ model Import {
   parsedRows      Int          @default(0)
   categorizedRows Int          @default(0)
   reviewRows      Int          @default(0)
+  lightReviewRows Int          @default(0)
   errorMessage    String?
   lastErrorCode   String?
   lastErrorMessage String?
@@ -253,6 +257,31 @@ model RegulatoryChange {
   @@unique([sourceSnapshotId, changeKey])
   @@index([changeKey])
   @@index([status])
+}
+
+model OfficialReferencePack {
+  id             String                      @id @default(cuid())
+  kind           String
+  version        String
+  status         OfficialReferencePackStatus @default(DRAFT)
+  source         String
+  sourceUrl      String
+  checksum       String
+  retrievedAt    DateTime                    @default(now())
+  publishedAt    DateTime?
+  effectiveFrom  DateTime
+  activatedAt    DateTime?
+  archivedAt     DateTime?
+  summary        String
+  payloadJson    Json
+  validationJson Json
+  createdAt      DateTime                    @default(now())
+  updatedAt      DateTime                    @updatedAt
+
+  @@unique([kind, version])
+  @@index([kind, status])
+  @@index([kind, effectiveFrom])
+  @@index([checksum])
 }
 
 model AccountingRulePack {
@@ -1250,6 +1279,14 @@ enum AccountingRuleApplicationStatus {
   NEEDS_REVIEW
 }
 
+enum OfficialReferencePackStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+  NEEDS_REVIEW
+  BLOCKED
+}
+
 enum PrivacyRequestKind {
   EXPORT
   SOFT_DELETE
@@ -1308,6 +1345,8 @@ enum CategorizationSource {
 
 enum CategorizationStatus {
   PROPOSED
+  AUTO_APPLIED
+  REVIEW_LIGHT
   USER_CONFIRMED
   USER_CORRECTED
   MANUAL

@@ -1,6 +1,7 @@
 import type { Prisma, VatDeclarationType } from "@prisma/client";
 import { ActivityLogCenter } from "../activity-log/activity-log-center.server";
 import type { CompanyWorkspace } from "../company-workspace/company-workspace.server";
+import { AccountingReferencePolicyCenter } from "../accounting-reference/accounting-reference-policy-center.server";
 import { prisma } from "../db.server";
 import { ExpectedRouteError } from "../route-errors.server";
 import { TransactionCorrectionFlow } from "../transactions/transaction-correction-flow.server";
@@ -49,7 +50,8 @@ export class VatReviewWorkflow {
     private readonly correctionFlow = new TransactionCorrectionFlow(),
     private readonly declarations = new VatDeclarationCenter(),
     private readonly declarationFreshness = new VatDeclarationFreshnessCenter(),
-    private readonly activity = new ActivityLogCenter()
+    private readonly activity = new ActivityLogCenter(),
+    private readonly accountPolicy = new AccountingReferencePolicyCenter()
   ) {}
 
   async getReviewQueue(workspace: CompanyWorkspace, _filters: VatPositionFilters = {}): Promise<VatReviewQueue> {
@@ -57,7 +59,7 @@ export class VatReviewWorkflow {
       return { issues: [], blockingCount: 0, warningCount: 0, empty: true };
     }
 
-    const [missingRate, missingNature, freshness] = await Promise.all([
+    const [missingRate, missingNature, freshness, bankRole, suspenseRole] = await Promise.all([
       prisma.categorization.findMany({
         where: taxableCategorizationWhere(workspace, { vatRate: null }),
         include: { transaction: true },
@@ -66,7 +68,7 @@ export class VatReviewWorkflow {
       prisma.categorization.findMany({
         where: {
           fiscalYearId: workspace.fiscalYear.id,
-          status: { not: "NEEDS_REVIEW" },
+          status: { notIn: ["NEEDS_REVIEW", "REVIEW_LIGHT"] },
           transaction: { journalEntryId: { not: null } },
           vatRate: { not: null },
           vatOperationNature: null,
@@ -75,11 +77,17 @@ export class VatReviewWorkflow {
         orderBy: { updatedAt: "desc" },
       }),
       this.declarationFreshness.getFreshness(workspace),
+      this.accountPolicy.getAccountRole("bank"),
+      this.accountPolicy.getAccountRole("suspense"),
     ]);
+    const accountRoles = {
+      bank: { account: bankRole.account, label: bankRole.label },
+      suspense: { account: suspenseRole.account, label: suspenseRole.label },
+    };
 
     const issues = [
-      ...missingRate.map((categorization) => transactionIssue("VAT_RATE_MISSING", categorization)),
-      ...missingNature.map((categorization) => transactionIssue("VAT_NATURE_MISSING", categorization)),
+      ...missingRate.map((categorization) => transactionIssue("VAT_RATE_MISSING", categorization, accountRoles)),
+      ...missingNature.map((categorization) => transactionIssue("VAT_NATURE_MISSING", categorization, accountRoles)),
       ...freshness.declarations.filter((declaration) => declaration.isStale).map((declaration): VatReviewIssue => ({
         issueKey: `VAT_DECLARATION_STALE:declaration:${declaration.declarationId}`,
         code: "VAT_DECLARATION_STALE",
@@ -174,7 +182,7 @@ export class VatReviewWorkflow {
 function taxableCategorizationWhere(workspace: CompanyWorkspace, extra: Prisma.CategorizationWhereInput): Prisma.CategorizationWhereInput {
   return {
     fiscalYearId: workspace.fiscalYear.id,
-    status: { not: "NEEDS_REVIEW" },
+    status: { notIn: ["NEEDS_REVIEW", "REVIEW_LIGHT"] },
     transaction: { journalEntryId: { not: null } },
     vatOperationNature: { in: ["DOMESTIC_PURCHASE", "DOMESTIC_SALE", "INTRACOM_PURCHASE", "REVERSE_CHARGE"] },
     ...extra,
@@ -183,7 +191,8 @@ function taxableCategorizationWhere(workspace: CompanyWorkspace, extra: Prisma.C
 
 function transactionIssue(
   code: "VAT_RATE_MISSING" | "VAT_NATURE_MISSING",
-  categorization: Prisma.CategorizationGetPayload<{ include: { transaction: true } }>
+  categorization: Prisma.CategorizationGetPayload<{ include: { transaction: true } }>,
+  accountRoles: { bank: { account: string; label: string }; suspense: { account: string; label: string } }
 ): VatReviewIssue {
   const transaction = categorization.transaction;
   const issueKey = `${code}:categorization:${categorization.id}`;
@@ -205,8 +214,8 @@ function transactionIssue(
       label: transaction.label,
       date: transaction.date.toISOString().slice(0, 10),
       amount: transaction.amount.toString(),
-      accountDebit: categorization.accountDebit ?? (transaction.type === "CREDIT" ? "5121" : "471"),
-      accountCredit: categorization.accountCredit ?? (transaction.type === "CREDIT" ? "471" : "5121"),
+      accountDebit: categorization.accountDebit ?? (transaction.type === "CREDIT" ? accountRoles.bank.account : accountRoles.suspense.account),
+      accountCredit: categorization.accountCredit ?? (transaction.type === "CREDIT" ? accountRoles.suspense.account : accountRoles.bank.account),
       ecritureLabel: categorization.ecritureLabel ?? transaction.label,
       vatRate: categorization.vatRate?.toString() ?? (taxable ? null : "0"),
       vatOperationNature: categorization.vatOperationNature ?? null,

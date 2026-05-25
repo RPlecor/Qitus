@@ -2,7 +2,7 @@ import { type AccountingIssueStatus, type Company, type DocumentType, type Fisca
 import { prisma } from "../db.server";
 import { ExpectedRouteError } from "../route-errors.server";
 import type { CompanyWorkspace } from "../company-workspace/company-workspace.server";
-import { isTransactionInReview } from "../transactions/transaction-review-state";
+import { isTransactionInLightReview, isTransactionInReview } from "../transactions/transaction-review-state";
 import { ReconciliationIssueWorkflow } from "../reconciliations/reconciliation-issue-workflow.server";
 
 export type AccountingReviewStatus = "blocked" | "ready_with_warnings" | "ready";
@@ -177,10 +177,10 @@ async function loadReviewSnapshot(company: Company, fiscalYear: FiscalYear): Pro
     documents,
     latestAccountingChangeAt,
     transactionsInReview: transactions
-      .filter((transaction) => isTransactionInReview(transaction.categorization))
+      .filter((transaction) => isTransactionInReview(transaction.categorization) || isTransactionInLightReview(transaction.categorization))
       .map((transaction) => transactionEvidence(transaction, displayAccount(transaction.amount.toNumber(), transaction.categorization))),
     confirmedTransactionsWithoutEntry: transactions
-      .filter((transaction) => !isTransactionInReview(transaction.categorization) && !transaction.journalEntryId)
+      .filter((transaction) => !isTransactionInReview(transaction.categorization) && !isTransactionInLightReview(transaction.categorization) && !transaction.journalEntryId)
       .map((transaction) => transactionEvidence(transaction, displayAccount(transaction.amount.toNumber(), transaction.categorization))),
     annualChargeCandidates: transactions
       .filter((transaction) => isAnnualChargeCandidate(transaction))
@@ -474,8 +474,8 @@ export function issueKey(controlCode: string, entityType: string, entityId: stri
 }
 
 function displayAccount(amount: number, categorization: { accountDebit: string | null; accountCredit: string | null } | null) {
-  if (!categorization) return "471";
-  return amount >= 0 ? categorization.accountCredit ?? "471" : categorization.accountDebit ?? "471";
+  if (!categorization) return "";
+  return amount >= 0 ? categorization.accountCredit ?? "" : categorization.accountDebit ?? "";
 }
 
 function latestDate(dates: Date[]) {

@@ -1,7 +1,7 @@
 import Decimal from "decimal.js";
 import type { EntrySource } from "@prisma/client";
 import type { CategorizationSuggestion, CategorizationTransaction } from "../categorization/types";
-import { buildVatAwareLines, type VatRegimeLike } from "./vat-ledger-policy";
+import { buildVatAwareLines, type VatLedgerReference, type VatRegimeLike } from "./vat-ledger-policy";
 
 export type JournalEntryDraft = {
   num: number;
@@ -19,6 +19,7 @@ export function writeJournalEntries(input: {
   categorizations: CategorizationSuggestion[];
   startingNum?: number;
   company?: { vatRegime: VatRegimeLike };
+  vatReference: VatLedgerReference;
 }): JournalEntryDraft[] {
   const byTransaction = new Map(input.categorizations.map((categorization) => [categorization.transactionId, categorization]));
   let nextNum = input.startingNum ?? 1;
@@ -36,17 +37,20 @@ export function writeJournalEntries(input: {
       label: categorization.ecritureLabel,
       source: "IMPORT",
       transactionId: transaction.id,
-      lines: buildVatAwareLines({
-        transactionType: transaction.type,
-        amount,
-        vatRegime: input.company?.vatRegime ?? "FRANCHISE",
-        vatRate: categorization.vatRate,
-        vatOperationNature: categorization.vatOperationNature as never,
-        accountDebit: categorization.accountDebit,
-        accountDebitLabel: categorization.accountDebitLabel,
-        accountCredit: categorization.accountCredit,
-        accountCreditLabel: categorization.accountCreditLabel,
-      }),
+      lines: buildVatAwareLines(
+        {
+          transactionType: transaction.type,
+          amount,
+          vatRegime: input.company?.vatRegime ?? "FRANCHISE",
+          vatRate: categorization.vatRate,
+          vatOperationNature: categorization.vatOperationNature as never,
+          accountDebit: categorization.accountDebit,
+          accountDebitLabel: categorization.accountDebitLabel,
+          accountCredit: categorization.accountCredit,
+          accountCreditLabel: categorization.accountCreditLabel,
+        },
+        input.vatReference,
+      ),
     };
 
     assertBalanced(entry);

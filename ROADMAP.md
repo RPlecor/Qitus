@@ -318,6 +318,8 @@ Objectif : améliorer la qualité de catégorisation tout en minimisant le recou
 
 Cette phase reprend "Catégorisation IA" du cadrage et l'annexe déterministe vs IA.
 
+Mise à jour Masterplan : la catégorisation transactionnelle adopte un modèle à trois vitesses configuré par profil d'entreprise. L'IA ne produit jamais `confirmed`, mais peut produire `auto_applied` pour les cas courants si `AutoApplyReliabilityPolicy` est entièrement satisfaite. Les seuils dépendent du tier : micro très permissif pour les charges courantes, EI réel intermédiaire, société à l'IS plus stricte, et entreprise avec expert-comptable alignée sur le tier EI tant que le workflow EC réel n'est pas actif. Les cas haute confiance mais nouveaux deviennent `to_review_light`; les cas ambigus ou fiscalement sensibles deviennent `to_review`.
+
 ### Livrables
 
 - `VendorLookupTable` plus complète.
@@ -325,6 +327,9 @@ Cette phase reprend "Catégorisation IA" du cadrage et l'annexe déterministe vs
 - Hit rate mesuré.
 - CorrectionRules créées automatiquement après correction utilisateur.
 - Batches IA optimisés.
+- `AutoApplyReliabilityPolicy` avec justification, traçabilité et correction utilisateur.
+- `CompanyProfileClassificationCenter` pour dériver le tier et configurer les seuils d'auto-application.
+- `CategorizationAutomationMetricsCenter` pour suivre couverture, revue, confiance IA, corrections des auto-appliqués et transactions anciennes sans catégorisation.
 - Suivi des appels IA économisés.
 - Suivi du coût IA évité.
 - Meilleure gestion des cas ambigus.
@@ -1093,7 +1098,7 @@ Décisions :
 
 - Publier `/privacy` ou `/politique-de-confidentialite` sans authentification.
 - Ajouter les liens privacy sur signup/login, onboarding, upload justificatifs, partage dossier EC et paramètres RGPD.
-- Couvrir responsable de traitement, contact privacy, finalités, bases légales, sous-traitants, transferts USA, Clerk, Clever Cloud, durées de conservation, droits utilisateurs, CNIL et IA suggestion-only.
+- Couvrir responsable de traitement, contact privacy, finalités, bases légales, sous-traitants, transferts USA, Clerk, Clever Cloud, durées de conservation, droits utilisateurs, CNIL, chat IA suggestion-only et catégorisation transactionnelle `auto_applied` sous policy.
 
 ### RGPD-2 — Droits utilisateurs et export RGPD — à faire
 
@@ -1125,9 +1130,212 @@ Décisions :
 
 ### RGPD-6 — AIPD simplifiée et Go/No-Go beta — à faire
 
-- Réaliser une AIPD simplifiée avant données réelles : banque, justificatifs, IA suggestion-only, connecteurs, dossier EC partagé, transferts USA, Clever Cloud.
+- Réaliser une AIPD simplifiée avant données réelles : banque, justificatifs, chat IA suggestion-only, catégorisation transactionnelle `auto_applied` sous policy, connecteurs, dossier EC partagé, transferts USA, Clever Cloud.
 - Go/No-Go beta RGPD : `/privacy` publié, export RGPD fonctionnel, DPA prioritaires vérifiés, Clever Cloud prêt, logs sans secrets, TIA Clerk documentée, plan de sortie auth documenté, backups/restauration vérifiés.
 - Validations à ajouter : `npm run validate:privacy`, `npm run validate:privacy-export`, `npm run validate:privacy-redaction`.
+
+## Masterplan — Référentiels officiels Qitus avant ouverture beta
+
+Objectif : avant beta ouverte, Qitus ne doit plus fonder ses calculs critiques sur des listes implicites, du prompt IA ou des conventions dispersées. Chaque sortie importante doit dépendre d'un référentiel explicite, versionné, synchronisé depuis une source officielle quand elle existe, validé par Qitus, et bloquant en cas d'incohérence.
+
+Décisions verrouillées :
+
+- Périmètre beta : France large, avec TVA CA3/CA12, FEC, préparation CERFA complète 2033 et 2050, OD, immobilisations, justificatifs, rapprochements, factures électroniques entrantes.
+- Wording produit : `préparation vérifiable`, pas certification juridique ni télétransmission.
+- Source strategy : synchronisation automatique directe des sources officielles, mais activation uniquement après validation interne par Qitus.
+- Aucune écriture existante n'est modifiée automatiquement après mise à jour d'un référentiel.
+- Tout référentiel actif doit être traçable : source, URL, millésime, checksum, date de récupération, date d'effet.
+- La certitude doit être visible comme une garantie produit, pas comme une friction : Qitus affiche d'abord ce qui est vérifié, puis les points à relire ou à compléter.
+
+### Bloc P0 — Projection de certitude et catégorisation trois vitesses
+
+Objectif : éviter deux écueils opposés avant beta ouverte :
+
+- une prudence excessive qui force l'utilisateur à valider chaque transaction, et fait perdre la promesse "sans expert-comptable pour les cas courants" ;
+- une automatisation opaque qui applique des comptes sans justification, et fait perdre la promesse "rules-first, fiable, vérifiable".
+
+#### Projection utilisateur
+
+Les Modules métier conservent leurs statuts propres. Qitus projette ces statuts vers une lecture utilisateur commune `UserFacingResolution`.
+
+Cette projection n'est pas un moteur de décision. Elle sert à afficher clairement :
+
+- `confirmed` : validé par utilisateur, règle déterministe, correction mémorisée ou mapping référentiel validé ;
+- `auto_applied` : appliqué automatiquement par Qitus, sans action requise, mais corrigeable et traçable ;
+- `to_review_light` : proposition haute confiance à relire discrètement ;
+- `to_review` : vraie revue nécessaire ;
+- `to_complete` : donnée réellement manquante ;
+- `blocked` : action réellement impossible ;
+- `not_started` et `not_applicable` : états neutres côté utilisateur.
+
+`confirmed` ne vient jamais d'une IA seule.
+
+#### Distinction IA chat / IA de catégorisation
+
+Qitus distingue deux usages de l'IA :
+
+- IA de chat : lecture seule, suggestion-only, aucune mutation et aucun statut comptable.
+- IA de catégorisation transactionnelle : peut produire `auto_applied` si la policy métier est entièrement satisfaite, sinon `to_review_light` ou `to_review`.
+
+Cette distinction est obligatoire dans les docs, le produit et les validations RGPD. Une mention générique "IA suggestion-only" vise le chat ; elle ne doit pas interdire la catégorisation transactionnelle `auto_applied` sous policy.
+
+#### `AutoApplyReliabilityPolicy`
+
+Créer un Module profond `AutoApplyReliabilityPolicy`.
+
+Une catégorisation IA ne peut devenir `auto_applied` que si toutes les conditions suivantes sont satisfaites :
+
+- compte PCG valide et non ambigu ;
+- TVA simple ou non applicable ;
+- aucun cas d'autoliquidation, intracommunautaire ou TVA complexe ;
+- fournisseur reconnu, ou historique cohérent ;
+- montant cohérent avec l'historique du fournisseur ;
+- pas d'immobilisation potentielle ;
+- pas de charge mixte pro/perso détectée ;
+- pas de provision, OD, écriture d'inventaire ou fiscalité sensible ;
+- aucune correction utilisateur antérieure contradictoire ;
+- confiance IA au moins le seuil du profil d'entreprise : `LOW` accepté seulement pour micro sur cas courant, `MEDIUM` possible pour EI réel avec historique, `HIGH` requis pour sociétés IS.
+
+Toute condition manquante déclasse la catégorisation :
+
+- `to_review_light` si confiance `HIGH` mais contexte incomplet ou nouveau ;
+- `to_review` si confiance `MEDIUM/LOW` ou impact fiscal.
+
+#### Traçabilité et correction
+
+Chaque `auto_applied` doit produire une justification visible et auditée :
+
+- fournisseur ;
+- historique ou occurrences similaires ;
+- compte PCG appliqué ;
+- référentiel utilisé ;
+- confiance IA ;
+- raisons de passage de la policy ;
+- possibilité de correction utilisateur.
+
+La correction utilisateur reste prioritaire et alimente les règles apprises. Le dossier expert-comptable et l'activité doivent distinguer :
+
+- règle déterministe ;
+- correction utilisateur ;
+- mapping référentiel ;
+- IA `auto_applied` ;
+- IA validée par utilisateur ;
+- saisie manuelle.
+
+#### UX cible
+
+Les transactions `auto_applied` ne comptent pas dans les compteurs "à valider". Elles apparaissent comme catégorisées, avec un indicateur discret `Appliqué automatiquement` et une action de correction.
+
+Exemple de justification utilisateur :
+
+`Orange — Télécommunications — même compte que vos dernières factures Orange.`
+
+#### Tests et validations
+
+Ajouter ou maintenir :
+
+- `auto_applied` impossible si le compte PCG est inconnu ;
+- `auto_applied` impossible si TVA complexe ;
+- `auto_applied` impossible en cas d'immobilisation potentielle ;
+- `auto_applied` impossible si correction utilisateur contradictoire ;
+- `to_review_light` pour confiance haute mais fournisseur nouveau ou montant atypique ;
+- `to_review` pour confiance moyenne/faible ou impact fiscal ;
+- 100 % des `auto_applied` avec justification traçable ;
+- monitoring du taux de correction des `auto_applied` ; si ce taux dépasse 5 %, la policy doit être resserrée.
+- suivi par tier : objectif d'auto-application 95 % micro, 85 % EI réel, 80 % IS sans EC, 90 % avec EC ; les élargissements restent post-beta si les corrections restent sous 2 %.
+
+### Bloc P0 — Gouvernance du tagging CERFA
+
+Objectif : sécuriser la distinction entre zéro fiable, donnée réellement manquante, case non applicable et blocage. Ce bloc est un gate de fiabilité comptable : un faux zéro est plus risqué qu'un faux `à compléter`.
+
+#### Règle produit
+
+Une case CERFA ne peut être `calculée à 0 faute de mouvement` que si Qitus peut justifier le zéro par :
+
+- le type de case ;
+- le comportement référentiel `emptyBehavior` ;
+- la famille de calcul `calculationFamily` ;
+- l'état de complétude de la source ;
+- le journal ou la balance disponible ;
+- le régime et le profil de l'entreprise.
+
+Si cette justification est absente ou incertaine, la case reste `à compléter` ou `non applicable`, jamais zéro par défaut.
+
+#### Revue case par case obligatoire
+
+Avant beta ouverte, exporter toutes les cases 2033 et 2050 dans un tableau de revue avec les colonnes minimales :
+
+- formulaire ;
+- millésime ;
+- tableau ;
+- code CERFA ;
+- libellé officiel ;
+- source Qitus attendue ;
+- `calculationFamily` ;
+- `emptyBehavior` ;
+- justification du comportement ;
+- statut de revue : `à valider`, `validé Qitus`, `validé EC`, `à revoir`.
+
+Toute case incertaine reste conservatrice :
+
+- `manual_if_absent` pour les données fiscales, déclaratives, annexes, déficits, affectations, crédits ou informations non déduites du journal ;
+- `zero_if_balance_source_complete` pour les cases de bilan seulement si Qitus sait que la balance est complète ;
+- `zero_if_no_movement` uniquement pour les postes de résultat ou de flux calculables depuis un journal exportable ;
+- `not_applicable_if_absent` uniquement si le régime, la forme juridique ou le périmètre rend la case hors sujet.
+
+#### Validation comptable
+
+Le tagging CERFA doit être validé avant activation beta :
+
+- soit par revue interne Qitus documentée ;
+- soit par revue expert-comptable externe ;
+- soit par une source officielle ou notice CERFA suffisamment explicite.
+
+Le dev seul ne suffit pas comme validation de fond. Les tests vérifient la mécanique, pas la justesse métier du tagging.
+
+#### Traçabilité
+
+Chaque case générée doit conserver une décision de résolution auditée :
+
+- `resolution` ;
+- `isZeroByAbsence` ;
+- `sourceCompleteness` ;
+- `resolutionReason` lisible ;
+- comportement référentiel utilisé ;
+- source de calcul ou raison d'absence.
+
+Le manifeste du dossier expert-comptable distingue :
+
+- cases calculées avec mouvement ;
+- cases calculées à 0 par absence de mouvement ;
+- cases à compléter ;
+- cases non applicables ;
+- cases bloquées.
+
+Les cases `à compléter` produisent une liste de revue. Seules les cases `bloquées` empêchent le livrable fiscal.
+
+#### Wording utilisateur
+
+Les libellés doivent rester rassurants et compréhensibles :
+
+- `Pas d'opération sur ce poste : 0 €.` pour un zéro fiable ;
+- `Solde de bilan à confirmer : Qitus ne dispose pas d'une balance complète.` pour une source bilan incomplète ;
+- `Information manquante — à renseigner ou à confirmer avec votre expert-comptable.` pour une donnée manuelle ;
+- `Case non applicable au régime configuré.` pour une case hors périmètre.
+
+Éviter les formulations répétitives et anxiogènes du type `Aucune écriture source n'a été trouvée pour cette case` lorsque la case peut être traitée comme un zéro fiable.
+
+#### Tests et validations
+
+Ajouter ou maintenir :
+
+- test de passage à zéro fiable pour les cases de résultat sans mouvement ;
+- test de non-régression pour les cases manuelles qui doivent rester `à compléter` ;
+- test de non-régression pour les cases de bilan sans balance complète ;
+- validation `validate:tax-package-cerfa` qui échoue si une case active n'a pas `emptyBehavior`, `calculationFamily` et justification de revue ;
+- validation beta qui bloque si les 2033/2050 n'ont pas de tagging revu.
+
+`TaxPackageSourceReadinessCenter` reste un Module interne en P0. Il peut alimenter les synthèses produit, mais ne devient pas un nouvel écran de progression détaillé avant décision produit dédiée.
 
 ## Phase 17 — Mise à jour automatique des règles comptables officielles
 

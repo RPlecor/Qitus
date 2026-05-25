@@ -1,6 +1,7 @@
 import { prisma } from "../db.server";
 import { AccountingAssignmentValidationPolicy } from "../accounting-reference/accounting-assignment-validation-policy.server";
 import { CategorizationTrustPolicy } from "../accounting-reference/categorization-trust-policy.server";
+import { VatReferenceCenter } from "../official-references/vat-reference-center.server";
 import { writeJournalEntries } from "./ledger-writer";
 
 export async function writeEntriesForImport(importId: string) {
@@ -33,7 +34,7 @@ export async function writeEntriesForImport(importId: string) {
 
   const categorizations = eligibleTransactions.flatMap((transaction) => {
     const categorization = transaction.categorization;
-    if (!categorization || categorization.status === "NEEDS_REVIEW" || !categorization.accountDebit || !categorization.accountCredit || !categorization.journal || !categorization.ecritureLabel) return [];
+    if (!categorization || categorization.status === "NEEDS_REVIEW" || categorization.status === "REVIEW_LIGHT" || !categorization.accountDebit || !categorization.accountCredit || !categorization.journal || !categorization.ecritureLabel) return [];
     if (categorization.validationStatus !== "VALIDATED") return [];
     const suggestion = {
       transactionId: transaction.id,
@@ -52,11 +53,12 @@ export async function writeEntriesForImport(importId: string) {
       amount: Number(transaction.amount),
       type: transaction.type,
     });
-    const trust = trustPolicy.classifySuggestion(suggestion, validation);
+    const trust = trustPolicy.classifySuggestion(suggestion, validation, { storedStatus: categorization.status });
     return validation.status === "VALIDATED" && trust.writable ? [suggestion] : [];
   });
 
-  const drafts = writeJournalEntries({ transactions, categorizations, startingNum: (maxEntry?.num ?? 0) + 1, company: { vatRegime: importRow.fiscalYear.company.vatRegime } });
+  const vatReference = await new VatReferenceCenter().getLedgerReference();
+  const drafts = writeJournalEntries({ transactions, categorizations, startingNum: (maxEntry?.num ?? 0) + 1, company: { vatRegime: importRow.fiscalYear.company.vatRegime }, vatReference });
   for (const draft of drafts) {
     await prisma.journalEntry.create({
       data: {

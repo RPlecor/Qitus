@@ -1,8 +1,10 @@
 import type { VatOperationNature } from "@prisma/client";
 import { prisma } from "../db.server";
+import { AccountingReferencePolicyCenter } from "../accounting-reference/accounting-reference-policy-center.server";
 import { AccountingAssignmentValidationPolicy } from "../accounting-reference/accounting-assignment-validation-policy.server";
 import { CategorizationTrustPolicy } from "../accounting-reference/categorization-trust-policy.server";
 import { writeJournalEntries } from "../ledger/ledger-writer";
+import { VatReferenceCenter } from "../official-references/vat-reference-center.server";
 import { ExpectedRouteError } from "../route-errors.server";
 import type { CategorizationSuggestion, CategorizationTransaction } from "../categorization/types";
 import { parseVatOperationNature as parseVatNaturePolicy, parseVatRate as parseVatRatePolicy } from "../vat/vat-rate-policy";
@@ -29,6 +31,12 @@ export class TransactionCorrectionFlow {
       where: { id: transactionId },
       include: { categorization: true },
     });
+    const [suspenseRole, bankRole] = transaction.categorization
+      ? [null, null]
+      : await Promise.all([
+        new AccountingReferencePolicyCenter().getAccountRole("suspense"),
+        new AccountingReferencePolicyCenter().getAccountRole("bank"),
+      ]);
 
     return {
       id: transaction.id,
@@ -36,9 +44,9 @@ export class TransactionCorrectionFlow {
       amount: transaction.amount.toString(),
       status: transaction.categorization?.status ?? null,
       confidence: transaction.categorization?.confidence ?? null,
-      accountDebit: transaction.categorization?.accountDebit ?? "471",
+      accountDebit: transaction.categorization?.accountDebit ?? suspenseRole?.account ?? "",
       accountDebitLabel: transaction.categorization?.accountDebitLabel ?? null,
-      accountCredit: transaction.categorization?.accountCredit ?? "5121",
+      accountCredit: transaction.categorization?.accountCredit ?? bankRole?.account ?? "",
       accountCreditLabel: transaction.categorization?.accountCreditLabel ?? null,
       vatRate: transaction.categorization?.vatRate?.toString() ?? null,
       vatOperationNature: transaction.categorization?.vatOperationNature ?? null,
@@ -56,14 +64,15 @@ export class TransactionCorrectionFlow {
     ecritureLabel: string;
     learn: boolean;
   }) {
+    const vatReference = await new VatReferenceCenter().getLedgerReference();
     return prisma.$transaction(async (tx) => {
       const transaction = await tx.transaction.findUniqueOrThrow({
         where: { id: input.transactionId },
         include: { fiscalYear: { include: { company: true } }, categorization: true },
       });
 
-      const accountDebitLabel = accountLabel(input.accountDebit, transaction.categorization?.accountDebitLabel ?? null);
-      const accountCreditLabel = accountLabel(input.accountCredit, transaction.categorization?.accountCreditLabel ?? null);
+      const accountDebitLabel = await accountLabel(input.accountDebit, transaction.categorization?.accountDebitLabel ?? null);
+      const accountCreditLabel = await accountLabel(input.accountCredit, transaction.categorization?.accountCreditLabel ?? null);
       const vatRate = parseVatRate(input.vatRate);
       const vatOperationNature = parseVatOperationNature(input.vatOperationNature);
       const validationPolicy = new AccountingAssignmentValidationPolicy();
@@ -74,9 +83,20 @@ export class TransactionCorrectionFlow {
       if (!validation.valid || !trust.writable) {
         throw new ExpectedRouteError([...validation.blockingReasons, ...trust.reasons].filter(Boolean)[0] ?? "Catégorisation à vérifier avant création de l'écriture.", 400);
       }
+      const correctedExisting = transaction.categorization
+        ? transaction.categorization.accountDebit !== input.accountDebit
+          || transaction.categorization.accountCredit !== input.accountCredit
+          || (transaction.categorization.vatRate?.toString() ?? null) !== (vatRate === null ? null : String(vatRate))
+          || (transaction.categorization.vatOperationNature ?? null) !== vatOperationNature
+          || transaction.categorization.ecritureLabel !== input.ecritureLabel
+        : false;
+      const correctedAutoApplied = correctedExisting && transaction.categorization?.status === "AUTO_APPLIED";
+      const userStatus = correctedExisting ? "USER_CORRECTED" : "USER_CONFIRMED";
       const categorization = await tx.categorization.upsert({
         where: { transactionId: transaction.id },
         update: {
+          originalAccountDebit: correctedExisting ? transaction.categorization?.accountDebit : transaction.categorization?.originalAccountDebit,
+          originalAccountCredit: correctedExisting ? transaction.categorization?.accountCredit : transaction.categorization?.originalAccountCredit,
           accountDebit: input.accountDebit,
           accountDebitLabel,
           accountCredit: input.accountCredit,
@@ -87,7 +107,7 @@ export class TransactionCorrectionFlow {
           ecritureLabel: input.ecritureLabel,
           confidence: "HIGH",
           source: "MANUAL",
-          status: "USER_CONFIRMED",
+          status: userStatus,
           chartVersion: validation.chartVersion,
           validationStatus: "VALIDATED",
           validationReasonsJson: { blockingReasons: validation.blockingReasons, warnings: validation.warnings, trustReasons: trust.reasons },
@@ -107,7 +127,7 @@ export class TransactionCorrectionFlow {
           ecritureLabel: input.ecritureLabel,
           confidence: "HIGH",
           source: "MANUAL",
-          status: "USER_CONFIRMED",
+          status: userStatus,
           chartVersion: validation.chartVersion,
           validationStatus: "VALIDATED",
           validationReasonsJson: { blockingReasons: validation.blockingReasons, warnings: validation.warnings, trustReasons: trust.reasons },
@@ -115,6 +135,25 @@ export class TransactionCorrectionFlow {
           confirmedAt: new Date(),
         },
       });
+
+      if (correctedAutoApplied) {
+        await tx.activityLog.create({
+          data: {
+            companyId: transaction.fiscalYear.companyId,
+            fiscalYearId: transaction.fiscalYearId,
+            userId: transaction.fiscalYear.company.userId,
+            action: "transaction.user_corrected_auto_applied",
+            entityType: "transaction",
+            entityId: transaction.id,
+            metadata: {
+              previousAccountDebit: transaction.categorization?.accountDebit,
+              previousAccountCredit: transaction.categorization?.accountCredit,
+              correctedAccountDebit: input.accountDebit,
+              correctedAccountCredit: input.accountCredit,
+            },
+          },
+        });
+      }
 
       const existingJournalEntry = transaction.journalEntryId
         ? await tx.journalEntry.findUnique({ where: { id: transaction.journalEntryId } })
@@ -128,6 +167,7 @@ export class TransactionCorrectionFlow {
         categorizations: [suggestion],
         startingNum: existingJournalEntry?.num ?? (maxEntry?.num ?? 0) + 1,
         company: { vatRegime: transaction.fiscalYear.company.vatRegime },
+        vatReference,
       });
       if (!draft) return { categorization, journalEntryCreated: false };
 
@@ -237,9 +277,14 @@ function parseVatRate(value: string | null | undefined) {
   return parseVatRatePolicy(value);
 }
 
-function accountLabel(account: string, fallback: string | null) {
+async function accountLabel(account: string, fallback: string | null) {
   if (fallback) return fallback;
-  if (account === "5121") return "Banque";
-  if (account === "471") return "Compte d'attente";
+  const policy = new AccountingReferencePolicyCenter();
+  const [bank, suspense] = await Promise.all([
+    policy.getAccountRole("bank"),
+    policy.getAccountRole("suspense"),
+  ]);
+  if (account === bank.account) return bank.label;
+  if (account === suspense.account) return suspense.label;
   return null;
 }

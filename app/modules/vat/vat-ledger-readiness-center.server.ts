@@ -1,7 +1,6 @@
 import type { CompanyWorkspace } from "../company-workspace/company-workspace.server";
 import { prisma } from "../db.server";
-
-const VAT_ACCOUNTS = ["44566", "44571", "4452"] as const;
+import { VatReferenceCenter } from "../official-references/vat-reference-center.server";
 
 export type VatLedgerReadinessStatus = "ok" | "warning" | "action_required";
 
@@ -30,10 +29,15 @@ export type VatLedgerReadiness = {
 
 export type VatLedgerReadinessSnapshot = VatLedgerReadiness["counters"] & {
   vatRegime: string;
+  requiredVatAccounts?: string[];
 };
 
 export class VatLedgerReadinessCenter {
+  constructor(private readonly vatReference = new VatReferenceCenter()) {}
+
   async getReadiness(workspace: CompanyWorkspace): Promise<VatLedgerReadiness> {
+    const accounts = await this.vatReference.getVatAccounts();
+    const requiredVatAccounts = [accounts.deductible, accounts.collected, accounts.reverseCharge];
     const [
       parsedImports,
       reviewImports,
@@ -51,20 +55,20 @@ export class VatLedgerReadinessCenter {
         where: {
           fiscalYearId: workspace.fiscalYear.id,
           source: "IMPORT",
-          lines: { some: { account: { in: [...VAT_ACCOUNTS] } } },
+          lines: { some: { account: { in: requiredVatAccounts } } },
         },
       }),
       prisma.journalEntry.count({
         where: {
           fiscalYearId: workspace.fiscalYear.id,
           source: "IMPORT",
-          lines: { none: { account: { in: [...VAT_ACCOUNTS] } } },
+          lines: { none: { account: { in: requiredVatAccounts } } },
         },
       }),
       prisma.categorization.count({
         where: {
           fiscalYearId: workspace.fiscalYear.id,
-          status: { not: "NEEDS_REVIEW" },
+          status: { notIn: ["NEEDS_REVIEW", "REVIEW_LIGHT"] },
           vatRate: { gt: 0 },
         },
       }),
@@ -85,11 +89,14 @@ export class VatLedgerReadinessCenter {
       taxableCategorizations,
       zeroVatDeclarations: declarations.filter((declaration) => isZeroVatAmounts(declaration.amountsJson)).length,
       transactionsInReview,
+      requiredVatAccounts,
     });
   }
 }
 
 export function buildVatLedgerReadiness(snapshot: VatLedgerReadinessSnapshot): VatLedgerReadiness {
+  const requiredVatAccounts = snapshot.requiredVatAccounts ?? [];
+  const accountHint = requiredVatAccounts.length > 0 ? ` (${requiredVatAccounts.join(", ")})` : "";
   const counters = {
     parsedImports: snapshot.parsedImports,
     reviewImports: snapshot.reviewImports,
@@ -128,7 +135,7 @@ export function buildVatLedgerReadiness(snapshot: VatLedgerReadinessSnapshot): V
     return readiness(
       "action_required",
       "Écritures existantes sans lignes TVA",
-      "Le régime TVA est réel, mais les écritures d'import existantes ne contiennent aucune ligne 44566, 44571 ou 4452. Elles doivent être recalculées ou corrigées avant de produire une CA3 exploitable.",
+      `Le régime TVA est réel, mais les écritures d'import existantes ne contiennent aucune ligne TVA attendue${accountHint}. Elles doivent être recalculées ou corrigées avant de produire une déclaration exploitable.`,
       counters,
       actions
     );

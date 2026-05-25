@@ -4,6 +4,8 @@
 
 - **Company**: the single legal entity managed by one authenticated user in the MVP.
 - **CompanyWorkspace**: the authenticated working context for one request: User, active Company, active FiscalYear, primary BankAccount, and access/subscription state.
+- **CompanyProfileClassification**: the product reading of a Company profile used to configure transaction auto-categorization prudence: micro, EI réel, IS sans expert-comptable, or expert-comptable-assisted fallback.
+- **CompanyProfileClassificationCenter**: the Module that derives CompanyTier, tier thresholds, history requirements and P0 fiscal stubs from existing Company fields without becoming a fiscal document engine.
 - **FiscalYear**: the active accounting period for a Company.
 - **FiscalYearCenter**: the Module that lists, creates, validates and activates FiscalYears for one mono-company workspace.
 - **ActiveFiscalYear**: the FiscalYear selected by query/cookie for the current request; all accounting Modules read it through CompanyWorkspace.
@@ -26,7 +28,10 @@
 - **ChartOfAccountsCenter**: the Module that owns PCG account lookup, source metadata, integrity checks, postable-account decisions and active chart version.
 - **AccountingAssignmentValidation**: the validation result proving a Categorization uses known postable accounts, coherent TVA inputs and enough traceability before ledger writing.
 - **AccountingAssignmentValidationPolicy**: the Module that validates automatic and manual Categorization suggestions against ChartOfAccounts and TVA rules before persistence or JournalEntry creation.
-- **CategorizationTrustPolicy**: the Module that decides whether a validated Categorization is auto-writable, needs user review, or is blocked; in beta, AI suggestions always require review.
+- **CategorizationTrustPolicy**: the Module that decides whether a validated Categorization is confirmed, auto-applied, lightly reviewable, needs full review, or is blocked.
+- **AutoApplyReliabilityPolicy**: the Module that allows an IA transaction categorization to be applied automatically only for common, low-risk, traceable cases with valid PCG account, simple TVA, coherent supplier history, no fiscal sensitivity and no contradictory user correction.
+- **CategorizationAutomationMetrics**: the Module-owned reading of auto-applied rate, review rate, AI confidence, old uncategorized transactions and corrections of auto-applied items, measured against tier-specific targets.
+- **UserFacingResolution**: the UI projection for product certainty states such as confirmed, auto-applied, to-review-light, to-review, to-complete, not-started, not-applicable and blocked; it is not a business decision engine.
 - **JournalEntry**: a balanced double-entry accounting entry generated from confirmed Categorizations.
 - **JournalExplorer**: the Module that owns journal listing, filters, pagination, facets, totals, and debit/credit balance.
 - **JournalExport**: a stable export of JournalEntries, such as CSV or JSON, generated from `JournalExplorer` results.
@@ -84,6 +89,9 @@
 - **QontoPaConnector**: the separate Qonto Plateforme Agréée connector for incoming supplier e-invoices; it never reuses Qonto banking credentials or claims compliance before partner validation.
 - **TaxPackageDraft**: a local `.md` draft of the fiscal package generated from deterministic journal totals and company metadata.
 - **TaxPackageTemplateRenderer**: the Module that renders the structured fiscal package source with case labels, amounts, and calculation references.
+- **TaxPackageCaseResolutionPolicy**: the Module that decides whether one CERFA case is calculated, calculated at zero by absence, to complete, not applicable, or blocked from the active reference and source completeness.
+- **TaxPackageSourceReadiness**: the internal reading of whether Qitus has enough journal, balance, fixed-asset, profile, and manual-tax data to justify each CERFA case resolution.
+- **CerfaTaggingReview**: the required case-by-case review of `emptyBehavior` and `calculationFamily` for 2033/2050 cases before beta; uncertain cases stay to complete rather than becoming automatic zeroes.
 - **DocumentPdfRenderer**: the Adapter that optionally turns structured fiscal package sources into PDFs via Qitus CLI scripts and Puppeteer.
 - **ClosedFiscalYear**: a FiscalYear with status `CLOSED`; business mutations require explicit reopening before they can proceed.
 - **AccountingReview**: the pre-closing business reading of one FiscalYear, returning readiness, blockers, warnings, actions, and evidence before document generation.
@@ -224,7 +232,7 @@
 - **OfficialReferenceCenter**: the orchestration Module for syncing, validating, listing and asserting readiness of all official or Qitus-maintained reference packs before critical capabilities run.
 - **VatReference**: the active TVA reference pack covering CA3/CA12 forms, rates, operation natures, TVA accounts and compatibility rules consumed by VAT Modules.
 - **FecComplianceReference**: the active FEC reference pack covering required columns, order, formats, naming and pre-export checks consumed by document and expert-dossier Modules.
-- **TaxPackageReference**: the active 2033/2050 pre-liasse reference pack covering tables, cases, account mappings, formulas and explicit `à compléter` states.
+- **TaxPackageReference**: the active 2033/2050 pre-liasse reference pack covering tables, cases, account mappings, formulas, `emptyBehavior`, `calculationFamily`, and explicit review states.
 - **ClosingAdjustmentReference**: the active OD reference pack covering supported adjustment types, accounts, formulas, evidence levels and approval blockers.
 - **FixedAssetReference**: the active fixed-asset reference pack covering asset families, accounts, methods, indicative useful lives and prorata controls.
 - **EvidenceRequirementPolicyReference**: the active evidence reference pack distinguishing blocking proof, dossier coverage gaps and recommended attachments with user-facing wording.

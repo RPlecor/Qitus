@@ -14,7 +14,7 @@ const result = requested
 console.log(JSON.stringify(result, null, 2));
 
 if (!requested) {
-  const readiness = center.getReferenceReadiness();
+  const readiness = await center.getReferenceReadinessAsync();
   if (readiness.status === "blocked") {
     console.error("Un ou plusieurs référentiels restent bloqués après synchronisation.");
     process.exit(1);

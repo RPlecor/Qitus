@@ -7,6 +7,8 @@ import { requireCompanyWorkspace } from "~/modules/company-workspace/company-wor
 import { DocumentCatalog } from "~/modules/documents/document-catalog.server";
 import { DocumentGenerationAuditCenter } from "~/modules/documents/document-generation-audit-center.server";
 import { DocumentFreshnessCenter } from "~/modules/documents/document-freshness-center.server";
+import { FecPrecheckCenter } from "~/modules/expert-dossier/fec-precheck-center.server";
+import { TaxPackageDraftCenter } from "~/modules/tax-package/tax-package-draft-center.server";
 import { documentFormatLabel, documentTypeLabel, freshnessLabel } from "~/modules/ui-labels";
 
 export async function loader(args: LoaderFunctionArgs) {
@@ -16,12 +18,24 @@ export async function loader(args: LoaderFunctionArgs) {
   const freshness = await new DocumentFreshnessCenter().getFreshness(workspace);
   const generationAudit = await new DocumentGenerationAuditCenter().getLatestGenerationAudit(workspace);
   const review = await new AccountingReviewCenter().getReview(workspace);
+  const [fecPrecheck, taxPackage] = await Promise.all([
+    new FecPrecheckCenter().getFecPrecheck(workspace).catch((error) => ({
+      status: "blocked" as const,
+      label: "FEC bloqué",
+      fec: null,
+      journal: null,
+      issues: [{ label: "Référentiel ou journal indisponible", detail: error instanceof Error ? error.message : "Le FEC ne peut pas encore être contrôlé.", severity: "blocking" as const, code: "MISSING_FEC" as const }],
+      blockingCount: 1,
+      warningCount: 0,
+    })),
+    new TaxPackageDraftCenter().getTaxPackageSummary(workspace),
+  ]);
   const error = new URL(request.url).searchParams.get("error");
-  return json({ documents, error, review, freshness, generationAudit });
+  return json({ documents, error, review, freshness, generationAudit, fecPrecheck, taxPackage });
 }
 
 export default function Documents() {
-  const { documents, error, review, freshness, generationAudit } = useLoaderData<typeof loader>();
+  const { documents, error, review, freshness, generationAudit, fecPrecheck, taxPackage } = useLoaderData<typeof loader>();
   const hasFec = documents.some((document) => document.type === "FEC");
   const reviewGuidance = buildReviewGuidance(review.blockingCount, review.warningCount);
   const freshnessGuidance = buildFreshnessGuidance(freshness.staleCount, review.blockingCount);
@@ -31,11 +45,24 @@ export default function Documents() {
         {error ? <div className="alert red">{error}</div> : null}
         {reviewGuidance ? <GuidanceAlert guidance={reviewGuidance} /> : null}
         {freshnessGuidance ? <GuidanceAlert guidance={freshnessGuidance} /> : null}
+        <div className="card">
+          <div className="sec-head">
+            <div>
+              <h2>Certitude des sorties fiscales</h2>
+              <p className="sub">Qitus vérifie le journal, les référentiels actifs et les cases CERFA avant de préparer les fichiers.</p>
+            </div>
+          </div>
+          <div className="doc-grid">
+            <FiscalOutputStatus title="FEC" status={fecPrecheck.status} detail={`${fecPrecheck.journal?.summary.entriesCount ?? 0} écriture${(fecPrecheck.journal?.summary.entriesCount ?? 0) > 1 ? "s" : ""} dans le journal`} actionLabel={fecPrecheck.status === "ready" ? "Télécharger le FEC" : "Générer le FEC"} href={fecPrecheck.fec ? `/api/documents/${fecPrecheck.fec.id}/download` : "/documents"} />
+            <FiscalOutputStatus title="Liasse fiscale CERFA" status={taxPackage.status === "blocked" ? "blocked" : taxPackage.status === "ready" ? "ready" : "warning"} detail={taxPackage.completeness ? taxPackageDetail(taxPackage.completeness) : "Préparation complète case par case"} actionLabel={taxPackage.documentId ? "Télécharger la liasse" : "Générer la liasse"} href={taxPackage.documentId ? `/api/documents/${taxPackage.documentId}/download` : "/documents"} />
+          </div>
+        </div>
         <div className="doc-grid">
           <div className="card doc-card">
             <h3>FEC</h3>
-            <p>Fichier des écritures comptables 18 colonnes.</p>
-            <Form method="post" action="/api/documents/fec/generate"><button className="btn btn-p">Générer</button></Form>
+            <p>Fichier des écritures comptables 18 colonnes, précontrôlé avant téléchargement.</p>
+            <p className="sub">{fecPrecheck.label}</p>
+            <Form method="post" action="/api/documents/fec/generate"><button className="btn btn-p">Générer le FEC</button></Form>
           </div>
           <div className="card doc-card">
             <h3>États financiers</h3>
@@ -43,9 +70,10 @@ export default function Documents() {
             <Form method="post" action="/api/documents/statements/generate"><button className="btn">Générer</button></Form>
           </div>
           <div className="card doc-card">
-            <h3>Liasse fiscale</h3>
-            <p>Source structurée vérifiable. PDF ajouté si la génération est disponible.</p>
-            <Form method="post" action="/api/documents/liasse/generate"><button className="btn">Générer</button></Form>
+            <h3>Liasse fiscale CERFA</h3>
+            <p>Préparation complète case par case, à relire avec votre expert-comptable.</p>
+            <p className="sub">{taxPackage.completeness?.label ?? "Aucune liasse générée pour cet exercice."}</p>
+            <Form method="post" action="/api/documents/liasse/generate"><button className="btn">Générer la liasse</button></Form>
           </div>
         </div>
         <div className="sec-head">
@@ -68,7 +96,7 @@ export default function Documents() {
         <div className="sec-head"><h2>Documents générés</h2></div>
         <TableShell>
           <table className="tbl">
-            <thead><tr><th>Date</th><th>Type</th><th>Fichier</th><th>État</th><th>Format</th><th className="r">Taille</th><th>Écritures</th><th>Outil</th><th>Généré par</th><th></th></tr></thead>
+            <thead><tr><th>Date</th><th>Type</th><th>Fichier</th><th>État</th><th>Format</th><th className="r">Taille</th><th>Écritures</th><th>Version</th><th>Produit par</th><th></th></tr></thead>
             <tbody>
               {documents.map((document) => (
                 <tr key={document.id}>
@@ -79,8 +107,8 @@ export default function Documents() {
                   <td>{documentFormatLabel(document.format)}</td>
                   <td className="r mono">{formatBytes(document.sizeBytes)}</td>
                   <td className="mono">{document.entriesCount ?? "—"}</td>
-                  <td className="mono wrap-anywhere">{document.scriptVersion ?? "Non renseigné"}</td>
-                  <td>{document.generatedBy}</td>
+                  <td className="mono wrap-anywhere">{document.scriptVersion ? humanScriptVersion(document.scriptVersion) : "Non renseignée"}</td>
+                  <td>{humanGeneratedBy(document.generatedBy)}</td>
                   <td><a className="btn btn-sm" href={`/api/documents/${document.id}/download`} download={document.filename}>Télécharger</a></td>
                 </tr>
               ))}
@@ -92,6 +120,18 @@ export default function Documents() {
         </TableShell>
       </Main>
     </AppShell>
+  );
+}
+
+function FiscalOutputStatus(props: { title: string; status: "ready" | "warning" | "blocked"; detail: string; actionLabel: string; href: string }) {
+  const label = props.status === "ready" ? "Vérifié" : props.status === "warning" ? "À relire" : "Bloqué";
+  return (
+    <div className="card doc-card">
+      <h3>{props.title}</h3>
+      <p><strong>{label}</strong></p>
+      <p className="sub">{props.detail}</p>
+      <a className="btn btn-sm" href={props.href}>{props.actionLabel}</a>
+    </div>
   );
 }
 
@@ -146,4 +186,26 @@ function formatDuration(value: number | null | undefined) {
   if (value == null) return "durée non renseignée";
   if (value < 1000) return "< 1 s";
   return `${Math.round(value / 100) / 10} s`;
+}
+
+function humanGeneratedBy(value: string) {
+  if (value.includes("tax-package") || value === "Qitus") return "Qitus";
+  if (value.includes("script")) return "Qitus";
+  return value;
+}
+
+function taxPackageDetail(completeness: { calculated: number; zeroByAbsence?: number; toComplete: number; notApplicable: number }) {
+  const zero = completeness.zeroByAbsence ?? 0;
+  return [
+    `${completeness.calculated} case${completeness.calculated > 1 ? "s" : ""} calculée${completeness.calculated > 1 ? "s" : ""}`,
+    zero > 0 ? `dont ${zero} à 0 faute de mouvement` : null,
+    `${completeness.toComplete} à compléter avec votre expert-comptable`,
+    `${completeness.notApplicable} non applicable${completeness.notApplicable > 1 ? "s" : ""}`,
+  ].filter(Boolean).join(" · ");
+}
+
+function humanScriptVersion(value: string) {
+  if (value.startsWith("tax-package-cerfa-")) return value.replace("tax-package-cerfa-", "");
+  if (value.startsWith("phase-")) return "Version Qitus";
+  return value;
 }

@@ -1,3 +1,5 @@
+import { DataRetentionReferenceCenter } from "../official-references/data-retention-reference-center.server";
+
 export type RetentionEntityType =
   | "share_link"
   | "notification"
@@ -21,8 +23,8 @@ const ACCOUNTING_EVIDENCE: RetentionEntityType[] = [
 export class DataRetentionPolicy {
   constructor(private readonly reference = new DataRetentionReferenceCenter()) {}
 
-  describe(entityType: RetentionEntityType) {
-    const autoPurgeAfterDays = this.reference.getRetentionDays(entityType);
+  async describe(entityType: RetentionEntityType) {
+    const autoPurgeAfterDays = await this.reference.getRetentionDays(entityType);
     const protectedAccountingEvidence = ACCOUNTING_EVIDENCE.includes(entityType);
     return {
       entityType,
@@ -37,11 +39,10 @@ export class DataRetentionPolicy {
     };
   }
 
-  listPolicies() {
-    return [
-      ...this.reference.listPurgeableRules().map((rule) => rule.kind),
+  async listPolicies() {
+    return await Promise.all([
+      ...(await this.reference.listPurgeableRules()).map((rule) => rule.kind),
       ...ACCOUNTING_EVIDENCE,
-    ].map((entityType) => this.describe(entityType as RetentionEntityType));
+    ].map((entityType) => this.describe(entityType as RetentionEntityType)));
   }
 }
-import { DataRetentionReferenceCenter } from "../official-references/data-retention-reference-center.server";

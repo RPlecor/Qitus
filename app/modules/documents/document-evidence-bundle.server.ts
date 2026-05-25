@@ -7,6 +7,7 @@ import { prisma } from "../db.server";
 import { ExpectedRouteError } from "../route-errors.server";
 import { AccountingCoverageCenter, type AccountingCoverageOverview } from "../accounting-coverage/accounting-coverage-center.server";
 import { EvidenceRequirementCenter, type EvidenceRequirementSummary } from "../accounting-coverage/evidence-requirement-center.server";
+import { AccountingCertaintyCenter, type AccountingCertaintyIssue, type AccountingCertaintySummary } from "../accounting-certainty/accounting-certainty-center.server";
 import { LocalEvidenceStorageAdapter, type EvidenceStorageAdapter } from "../evidence/evidence-storage-adapter.server";
 import { JournalAuditCenter } from "../journal/journal-audit-center.server";
 import { JournalExportCenter } from "../journal/journal-export-center.server";
@@ -24,6 +25,7 @@ import { ClosingWorkpaperCenter } from "../closing-workpapers/closing-workpaper-
 import { ClosingAdjustmentCenter } from "../closing-adjustments/closing-adjustment-center.server";
 import { ClosingAdjustmentFreshnessCenter } from "../closing-adjustments/closing-adjustment-freshness-center.server";
 import { ClosingAdjustmentReviewWorkflow } from "../closing-adjustments/closing-adjustment-review-workflow.server";
+import { TaxPackageCerfaCenter, type TaxPackageCerfaDraft } from "../tax-package/tax-package-cerfa-center.server";
 import { DocumentCatalog } from "./document-catalog.server";
 import { LocalDocumentStorageAdapter, type DocumentStorageAdapter } from "./document-storage-adapter.server";
 import { collectEvidenceSections, type EvidenceSectionProvider } from "./evidence-section-provider.server";
@@ -135,6 +137,16 @@ export type EvidenceManifest = {
     generatedAt: string;
     freshness: string | null;
   }>;
+  accountingCertainty: {
+    manifestFilename: "accounting-certainty-manifest.json";
+    summary: AccountingCertaintySummary;
+    issues: AccountingCertaintyIssue[];
+  };
+  taxPackage: {
+    manifestFilename: "tax-package-cerfa-manifest.json";
+    draft: TaxPackageCerfaDraft | null;
+    unavailableReason: string | null;
+  };
 };
 
 type AttachmentManifestReader = {
@@ -174,11 +186,13 @@ export class DocumentEvidenceBundle {
     private readonly closingAdjustments = new ClosingAdjustmentCenter(),
     private readonly closingFreshness = new ClosingAdjustmentFreshnessCenter(),
     private readonly closingReview = new ClosingAdjustmentReviewWorkflow(),
+    private readonly accountingCertainty = new AccountingCertaintyCenter(),
+    private readonly taxPackage = new TaxPackageCerfaCenter(),
     private readonly sectionProviders: EvidenceSectionProvider[] = []
   ) {}
 
   async getBundleManifest(workspace: CompanyWorkspace): Promise<EvidenceManifest> {
-    const [documents, audit, csv, vat, vatPosition, vatDeclarations, vatDeclarationFreshness, reconciliationReadiness, reconciliationReport, bankReconciliation, stripeReconciliation, thirdPartyMatching, suspenseAccounts, closingWorkpapers, closingSummary, closingAdjustments, closingFreshness, closingReview, expertValidation, coverage, evidenceSummary, evidenceRequirements, attachments, eInvoices] = await Promise.all([
+    const [documents, audit, csv, vat, vatPosition, vatDeclarations, vatDeclarationFreshness, reconciliationReadiness, reconciliationReport, bankReconciliation, stripeReconciliation, thirdPartyMatching, suspenseAccounts, closingWorkpapers, closingSummary, closingAdjustments, closingFreshness, closingReview, expertValidation, coverage, evidenceSummary, evidenceRequirements, attachments, eInvoices, certaintySummary, certaintyIssues, taxPackage] = await Promise.all([
       this.catalog.listDocuments(workspace),
       this.journalAudit.getAuditSummary(workspace),
       this.journalExport.exportCsv(workspace),
@@ -206,6 +220,9 @@ export class DocumentEvidenceBundle {
       this.evidence.listEvidenceRequirements(workspace),
       this.attachmentReader.listAttachments(workspace),
       this.listEInvoicesForManifest(workspace),
+      this.accountingCertainty.getFiscalYearCertaintySummary(workspace),
+      this.accountingCertainty.getCertaintyIssues(workspace),
+      this.safeTaxPackage(workspace),
     ]);
     if (!documents.some((document) => document.type === DocumentType.FEC)) {
       throw new ExpectedRouteError("Aucun FEC généré : le paquet de preuve n'est pas encore disponible.", 409);
@@ -319,6 +336,16 @@ export class DocumentEvidenceBundle {
         generatedAt: document.generatedAt,
         freshness: document.freshness?.statusLabel ?? null,
       })),
+      accountingCertainty: {
+        manifestFilename: "accounting-certainty-manifest.json",
+        summary: certaintySummary,
+        issues: certaintyIssues,
+      },
+      taxPackage: {
+        manifestFilename: "tax-package-cerfa-manifest.json",
+        draft: taxPackage.draft,
+        unavailableReason: taxPackage.unavailableReason,
+      },
     };
     return this.applyProviderSections(workspace, manifest);
   }
@@ -456,6 +483,12 @@ export class DocumentEvidenceBundle {
 
   private async safeClosingReview(workspace: CompanyWorkspace) {
     return this.closingReview.getReviewQueue(workspace).catch(() => []);
+  }
+
+  private async safeTaxPackage(workspace: CompanyWorkspace): Promise<{ draft: TaxPackageCerfaDraft | null; unavailableReason: string | null }> {
+    return this.taxPackage.buildDraft(workspace)
+      .then((draft) => ({ draft, unavailableReason: null }))
+      .catch((error) => ({ draft: null, unavailableReason: error instanceof Error ? error.message : "Liasse CERFA indisponible." }));
   }
 
   async buildEvidenceBundle(workspace: CompanyWorkspace) {

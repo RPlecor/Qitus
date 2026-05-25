@@ -4,18 +4,19 @@ import type { EvidenceReferencePayload } from "./official-reference-data.server"
 export class EvidenceRequirementPolicyCenter {
   constructor(private readonly references = new OfficialReferenceCenter()) {}
 
-  getActiveReference() {
-    return this.references.getActiveReference<EvidenceReferencePayload>("evidence");
+  async getActiveReference() {
+    return this.references.getActiveReferenceAsync<EvidenceReferencePayload>("evidence");
   }
 
-  getRequirementForEntrySource(source: string | null | undefined) {
+  async getRequirementForEntrySource(source: string | null | undefined) {
+    const payload = (await this.getActiveReference()).payloadJson;
     const normalized = source ?? "MANUAL";
-    return this.getActiveReference().payloadJson.byEntrySource.find((item) => item.source === normalized)
-      ?? this.getActiveReference().payloadJson.byEntrySource.find((item) => item.source === "MANUAL")!;
+    return payload.byEntrySource.find((item) => item.source === normalized)
+      ?? payload.byEntrySource.find((item) => item.source === "MANUAL")!;
   }
 
-  getWording() {
-    return this.getActiveReference().payloadJson.wording;
+  async getWording() {
+    return (await this.getActiveReference()).payloadJson.wording;
   }
 
   isBlockingLevel(level: string) {

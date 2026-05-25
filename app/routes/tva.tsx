@@ -8,6 +8,7 @@ import { VatLedgerReadinessCenter } from "~/modules/vat/vat-ledger-readiness-cen
 import { VatPositionCenter } from "~/modules/vat/vat-position-center.server";
 import { VatRegularizationCenter } from "~/modules/vat/vat-regularization-center.server";
 import { VatReviewWorkflow } from "~/modules/vat/vat-review-workflow.server";
+import { VatReferenceCenter } from "~/modules/official-references/vat-reference-center.server";
 import { freshnessLabel, vatDeclarationStatusLabel } from "~/modules/ui-labels";
 
 export async function loader(args: LoaderFunctionArgs) {
@@ -22,11 +23,12 @@ export async function loader(args: LoaderFunctionArgs) {
     new VatReviewWorkflow().getReviewQueue(workspace, filters),
     new VatLedgerReadinessCenter().getReadiness(workspace),
   ]);
-  return json({ position, review, declarations, settlement, queue, ledgerReadiness, query: Object.fromEntries(url.searchParams) });
+  const vatAccounts = await new VatReferenceCenter().getVatAccounts();
+  return json({ position, review, declarations, settlement, queue, ledgerReadiness, vatAccounts, query: Object.fromEntries(url.searchParams) });
 }
 
 export default function TvaPage() {
-  const { position, review, declarations, settlement, queue, ledgerReadiness, query } = useLoaderData<typeof loader>();
+  const { position, review, declarations, settlement, queue, ledgerReadiness, vatAccounts, query } = useLoaderData<typeof loader>();
   const declarationType = position.regime === "REEL_NORMAL" ? "CA3" : "CA12";
   const hasActiveDeclaration = declarations.some((declaration) => declaration.active);
   const visibleDeclarations = declarations.filter((declaration) => declaration.status !== "SUPERSEDED");
@@ -41,8 +43,8 @@ export default function TvaPage() {
 
         <div className="kpi-grid">
           <KpiCard label="Régime" value={vatRegimeLabel(position.regime)} hint={vatExigibilityLabel(position.exigibility)} />
-          <KpiCard label="TVA collectée" value={formatEuro(position.totals.collected)} hint="44571" />
-          <KpiCard label="TVA déductible" value={formatEuro(position.totals.deductible)} hint="44566" />
+          <KpiCard label="TVA collectée" value={formatEuro(position.totals.collected)} hint={vatAccounts.collected} />
+          <KpiCard label="TVA déductible" value={formatEuro(position.totals.deductible)} hint={vatAccounts.deductible} />
           <KpiCard label="Net" value={formatEuro(position.totals.net)} hint={settlement.label ?? settlement.kind} />
         </div>
 

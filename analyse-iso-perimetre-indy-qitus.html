@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analyse iso-périmètre Indy vs Qitus — Pricing & Features</title>
+<style>
+:root {
+  --ivory: #FAF9F5;
+  --paper: #FFFFFF;
+  --slate: #141413;
+  --green: #1B3A2D;
+  --green-l: #2D5F3F;
+  --clay: #D97757;
+  --clay-d: #B85C3E;
+  --oat: #E3DACC;
+  --olive: #788C5D;
+  --red: #C0392B;
+  --amber: #E67E22;
+  --blue: #2980B9;
+  --g100: #F0EEE6;
+  --g200: #E6E3DA;
+  --g300: #D1CFC5;
+  --g500: #87867F;
+  --g700: #3D3D3A;
+  --serif: ui-serif, Georgia, "Times New Roman", serif;
+  --sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--sans);
+  background: var(--ivory);
+  color: var(--slate);
+  line-height: 1.55;
+  font-size: 15px;
+  -webkit-font-smoothing: antialiased;
+}
+
+.wrap {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 48px 32px 80px;
+}
+
+/* ── Hero ── */
+.hero {
+  padding: 72px 0 56px;
+  border-bottom: 1.5px solid var(--g300);
+  margin-bottom: 48px;
+}
+.hero h1 {
+  font-family: var(--serif);
+  font-size: 2.4rem;
+  font-weight: 700;
+  color: var(--green);
+  letter-spacing: -0.02em;
+  margin-bottom: 12px;
+}
+.hero .sub {
+  font-size: 1.1rem;
+  color: var(--g500);
+  max-width: 720px;
+}
+.hero .meta {
+  margin-top: 16px;
+  font-size: 0.82rem;
+  color: var(--g500);
+}
+
+/* ── Sections ── */
+section { margin-bottom: 56px; }
+h2 {
+  font-family: var(--serif);
+  font-size: 1.55rem;
+  font-weight: 700;
+  color: var(--green);
+  margin-bottom: 20px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--clay);
+  display: inline-block;
+}
+h3 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--green-l);
+  margin: 24px 0 12px;
+}
+
+p { margin-bottom: 14px; max-width: 800px; }
+.note {
+  background: var(--g100);
+  border-left: 3px solid var(--clay);
+  padding: 14px 18px;
+  margin: 18px 0;
+  font-size: 0.92rem;
+  border-radius: 0 6px 6px 0;
+}
+
+/* ── Tables ── */
+.table-wrap {
+  overflow-x: auto;
+  margin: 18px 0 28px;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--paper);
+  font-size: 0.88rem;
+}
+th {
+  background: var(--green);
+  color: #fff;
+  padding: 12px 14px;
+  text-align: left;
+  font-weight: 600;
+  white-space: nowrap;
+}
+td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--g200);
+  vertical-align: top;
+}
+tr:last-child td { border-bottom: none; }
+tr:nth-child(even) td { background: var(--g100); }
+
+.highlight-row td { background: rgba(217,119,87,0.08) !important; font-weight: 600; }
+.moat-row td { background: rgba(27,58,45,0.06) !important; }
+
+/* ── Badges ── */
+.badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 10px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.badge-green { background: #D4EDDA; color: #155724; }
+.badge-red { background: #F8D7DA; color: #721C24; }
+.badge-amber { background: #FFF3CD; color: #856404; }
+.badge-blue { background: #D1ECF1; color: #0C5460; }
+.badge-gray { background: var(--g200); color: var(--g700); }
+
+/* ── Pricing cards ── */
+.pricing-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+  margin: 28px 0;
+}
+.pricing-card {
+  background: var(--paper);
+  border-radius: 12px;
+  padding: 28px 24px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  border-top: 4px solid var(--g300);
+  position: relative;
+}
+.pricing-card.qitus { border-top-color: var(--clay); }
+.pricing-card.indy { border-top-color: var(--blue); }
+
+.pricing-card .brand {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 4px;
+}
+.pricing-card.qitus .brand { color: var(--clay); }
+.pricing-card.indy .brand { color: var(--blue); }
+
+.pricing-card .plan-name {
+  font-family: var(--serif);
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--green);
+  margin-bottom: 12px;
+}
+.pricing-card .price {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--slate);
+  margin-bottom: 4px;
+}
+.pricing-card .price span { font-size: 0.9rem; font-weight: 400; color: var(--g500); }
+.pricing-card .price-note { font-size: 0.82rem; color: var(--g500); margin-bottom: 16px; }
+.pricing-card ul { list-style: none; padding: 0; }
+.pricing-card li {
+  padding: 6px 0;
+  font-size: 0.88rem;
+  border-bottom: 1px solid var(--g100);
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.pricing-card li::before {
+  content: "✓";
+  color: var(--olive);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.pricing-card li.no::before {
+  content: "✗";
+  color: var(--red);
+}
+
+/* ── Verdict box ── */
+.verdict {
+  background: var(--green);
+  color: #fff;
+  border-radius: 12px;
+  padding: 32px;
+  margin: 36px 0;
+}
+.verdict h3 {
+  color: var(--clay);
+  font-family: var(--serif);
+  font-size: 1.3rem;
+  margin: 0 0 16px;
+}
+.verdict p { color: rgba(255,255,255,0.9); max-width: none; }
+
+/* ── Bar chart ── */
+.chart-wrap {
+  margin: 28px 0;
+  background: var(--paper);
+  border-radius: 12px;
+  padding: 28px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+.chart-title {
+  font-family: var(--serif);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--green);
+  margin-bottom: 20px;
+}
+
+@media (max-width: 700px) {
+  .hero h1 { font-size: 1.7rem; }
+  .wrap { padding: 24px 16px 48px; }
+  .pricing-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- HERO -->
+<header class="hero">
+  <h1>Analyse iso-périmètre : Indy vs Qitus</h1>
+  <p class="sub">Comparaison détaillée du pricing à périmètre fonctionnel comparable. Données Indy vérifiées sur indy.fr, wiki.indy.fr et pages tarifs (mai 2026).</p>
+  <p class="meta">CPO Advisory · mai 2026 · Données HT pour Indy, TTC pour Qitus (beta)</p>
+</header>
+
+<!-- 1. CONTEXTE METHODOLOGIQUE -->
+<section>
+  <h2>1. Méthodologie</h2>
+  <p>Cette analyse compare Indy et Qitus sur un <strong>périmètre iso</strong> : les fonctions comptables communes aux deux produits. Les features exclusives à l'un ou l'autre sont identifiées séparément pour mesurer le "moat" de chaque solution.</p>
+
+  <h3>Philosophies produit divergentes</h3>
+  <div class="table-wrap">
+    <table>
+      <tr><th style="width:20%">Dimension</th><th style="width:40%">Indy</th><th style="width:40%">Qitus</th></tr>
+      <tr><td><strong>Positionnement</strong></td><td>Remplacer l'expert-comptable (tout-en-un autonome)</td><td>Travailler avec l'expert-comptable (dossier collaboratif)</td></tr>
+      <tr><td><strong>Cible primaire</strong></td><td>Freelances, professions libérales, micro-entrepreneurs</td><td>TPE/PME travaillant déjà avec un EC</td></tr>
+      <tr><td><strong>Formes juridiques</strong></td><td>AE, EI BNC, SCI, LMNP, SAS/SASU, SARL/EURL</td><td>Toutes TPE/PME (agnostique statut)</td></tr>
+      <tr><td><strong>Limite CA</strong></td><td>&lt; 254K€ (services) / &lt; 840K€ (commerce)</td><td>Pas de limite explicite (beta)</td></tr>
+      <tr><td><strong>Génération bilan/CR/liasse</strong></td><td>Oui (Premium) + télétransmission directe</td><td>Oui — génération locale, télétransmission par l'EC</td></tr>
+    </table>
+  </div>
+  <div class="note">
+    <strong>Conséquence structurelle :</strong> Indy facture selon le statut juridique car la complexité déclarative varie (un AE ≠ une SAS). Qitus facture selon le volume transactionnel car il ne fait pas de déclaration — il produit le dossier pour l'EC.
+  </div>
+</section>
+
+<!-- 2. GRILLE TARIFAIRE COMPLETE -->
+<section>
+  <h2>2. Grilles tarifaires complètes</h2>
+
+  <h3>Indy — Pricing par statut juridique (HT)</h3>
+  <div class="table-wrap">
+    <table>
+      <tr><th>Plan</th><th>Auto-entrepreneur</th><th>EI / BNC</th><th>SCI / LMNP</th><th>SAS/SASU SARL/EURL</th></tr>
+      <tr><td><strong>Essentiel</strong></td><td>Gratuit</td><td>Gratuit</td><td>Gratuit</td><td>Gratuit</td></tr>
+      <tr><td><strong>Plus</strong></td><td>9€ annuel / 12€ mensuel</td><td>9€ annuel / 12€ mensuel</td><td>9€ annuel / 12€ mensuel</td><td>9€ annuel / 12€ mensuel</td></tr>
+      <tr class="highlight-row"><td><strong>Premium</strong></td><td>12€ annuel / 16€ mensuel</td><td>22€ annuel / 28€ mensuel</td><td>24€ annuel / 32€ mensuel</td><td>49€ annuel / 59€ mensuel</td></tr>
+    </table>
+  </div>
+  <p style="font-size:0.85rem;color:var(--g500);">Source : indy.fr/tarifs (mai 2026). Prix HT/mois. "Annuel" = tarif mensuel avec engagement annuel.</p>
+
+  <h3>Qitus — Pricing (TTC, sans engagement)</h3>
+  <div class="table-wrap">
+    <table>
+      <tr><th>Plan</th><th>Cible</th><th>Prix TTC/mois</th><th>Limite transactions</th></tr>
+      <tr><td><strong>Solo</strong></td><td>Freelance / AE</td><td>9,90€</td><td>200/mois</td></tr>
+      <tr class="highlight-row"><td><strong>Pro</strong></td><td>TPE 1-5 salariés</td><td>24,90€</td><td>Illimité</td></tr>
+      <tr><td><strong>Cabinet</strong></td><td>TPE 5-10 salariés</td><td>39€</td><td>Illimité + multi-exercices</td></tr>
+    </table>
+  </div>
+  <p style="font-size:0.85rem;color:var(--g500);">Source : landing page Qitus (mai 2026). Prix TTC/mois, sans engagement. Pricing beta.</p>
+</section>
+
+<!-- 3. MATRICE ISO-PERIMETRE -->
+<section>
+  <h2>3. Matrice fonctionnelle iso-périmètre</h2>
+  <p>Comparaison feature-by-feature sur les fonctions communes. Le plan Indy requis pour matcher chaque feature Qitus est indiqué.</p>
+
+  <div class="table-wrap">
+    <table>
+      <tr>
+        <th style="width:28%">Fonction</th>
+        <th style="width:14%">Qitus Solo</th>
+        <th style="width:14%">Qitus Pro</th>
+        <th style="width:14%">Qitus Cabinet</th>
+        <th style="width:14%">Indy requis</th>
+        <th style="width:16%">Verdict</th>
+      </tr>
+      <!-- Socle commun -->
+      <tr><td><strong>Synchro bancaire</strong></td><td>1 compte</td><td>Multi</td><td>Multi</td><td>Essentiel (1) / Plus (multi)</td><td><span class="badge badge-green">Parité</span></td></tr>
+      <tr><td><strong>Import CSV</strong></td><td>Oui</td><td>Oui</td><td>Oui</td><td>Essentiel</td><td><span class="badge badge-green">Parité</span></td></tr>
+      <tr><td><strong>Catégorisation IA</strong></td><td>Oui (rules-first)</td><td>Oui</td><td>Oui</td><td>Essentiel</td><td><span class="badge badge-amber">Différent</span></td></tr>
+      <tr><td><strong>Justificatifs / pièces</strong></td><td>Oui</td><td>Oui</td><td>Oui</td><td>Essentiel</td><td><span class="badge badge-green">Parité</span></td></tr>
+      <tr><td><strong>OCR justificatifs</strong></td><td>Oui</td><td>Oui</td><td>Oui</td><td>Essentiel</td><td><span class="badge badge-green">Parité</span></td></tr>
+      <tr><td><strong>Écritures comptables</strong></td><td>Oui (débit/crédit)</td><td>Oui</td><td>Oui</td><td>Essentiel</td><td><span class="badge badge-green">Parité</span></td></tr>
+
+      <!-- TVA -->
+      <tr><td><strong>Gestion TVA déclarative</strong></td><td>Oui (prépa)</td><td>Oui</td><td>Oui</td><td>Plus (seuils) / Premium (télétrans.)</td><td><span class="badge badge-amber">Différent</span></td></tr>
+
+      <!-- Rapprochement -->
+      <tr><td><strong>Rapprochement bancaire</strong></td><td>Oui (4 domaines)</td><td>Oui</td><td>Oui</td><td>Essentiel (basique)</td><td><span class="badge badge-blue">Qitus +</span></td></tr>
+
+      <!-- FEC -->
+      <tr><td><strong>Génération FEC</strong></td><td>Oui</td><td>Oui</td><td>Oui</td><td>Essentiel (prépa) / Plus (export)</td><td><span class="badge badge-green">Parité</span></td></tr>
+
+      <!-- Facturation -->
+      <tr><td><strong>Devis & factures clients</strong></td><td>Non (hors scope)</td><td>Non</td><td>Non</td><td>Essentiel</td><td><span class="badge badge-blue">Indy +</span></td></tr>
+
+      <!-- Factures e-invoicing entrantes -->
+      <tr><td><strong>Factures électroniques entrantes</strong></td><td>Oui (PA Qonto)</td><td>Oui</td><td>Oui</td><td>Partiel</td><td><span class="badge badge-blue">Qitus +</span></td></tr>
+
+      <!-- Connecteurs -->
+      <tr><td><strong>Connecteur Stripe</strong></td><td>Oui</td><td>Oui</td><td>Oui</td><td>Non</td><td><span class="badge badge-blue">Qitus +</span></td></tr>
+      <tr><td><strong>Compte pro intégré</strong></td><td>Non</td><td>Non</td><td>Non</td><td>Essentiel (Mastercard)</td><td><span class="badge badge-blue">Indy +</span></td></tr>
+
+      <!-- MOAT QITUS — exclusifs -->
+      <tr class="moat-row"><td><strong>OD validables (10 types)</strong></td><td>Oui</td><td>Oui</td><td>Oui</td><td><span class="badge badge-red">Absent</span></td><td><span class="badge badge-blue">Qitus moat</span></td></tr>
+      <tr class="moat-row"><td><strong>Workpapers de clôture</strong></td><td>Oui</td><td>Oui</td><td>Oui</td><td><span class="badge badge-red">Absent</span></td><td><span class="badge badge-blue">Qitus moat</span></td></tr>
+      <tr class="moat-row"><td><strong>Clôture guidée multi-étapes</strong></td><td>Oui</td><td>Oui</td><td>Oui</td><td><span class="badge badge-red">Absent</span></td><td><span class="badge badge-blue">Qitus moat</span></td></tr>
+      <tr class="moat-row"><td><strong>Paquet de preuve (bundle)</strong></td><td>Oui</td><td>Oui</td><td>Oui</td><td><span class="badge badge-red">Absent</span></td><td><span class="badge badge-blue">Qitus moat</span></td></tr>
+      <tr class="moat-row"><td><strong>Dossier EC collaboratif</strong></td><td>Oui</td><td>Oui</td><td>Oui</td><td><span class="badge badge-red">Absent</span></td><td><span class="badge badge-blue">Qitus moat</span></td></tr>
+      <tr class="moat-row"><td><strong>Signoff EC (validation formelle)</strong></td><td>Oui</td><td>Oui</td><td>Oui</td><td><span class="badge badge-red">Absent</span></td><td><span class="badge badge-blue">Qitus moat</span></td></tr>
+      <tr class="moat-row"><td><strong>Audit trail complet</strong></td><td>Oui</td><td>Oui</td><td>Oui</td><td>Partiel</td><td><span class="badge badge-blue">Qitus +</span></td></tr>
+
+      <!-- Génération documents comptables -->
+      <tr><td><strong>Bilan / Compte de résultat</strong></td><td>Oui</td><td>Oui</td><td>Oui</td><td>Premium (sociétés)</td><td><span class="badge badge-green">Parité</span></td></tr>
+      <tr><td><strong>Liasse fiscale</strong></td><td>Oui</td><td>Oui</td><td>Oui</td><td>Premium</td><td><span class="badge badge-green">Parité</span></td></tr>
+      <tr><td><strong>Balance générale</strong></td><td>Oui</td><td>Oui</td><td>Oui</td><td>Premium</td><td><span class="badge badge-green">Parité</span></td></tr>
+
+      <!-- MOAT INDY — exclusifs -->
+      <tr><td><strong>Télétransmission fiscale</strong></td><td>Non</td><td>Non</td><td>Non</td><td>Premium</td><td><span class="badge badge-blue">Indy moat</span></td></tr>
+      <tr><td><strong>DAS2, CFE</strong></td><td>Non</td><td>Non</td><td>Non</td><td>Premium</td><td><span class="badge badge-blue">Indy moat</span></td></tr>
+      <tr><td><strong>PV d'AG / fiches de paie dirigeant</strong></td><td>Non</td><td>Non</td><td>Non</td><td>Premium</td><td><span class="badge badge-blue">Indy moat</span></td></tr>
+      <tr><td><strong>App mobile native</strong></td><td>Non (v1)</td><td>Non</td><td>Non</td><td>Essentiel</td><td><span class="badge badge-blue">Indy +</span></td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 4. COMPARAISON PRIX ISO-PERIMETRE -->
+<section>
+  <h2>4. Comparaison pricing iso-périmètre</h2>
+  <p>Pour comparer les prix à périmètre égal, on isole les fonctions communes (tenue comptable, banque, catégorisation, TVA, FEC, justificatifs) et on identifie le plan Indy nécessaire pour couvrir le même scope que chaque plan Qitus.</p>
+
+  <h3>Scénario A — Freelance / Auto-entrepreneur</h3>
+  <div class="pricing-grid">
+    <div class="pricing-card qitus">
+      <div class="brand">Qitus</div>
+      <div class="plan-name">Solo</div>
+      <div class="price">9,90€ <span>/mois TTC</span></div>
+      <div class="price-note">Sans engagement · 200 transactions/mois</div>
+      <ul>
+        <li>Synchro bancaire (1 compte)</li>
+        <li>Import CSV illimité</li>
+        <li>Catégorisation IA rules-first</li>
+        <li>Écritures débit/crédit</li>
+        <li>Justificatifs + OCR</li>
+        <li>TVA déclarative (préparation)</li>
+        <li>Rapprochement 4 domaines</li>
+        <li>FEC normé exportable</li>
+        <li>OD validables (10 types)</li>
+        <li>Workpapers + clôture guidée</li>
+        <li>Bundle preuve auditable</li>
+        <li>Dossier EC + signoff</li>
+        <li>Bilan, CR, liasse, balance</li>
+        <li>Factures e-invoicing entrantes</li>
+        <li>Connecteur Stripe</li>
+        <li class="no">Pas de factures clients</li>
+        <li class="no">Pas de télétransmission (EC)</li>
+        <li class="no">Pas de compte pro</li>
+      </ul>
+    </div>
+    <div class="pricing-card indy">
+      <div class="brand">Indy</div>
+      <div class="plan-name">Plus (AE)</div>
+      <div class="price">9€ <span>/mois HT (annuel)</span></div>
+      <div class="price-note">Soit 10,80€ TTC · ou 12€ HT mensuel (14,40€ TTC)</div>
+      <ul>
+        <li>Synchro bancaire multi-comptes</li>
+        <li>Catégorisation IA</li>
+        <li>Justificatifs + OCR</li>
+        <li>Export FEC</li>
+        <li>Devis & factures clients</li>
+        <li>Seuils TVA micro</li>
+        <li>Facturation avancée</li>
+        <li>3 sous-comptes pro</li>
+        <li>App mobile</li>
+        <li class="no">Pas de télétransmission</li>
+        <li class="no">Pas d'OD validables</li>
+        <li class="no">Pas de workpapers</li>
+        <li class="no">Pas de dossier EC</li>
+        <li class="no">Pas de bundle preuve</li>
+        <li class="no">Pas de connecteur Stripe</li>
+      </ul>
+    </div>
+  </div>
+  <div class="note">
+    <strong>Verdict AE :</strong> Qitus Solo (9,90€ TTC) vs Indy Plus (10,80€–14,40€ TTC). <strong>Pricing quasi-identique</strong>, mais périmètre fonctionnel radicalement différent. Indy a la facturation clients et l'app mobile. Qitus a le workflow EC complet (OD, workpapers, clôture, bundle, signoff). Le choix dépend du besoin : autonomie totale (Indy) vs collaboration EC (Qitus).
+  </div>
+
+  <h3>Scénario B — TPE en société (SAS/SARL, 1-5 salariés)</h3>
+  <div class="pricing-grid">
+    <div class="pricing-card qitus">
+      <div class="brand">Qitus</div>
+      <div class="plan-name">Pro</div>
+      <div class="price">24,90€ <span>/mois TTC</span></div>
+      <div class="price-note">Sans engagement · Transactions illimitées</div>
+      <ul>
+        <li>Tout le Solo +</li>
+        <li>Transactions illimitées</li>
+        <li>Synchro multi-comptes</li>
+        <li>Rapprochement 4 domaines</li>
+        <li>OD validables (10 types)</li>
+        <li>Workpapers + clôture guidée</li>
+        <li>Bundle preuve complet</li>
+        <li>Dossier EC collaboratif + signoff</li>
+        <li>Bilan, CR, liasse, balance</li>
+        <li>Audit trail complet</li>
+        <li class="no">Pas de télétransmission (EC)</li>
+      </ul>
+    </div>
+    <div class="pricing-card indy">
+      <div class="brand">Indy</div>
+      <div class="plan-name">Premium (SAS/SARL)</div>
+      <div class="price">49€ <span>/mois HT (annuel)</span></div>
+      <div class="price-note">Soit 58,80€ TTC · ou 59€ HT mensuel (70,80€ TTC)</div>
+      <ul>
+        <li>Tout le Plus +</li>
+        <li>Déclarations fiscales</li>
+        <li>Télétransmission directe</li>
+        <li>Bilan + Compte de résultat</li>
+        <li>Liasse fiscale</li>
+        <li>DAS2, CFE</li>
+        <li>PV d'AG, fiches de paie dirigeant</li>
+        <li>Devis & factures avancés</li>
+        <li>App mobile</li>
+        <li class="no">Pas d'OD validables</li>
+        <li class="no">Pas de workpapers</li>
+        <li class="no">Pas de dossier EC</li>
+        <li class="no">Bilan simplifié uniquement</li>
+      </ul>
+    </div>
+  </div>
+  <div class="note">
+    <strong>Verdict TPE société :</strong> Qitus Pro (24,90€ TTC) vs Indy Premium (58,80€–70,80€ TTC). <strong>Indy coûte 2,4× à 2,8× plus cher</strong> — mais il fait le bilan et la liasse. Cependant, si la TPE a déjà un EC (ce qui est le cas de la cible Qitus), elle paie l'EC + Qitus à 24,90€ vs Indy seul à 58,80€+. Le coût total "Qitus + EC" dépend de l'honoraire EC, mais Qitus réduit le temps de travail de l'EC grâce au dossier préparé.
+  </div>
+
+  <h3>Scénario C — TPE 5-10 salariés / multi-exercices</h3>
+  <div class="pricing-grid">
+    <div class="pricing-card qitus">
+      <div class="brand">Qitus</div>
+      <div class="plan-name">Cabinet</div>
+      <div class="price">39€ <span>/mois TTC</span></div>
+      <div class="price-note">Sans engagement · Multi-exercices</div>
+      <ul>
+        <li>Tout le Pro +</li>
+        <li>Gestion multi-exercices</li>
+        <li>Volume transactionnel élevé</li>
+        <li>Dossier EC enrichi</li>
+        <li>Clôture multi-périodes</li>
+      </ul>
+    </div>
+    <div class="pricing-card indy">
+      <div class="brand">Indy</div>
+      <div class="plan-name">Premium (SAS/SARL)</div>
+      <div class="price">49€ <span>/mois HT (annuel)</span></div>
+      <div class="price-note">Soit 58,80€ TTC · ou 59€ HT mensuel (70,80€ TTC)</div>
+      <ul>
+        <li>Même plan que scénario B</li>
+        <li>Pas de pricing spécifique "gros volume"</li>
+        <li class="no">Limite CA &lt; 254K/840K€</li>
+        <li class="no">Bilan simplifié uniquement</li>
+        <li class="no">Pas de compta analytique</li>
+      </ul>
+    </div>
+  </div>
+  <div class="note">
+    <strong>Verdict TPE 5-10 :</strong> Qitus Cabinet (39€ TTC) vs Indy Premium (58,80€–70,80€ TTC). <strong>Qitus 34% à 45% moins cher</strong>. Et surtout, Indy atteint ses limites structurelles : plafond de CA, bilan simplifié uniquement, pas de comptabilité analytique. Pour une TPE de cette taille, Indy n'est plus adapté — la cible naturelle est un EC traditionnel, et Qitus se positionne comme le pont entre la TPE et cet EC.
+  </div>
+</section>
+
+<!-- 5. SYNTHESE PRIX -->
+<section>
+  <h2>5. Synthèse comparative des prix</h2>
+
+  <div class="chart-wrap">
+    <div class="chart-title">Coût mensuel par scénario (TTC)</div>
+    <svg viewBox="0 0 740 320" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:740px">
+      <!-- Axes -->
+      <line x1="120" y1="20" x2="120" y2="260" stroke="#D1CFC5" stroke-width="1"/>
+      <line x1="120" y1="260" x2="720" y2="260" stroke="#D1CFC5" stroke-width="1"/>
+
+      <!-- Grid lines -->
+      <line x1="120" y1="60" x2="720" y2="60" stroke="#F0EEE6" stroke-width="1" stroke-dasharray="4"/>
+      <line x1="120" y1="110" x2="720" y2="110" stroke="#F0EEE6" stroke-width="1" stroke-dasharray="4"/>
+      <line x1="120" y1="160" x2="720" y2="160" stroke="#F0EEE6" stroke-width="1" stroke-dasharray="4"/>
+      <line x1="120" y1="210" x2="720" y2="210" stroke="#F0EEE6" stroke-width="1" stroke-dasharray="4"/>
+
+      <!-- Y labels -->
+      <text x="115" y="64" text-anchor="end" fill="#87867F" font-size="11">70€</text>
+      <text x="115" y="114" text-anchor="end" fill="#87867F" font-size="11">50€</text>
+      <text x="115" y="164" text-anchor="end" fill="#87867F" font-size="11">30€</text>
+      <text x="115" y="214" text-anchor="end" fill="#87867F" font-size="11">15€</text>
+      <text x="115" y="264" text-anchor="end" fill="#87867F" font-size="11">0€</text>
+
+      <!-- Scénario A: AE / Freelance -->
+      <!-- Qitus Solo 9.90 TTC -->
+      <rect x="160" y="225.7" width="52" height="34.3" rx="3" fill="#D97757"/>
+      <text x="186" y="220" text-anchor="middle" fill="#D97757" font-size="11" font-weight="700">9,90€</text>
+      <!-- Indy Plus AE annuel 10.80 TTC -->
+      <rect x="220" y="222.6" width="52" height="37.4" rx="3" fill="#2980B9"/>
+      <text x="246" y="217" text-anchor="middle" fill="#2980B9" font-size="11" font-weight="700">10,80€</text>
+      <!-- Label -->
+      <text x="210" y="290" text-anchor="middle" fill="#3D3D3A" font-size="11" font-weight="600">AE / Freelance</text>
+      <text x="210" y="303" text-anchor="middle" fill="#87867F" font-size="9">(Indy annuel)</text>
+
+      <!-- Scénario B: TPE société -->
+      <!-- Qitus Pro 24.90 TTC -->
+      <rect x="360" y="174.3" width="52" height="85.7" rx="3" fill="#D97757"/>
+      <text x="386" y="168" text-anchor="middle" fill="#D97757" font-size="11" font-weight="700">24,90€</text>
+      <!-- Indy Premium SAS annuel 58.80 TTC -->
+      <rect x="420" y="91.4" width="52" height="168.6" rx="3" fill="#2980B9"/>
+      <text x="446" y="85" text-anchor="middle" fill="#2980B9" font-size="11" font-weight="700">58,80€</text>
+      <!-- Label -->
+      <text x="410" y="290" text-anchor="middle" fill="#3D3D3A" font-size="11" font-weight="600">TPE société</text>
+      <text x="410" y="303" text-anchor="middle" fill="#87867F" font-size="9">(SAS/SARL, annuel)</text>
+
+      <!-- Scénario C: TPE 5-10 -->
+      <!-- Qitus Cabinet 39 TTC -->
+      <rect x="560" y="125.7" width="52" height="134.3" rx="3" fill="#D97757"/>
+      <text x="586" y="120" text-anchor="middle" fill="#D97757" font-size="11" font-weight="700">39€</text>
+      <!-- Indy Premium SAS annuel 58.80 TTC -->
+      <rect x="620" y="91.4" width="52" height="168.6" rx="3" fill="#2980B9"/>
+      <text x="646" y="85" text-anchor="middle" fill="#2980B9" font-size="11" font-weight="700">58,80€</text>
+      <!-- Label -->
+      <text x="610" y="290" text-anchor="middle" fill="#3D3D3A" font-size="11" font-weight="600">TPE 5-10 sal.</text>
+      <text x="610" y="303" text-anchor="middle" fill="#87867F" font-size="9">(SAS/SARL, annuel)</text>
+
+      <!-- Légende -->
+      <rect x="160" y="316" width="14" height="10" rx="2" fill="#D97757"/>
+      <text x="180" y="325" fill="#3D3D3A" font-size="11">Qitus (TTC)</text>
+      <rect x="280" y="316" width="14" height="10" rx="2" fill="#2980B9"/>
+      <text x="300" y="325" fill="#3D3D3A" font-size="11">Indy (TTC, engagement annuel)</text>
+    </svg>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <tr>
+        <th>Scénario</th>
+        <th>Qitus (TTC/mois)</th>
+        <th>Indy équivalent (TTC/mois, annuel)</th>
+        <th>Indy (TTC/mois, mensuel)</th>
+        <th>Écart annuel vs Qitus</th>
+      </tr>
+      <tr>
+        <td><strong>AE / Freelance</strong></td>
+        <td>9,90€ (Solo)</td>
+        <td>10,80€ (Plus AE)</td>
+        <td>14,40€</td>
+        <td style="color:var(--olive)">+9% à +45%</td>
+      </tr>
+      <tr class="highlight-row">
+        <td><strong>TPE société (SAS/SARL)</strong></td>
+        <td>24,90€ (Pro)</td>
+        <td>58,80€ (Premium SAS)</td>
+        <td>70,80€</td>
+        <td style="color:var(--red)">+136% à +184%</td>
+      </tr>
+      <tr>
+        <td><strong>TPE 5-10 salariés</strong></td>
+        <td>39€ (Cabinet)</td>
+        <td>58,80€ (Premium SAS)</td>
+        <td>70,80€</td>
+        <td style="color:var(--red)">+51% à +82%</td>
+      </tr>
+    </table>
+  </div>
+</section>
+
+<!-- 6. ANALYSE CPO -->
+<section>
+  <h2>6. Analyse CPO : positionnement et recommandations</h2>
+
+  <h3>Ce que cette matrice révèle</h3>
+
+  <p><strong>Sur les AE/freelances :</strong> le match est serré en prix (9,90€ vs 10,80€). Mais les produits ne se battent pas sur le même terrain. Un freelance qui veut se passer d'EC ira naturellement chez Indy (facturation, déclarations, app mobile). Un freelance qui veut un dossier propre pour son EC ira chez Qitus. Le vrai risque pour Qitus : combien de freelances ont un EC et veulent garder cette relation ? La réponse conditionne le TAM sur ce segment.</p>
+
+  <p><strong>Sur les TPE en société :</strong> c'est le sweet spot de Qitus. L'écart de prix est massif (24,90€ vs 58,80€ TTC). Indy Premium SAS est cher parce qu'il inclut la liasse, le bilan et la télétransmission — des features dont la cible Qitus n'a pas besoin (l'EC les fait). Qitus capture la valeur là où Indy a un trou : le workflow de collaboration EC (OD, workpapers, clôture, bundle, signoff).</p>
+
+  <p><strong>Sur les TPE 5-10 salariés :</strong> Indy atteint sa limite structurelle (plafond CA, bilan simplifié). Ce segment n'est pas son marché. Qitus n'a pas ces limites, et le prix (39€) reste compétitif face à n'importe quel outil du marché incluant un workflow EC.</p>
+
+  <h3>Les 6 features "moat" de Qitus</h3>
+  <div class="table-wrap">
+    <table>
+      <tr><th>Feature moat</th><th>Valeur pour la cible</th><th>Existe chez Indy ?</th></tr>
+      <tr class="moat-row"><td>OD validables (10 types)</td><td>L'EC peut ajuster sans toucher au journal — gain de temps en clôture</td><td><span class="badge badge-red">Non</span></td></tr>
+      <tr class="moat-row"><td>Workpapers de clôture</td><td>Traçabilité des travaux préparatoires — attendu par tout EC structuré</td><td><span class="badge badge-red">Non</span></td></tr>
+      <tr class="moat-row"><td>Clôture guidée multi-étapes</td><td>Réduit les erreurs de clôture et le ping-pong EC/client</td><td><span class="badge badge-red">Non</span></td></tr>
+      <tr class="moat-row"><td>Paquet de preuve (bundle)</td><td>Dossier auditable : chaque écriture liée à ses pièces justificatives</td><td><span class="badge badge-red">Non</span></td></tr>
+      <tr class="moat-row"><td>Dossier EC collaboratif</td><td>Espace partagé avec commentaires, statuts, historique — fini les emails</td><td><span class="badge badge-red">Non</span></td></tr>
+      <tr class="moat-row"><td>Signoff EC formel</td><td>Validation traçable de l'EC sur le dossier — valeur juridique implicite</td><td><span class="badge badge-red">Non</span></td></tr>
+    </table>
+  </div>
+
+  <h3>Les features "moat" d'Indy (que Qitus n'a pas)</h3>
+  <div class="table-wrap">
+    <table>
+      <tr><th>Feature moat</th><th>Valeur pour la cible Indy</th><th>Impact sur Qitus</th></tr>
+      <tr><td>Télétransmission fiscale</td><td>L'utilisateur déclare seul, sans EC</td><td><span class="badge badge-gray">Non pertinent</span> — la cible Qitus a un EC qui télétransmet</td></tr>
+      <tr><td>DAS2, CFE</td><td>Déclarations fiscales spécifiques générées et transmises</td><td><span class="badge badge-amber">Attention</span> — Qitus ne les génère pas (encore)</td></tr>
+      <tr><td>Facturation clients</td><td>Devis → facture → suivi paiement intégré</td><td><span class="badge badge-amber">Attention</span> — manque à Qitus, même si hors scope v1</td></tr>
+      <tr><td>Compte pro + Mastercard</td><td>Banking intégré à la compta</td><td><span class="badge badge-gray">Non pertinent</span> — la TPE a déjà une banque</td></tr>
+      <tr><td>App mobile native</td><td>Scan justificatifs, suivi en mobilité</td><td><span class="badge badge-amber">Attention</span> — attendu par les utilisateurs à moyen terme</td></tr>
+    </table>
+  </div>
+
+  <div class="verdict">
+    <h3>Verdict CPO</h3>
+    <p><strong>Le pricing de Qitus est compétitif à iso-périmètre, et franchement avantageux sur les TPE en société.</strong></p>
+    <p style="margin-top:12px;">L'écart de pricing Indy vs Qitus sur le segment SAS/SARL (×2,4 à ×2,8) n'est pas un bug — c'est le reflet de deux modèles différents. Indy embarque le coût de la télétransmission et des déclarations spécifiques (DAS2, CFE, PV d'AG). Qitus génère bilan, CR et liasse mais laisse la télétransmission à l'EC, et concentre sa valeur ajoutée sur le workflow collaboratif. Pour la cible "TPE avec EC", Qitus est moins cher ET offre des features que personne n'a (les 6 moats).</p>
+    <p style="margin-top:12px;"><strong>Risque principal :</strong> si Indy ajoute un "mode EC" (dossier partageable) à son Premium, le moat de Qitus se réduit. À surveiller. Mais construire un vrai workflow EC (OD, workpapers, clôture, signoff) est un investissement produit lourd qu'un acteur "anti-EC" comme Indy a peu d'incitations à faire.</p>
+    <p style="margin-top:12px;"><strong>Recommandation pricing :</strong> le Solo à 9,90€ est bien calibré face à Indy Plus AE. Le Pro à 24,90€ est le plan le plus défendable — c'est là que l'écart prix/valeur est maximal. Considérer un "Pro+" ou relever légèrement le Cabinet si la roadmap ajoute la facturation clients ou l'app mobile.</p>
+  </div>
+</section>
+
+<!-- 7. LIMITES -->
+<section>
+  <h2>7. Limites de l'analyse</h2>
+  <div class="table-wrap">
+    <table>
+      <tr><th style="width:30%">Limite</th><th>Impact</th></tr>
+      <tr><td>Qitus pricing = beta, TTC</td><td>Les prix Qitus peuvent évoluer. La comparaison TTC vs HT est normalisée mais la base fiscale diffère.</td></tr>
+      <tr><td>Indy pricing = statut-dépendant</td><td>Un même "Premium" coûte de 12€ (AE) à 49€ (SAS) HT. La comparaison par scénario est nécessaire.</td></tr>
+      <tr><td>Coût total EC non inclus</td><td>Qitus suppose un EC payé séparément. Le "vrai" coût pour le client = Qitus + honoraires EC. Mais Qitus réduit ces honoraires (dossier préparé).</td></tr>
+      <tr><td>Périmètre Qitus = spec v1</td><td>Certaines features (facturation, mobile) pourraient être ajoutées post-beta. L'analyse reflète l'état actuel.</td></tr>
+      <tr><td>Indy peut modifier ses plans</td><td>Les prix et features Indy sont ceux de mai 2026. Ils peuvent changer sans préavis.</td></tr>
+    </table>
+  </div>
+</section>
+
+<footer style="text-align:center;padding:40px 0 0;border-top:1px solid var(--g300);color:var(--g500);font-size:0.82rem;">
+  Analyse produite par CPO Advisory · mai 2026 · Sources : indy.fr, wiki.indy.fr, spec Qitus v1
+</footer>
+
+</div>
+</body>
+</html>

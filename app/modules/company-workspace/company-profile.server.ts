@@ -19,6 +19,9 @@ export type CompanyProfileInput = {
   managerLastName?: string;
   managerRole?: string;
   capital?: string | number;
+  hasAccountant?: boolean | string;
+  accountantEmail?: string;
+  revenueEstimate?: string;
 };
 
 export class CompanyProfile {
@@ -40,6 +43,9 @@ export class CompanyProfile {
       managerLastName: workspace.company.managerLastName ?? "",
       managerRole: workspace.company.managerRole ?? "",
       capital: workspace.company.capital ?? "",
+      hasAccountant: workspace.company.hasAccountant,
+      accountantEmail: workspace.company.accountantEmail ?? "",
+      revenueEstimate: workspace.company.revenueEstimate ?? "",
       onboardingComplete: workspace.company.onboardingComplete,
     };
   }
@@ -79,6 +85,9 @@ export function companyProfileInputFromForm(form: FormData): CompanyProfileInput
     managerLastName: optionalString(form.get("managerLastName")),
     managerRole: optionalString(form.get("managerRole")),
     capital: optionalString(form.get("capital")),
+    hasAccountant: optionalBoolean(form.get("hasAccountant")),
+    accountantEmail: optionalString(form.get("accountantEmail")),
+    revenueEstimate: optionalString(form.get("revenueEstimate")),
   };
 }
 
@@ -101,6 +110,9 @@ function profileData(input: CompanyProfileInput) {
   if (input.managerLastName !== undefined) data.managerLastName = input.managerLastName || null;
   if (input.managerRole !== undefined) data.managerRole = input.managerRole || null;
   if (input.capital !== undefined) data.capital = normalizeCapital(input.capital);
+  if (input.hasAccountant !== undefined) data.hasAccountant = normalizeBoolean(input.hasAccountant);
+  if (input.accountantEmail !== undefined) data.accountantEmail = input.accountantEmail || null;
+  if (input.revenueEstimate !== undefined) data.revenueEstimate = input.revenueEstimate || null;
 
   return data;
 }
@@ -113,6 +125,16 @@ function optionalString(value: FormDataEntryValue | string | null | undefined) {
 function optionalEnum<T extends string>(value: string | undefined, candidates: readonly T[]): T | undefined {
   if (!value || !candidates.includes(value as T)) return undefined;
   return value as T;
+}
+
+function optionalBoolean(value: FormDataEntryValue | string | null | undefined) {
+  if (value == null) return undefined;
+  return normalizeBoolean(String(value));
+}
+
+function normalizeBoolean(value: boolean | string | undefined) {
+  if (typeof value === "boolean") return value;
+  return value === "true" || value === "on" || value === "1";
 }
 
 function normalizeCapital(value: string | number | undefined) {

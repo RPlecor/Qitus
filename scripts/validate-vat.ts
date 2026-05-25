@@ -1,5 +1,6 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+import { VatReferenceCenter } from "../app/modules/official-references/vat-reference-center.server";
 
 const execFileAsync = promisify(execFile);
 const baseUrl = process.env.MVP_BASE_URL ?? "http://localhost:5173";
@@ -22,8 +23,9 @@ async function main() {
     check(position.position.regime === "REEL_SIMPLIFIE", `Régime TVA attendu REEL_SIMPLIFIE, obtenu ${position.position.regime}.`);
     check(position.position.totals.collected > 0, "La position TVA doit contenir de la TVA collectée.");
     check(position.position.totals.deductible > 0, "La position TVA doit contenir de la TVA déductible.");
-    check(position.position.accounts.some((account) => account.account === "44566"), "Les comptes TVA doivent inclure 44566.");
-    check(position.position.accounts.some((account) => account.account === "44571"), "Les comptes TVA doivent inclure 44571.");
+    const vatAccounts = await new VatReferenceCenter().getVatAccounts();
+    check(position.position.accounts.some((account) => account.account === vatAccounts.deductible), `Les comptes TVA doivent inclure ${vatAccounts.deductible}.`);
+    check(position.position.accounts.some((account) => account.account === vatAccounts.collected), `Les comptes TVA doivent inclure ${vatAccounts.collected}.`);
 
     const first = await generateVatDeclaration();
     check(first.declaration.type === "CA12", `Déclaration attendue CA12, obtenue ${first.declaration.type}.`);

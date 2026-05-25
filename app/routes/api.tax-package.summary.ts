@@ -4,6 +4,5 @@ import { TaxPackageDraftCenter } from "~/modules/tax-package/tax-package-draft-c
 
 export async function loader(args: LoaderFunctionArgs) {
   const workspace = await requireCompanyWorkspace(args);
-  const summary = await new TaxPackageDraftCenter().getTaxPackageSummary(workspace);
-  return json({ summary });
+  return json({ taxPackage: await new TaxPackageDraftCenter().getTaxPackageSummary(workspace) });
 }

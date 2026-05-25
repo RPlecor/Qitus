@@ -6,7 +6,8 @@ describe("AttachmentMatchingCenter", () => {
     const result = scoreAttachmentMatch(
       { supplierName: "OVH SAS", invoiceDate: new Date("2025-01-03"), amountTtc: decimal(29.99) },
       { kind: "invoice", label: "Facture OVH" },
-      { requirementId: "req_1", text: "OVH SAS OVH CLOUD HOSTING JANVIER", amount: -29.99, date: new Date("2025-01-03") }
+      { requirementId: "req_1", text: "OVH SAS OVH CLOUD HOSTING JANVIER", amount: -29.99, date: new Date("2025-01-03") },
+      0.01,
     );
 
     expect(result.score).toBeGreaterThanOrEqual(100);

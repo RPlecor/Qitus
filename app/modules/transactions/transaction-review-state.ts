@@ -6,3 +6,7 @@ export type TransactionReviewCategorization = {
 export function isTransactionInReview(categorization: TransactionReviewCategorization) {
   return !categorization || categorization.status === "NEEDS_REVIEW";
 }
+
+export function isTransactionInLightReview(categorization: TransactionReviewCategorization) {
+  return categorization?.status === "REVIEW_LIGHT";
+}

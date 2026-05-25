@@ -1,6 +1,7 @@
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
 import { Form, Link, useLoaderData } from "@remix-run/react";
-import { AppShell, ButtonLink, KpiCard, Main, StatusBadge, TableShell } from "~/components/ui";
+import { AppShell, ButtonLink, KpiCard, Main, StatusBadge, StatusPill, TableShell } from "~/components/ui";
+import { AccountingCertaintyCenter } from "~/modules/accounting-certainty/accounting-certainty-center.server";
 import { requireCompanyWorkspace } from "~/modules/company-workspace/company-workspace.server";
 import { TransactionExplorer } from "~/modules/transactions/transaction-explorer.server";
 import { TransactionFilterStateCenter, type TransactionFilterState } from "~/modules/transactions/transaction-filter-state";
@@ -15,8 +16,14 @@ export async function loader(args: LoaderFunctionArgs) {
     new TransactionExplorer().listTransactions(workspace, filters.toExplorerQuery(filterState)),
     new TransactionReviewQueue().summarizeQueue(workspace, filterState),
   ]);
+  const certaintyCenter = new AccountingCertaintyCenter();
+  const certainties = Object.fromEntries(await Promise.all(result.transactions.map(async (transaction) => {
+    const certainty = await certaintyCenter.getTransactionCertainty(workspace, transaction.id);
+    return [transaction.id, { status: certainty.status, label: certainty.label, tone: certainty.tone }];
+  })));
   return json({
     ...result,
+    certainties,
     filterState,
     activeFilterLabels: filters.describeActiveFilters(filterState),
     queueSummary,
@@ -24,7 +31,7 @@ export async function loader(args: LoaderFunctionArgs) {
 }
 
 export default function Transactions() {
-  const { transactions, page, totalPages, total, facets, filterState, activeFilterLabels, queueSummary } = useLoaderData<typeof loader>();
+  const { transactions, page, totalPages, total, facets, filterState, activeFilterLabels, queueSummary, certainties } = useLoaderData<typeof loader>();
   const filters = new TransactionFilterStateCenter();
   const detailParams = filters.toUrlParams(filterState).toString();
   const emptyMessage = emptyStateMessage(facets.total, total, filterState);
@@ -47,6 +54,8 @@ export default function Transactions() {
               <select id="transaction-status" name="status" defaultValue={filterState.status}>
                 <option value="all">Toutes</option>
                 <option value="review">À vérifier</option>
+                <option value="review_light">À relire rapidement</option>
+                <option value="auto_applied">Appliquées automatiquement</option>
                 <option value="categorized">Catégorisées</option>
                 <option value="confirmed">Confirmées</option>
                 <option value="corrected">Corrigées</option>
@@ -93,8 +102,9 @@ export default function Transactions() {
         <div className="kpi-grid">
           <KpiCard label="Total" value={String(facets.total)} />
           <KpiCard label="À vérifier" value={String(facets.review)} />
+          <KpiCard label="À relire" value={String(facets.reviewLight)} />
+          <KpiCard label="Appliquées auto" value={String(facets.autoApplied)} />
           <KpiCard label="Corrigées" value={String(facets.corrected)} />
-          <KpiCard label="Avec règle" value={String(facets.hasRule)} />
         </div>
 
         {filterState.status === "review" && queueSummary.empty ? (
@@ -103,21 +113,25 @@ export default function Transactions() {
 
         <TableShell>
           <table className="tbl">
-            <thead><tr><th>Date</th><th>Libellé</th><th>Compte</th><th className="r">Montant</th><th>Statut</th><th>Règle</th><th></th></tr></thead>
+            <thead><tr><th>Date</th><th>Libellé</th><th>Compte</th><th className="r">Montant</th><th>Statut</th><th>Certitude</th><th>Règle</th><th></th></tr></thead>
             <tbody>
-              {transactions.map((transaction) => (
-                <tr key={transaction.id}>
-                  <td className="mono">{formatShortDate(transaction.date)}</td>
-                  <td>{transaction.label}</td>
-                  <td><span className="cpt">{transaction.account}</span></td>
-                  <td className="r mono">{formatEuro(transaction.amount)}</td>
-                  <td><StatusBadge status={transaction.needsReview ? "warn" : "ok"} /></td>
-                  <td>{transaction.hasRule ? "Oui" : "—"}</td>
-                  <td><Link className="btn btn-sm" to={`/transactions/${transaction.id}?${detailParams}`}>{transaction.needsReview ? "Corriger" : "Voir"}</Link></td>
-                </tr>
-              ))}
+              {transactions.map((transaction) => {
+                const certainty = certainties[transaction.id];
+                return (
+                  <tr key={transaction.id}>
+                    <td className="mono">{formatShortDate(transaction.date)}</td>
+                    <td>{transaction.label}</td>
+                    <td><span className="cpt">{transaction.account}</span></td>
+                    <td className="r mono">{formatEuro(transaction.amount)}</td>
+                    <td>{transaction.needsLightReview ? <StatusPill label="À relire rapidement" tone="info" /> : <StatusBadge status={transaction.needsReview ? "warn" : "ok"} />}</td>
+                    <td>{certainty ? <StatusPill label={certainty.label} tone={certaintyTone(certainty.status)} /> : "—"}</td>
+                    <td>{transaction.hasRule ? "Oui" : "—"}</td>
+                    <td><Link className="btn btn-sm" to={`/transactions/${transaction.id}?${detailParams}`}>{transaction.needsReview ? "Corriger" : transaction.needsLightReview ? "Relire" : "Voir"}</Link></td>
+                  </tr>
+                );
+              })}
               {transactions.length === 0 ? (
-                <tr><td colSpan={7} className="sub">{emptyMessage}</td></tr>
+                <tr><td colSpan={8} className="sub">{emptyMessage}</td></tr>
               ) : null}
             </tbody>
           </table>
@@ -133,6 +147,14 @@ export default function Transactions() {
   );
 }
 
+function certaintyTone(status: string) {
+  if (status === "verified") return "ok" as const;
+  if (status === "blocked") return "error" as const;
+  if (status === "not_applicable") return "info" as const;
+  if (status === "review_light") return "info" as const;
+  return "warn" as const;
+}
+
 function formatShortDate(value: string) {
   return new Intl.DateTimeFormat("fr-FR", { day: "2-digit", month: "2-digit", timeZone: "UTC" }).format(new Date(value));
 }
@@ -144,5 +166,7 @@ function formatEuro(value: string) {
 function emptyStateMessage(totalImported: number, filteredTotal: number, filterState: TransactionFilterState) {
   if (totalImported === 0) return "Aucune transaction importée.";
   if (filterState.status === "review" && filteredTotal === 0) return "Aucune transaction à corriger.";
+  if (filterState.status === "review_light" && filteredTotal === 0) return "Aucune transaction à relire rapidement.";
+  if (filterState.status === "auto_applied" && filteredTotal === 0) return "Aucune transaction appliquée automatiquement.";
   return "Aucune transaction ne correspond aux filtres.";
 }

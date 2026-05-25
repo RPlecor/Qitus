@@ -16,6 +16,10 @@ describe("IA categorization provider contract", () => {
       companyName: "ACME",
       legalForm: "SASU",
       vatRegime: "FRANCHISE",
+      accountRoles: {
+        bank: { account: "5121", label: "Banque" },
+        suspense: { account: "471", label: "Compte d'attente" },
+      },
       correctionRules: [],
       vendorMappings: [],
     });

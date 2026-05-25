@@ -1,0 +1,1401 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Qitus · Votre compta, prête avant que vous y pensiez</title>
+<meta name="description" content="Qitus classe vos transactions automatiquement, prépare vos documents comptables et livre un dossier prêt pour votre expert-comptable. Beta gratuite ouverte.">
+<meta property="og:title" content="Qitus — Votre compta est faite. Votre expert-comptable valide. Vous n'avez rien eu à faire.">
+<meta property="og:description" content="Vos relevés bancaires deviennent un dossier comptable complet. Beta gratuite — premiers inscrits, tarif garanti.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════
+   DESIGN TOKENS
+   ═══════════════════════════════════════════ */
+:root {
+  --navy: #1B2A4A;
+  --ivory: #F7F5F0;
+  --gold: #C9A84C;
+  --gold-hover: #D4B65E;
+  --slate: #4A5568;
+  --slate-light: #718096;
+  --blue-confirm: #2B6CB0;
+  --red-alert: #C53030;
+  --white: #FFFFFF;
+  --border: #E2E8F0;
+  --border-light: #EDF2F7;
+
+  --font-serif: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+  --max-width: 1200px;
+  --section-pad: 120px;
+  --section-pad-mobile: 64px;
+}
+
+/* ═══════════════════════════════════════════
+   RESET & BASE
+   ═══════════════════════════════════════════ */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+html {
+  scroll-behavior: smooth;
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: var(--font-sans);
+  color: var(--slate);
+  background: var(--ivory);
+  line-height: 1.7;
+  overflow-x: hidden;
+}
+
+a { color: inherit; text-decoration: none; }
+img { max-width: 100%; display: block; }
+
+.container {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0 32px;
+}
+
+/* ═══════════════════════════════════════════
+   TYPOGRAPHY
+   ═══════════════════════════════════════════ */
+h1, h2, h3 {
+  font-family: var(--font-serif);
+  color: var(--navy);
+  line-height: 1.2;
+  font-weight: 500;
+}
+
+h1 { font-size: clamp(2.5rem, 5vw, 3.75rem); letter-spacing: -0.02em; }
+h2 { font-size: clamp(2rem, 3.5vw, 2.75rem); letter-spacing: -0.01em; }
+h3 { font-size: clamp(1.25rem, 2vw, 1.5rem); }
+
+p { font-size: 1.0625rem; color: var(--slate); }
+
+.text-sm { font-size: 0.875rem; }
+.text-xs { font-size: 0.8125rem; }
+.text-slate-light { color: var(--slate-light); }
+
+/* ═══════════════════════════════════════════
+   BUTTONS
+   ═══════════════════════════════════════════ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 1rem;
+  padding: 14px 32px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  letter-spacing: 0.01em;
+}
+
+.btn-primary {
+  background: var(--gold);
+  color: var(--navy);
+  box-shadow: 0 1px 3px rgba(201,168,76,0.3);
+}
+.btn-primary:hover {
+  background: var(--gold-hover);
+  box-shadow: 0 4px 12px rgba(201,168,76,0.35);
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--navy);
+  border: 1.5px solid var(--navy);
+}
+.btn-secondary:hover {
+  background: rgba(27,42,74,0.05);
+}
+
+.btn-sm {
+  padding: 10px 24px;
+  font-size: 0.9375rem;
+}
+
+/* ═══════════════════════════════════════════
+   NAVBAR
+   ═══════════════════════════════════════════ */
+.navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: rgba(247,245,240,0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.navbar.scrolled {
+  border-bottom-color: var(--border);
+  box-shadow: 0 1px 8px rgba(0,0,0,0.04);
+}
+
+.navbar-inner {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 72px;
+}
+
+.navbar-logo {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.navbar-links {
+  display: flex;
+  align-items: center;
+  gap: 36px;
+}
+
+.navbar-links a {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--slate);
+  transition: color 0.2s;
+}
+.navbar-links a:hover { color: var(--navy); }
+
+.navbar-cta { margin-left: 12px; }
+
+@media (max-width: 768px) {
+  .navbar-links { display: none; }
+  .navbar-inner { height: 60px; }
+}
+
+/* ═══════════════════════════════════════════
+   SECTION 1 — HERO
+   ═══════════════════════════════════════════ */
+.hero {
+  background: var(--ivory);
+  padding-top: calc(72px + 80px);
+  padding-bottom: var(--section-pad);
+}
+
+.hero-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 64px;
+  align-items: center;
+}
+
+.hero-headline span {
+  display: block;
+}
+
+.hero-sub {
+  margin-top: 24px;
+  font-size: 1.125rem;
+  max-width: 520px;
+  line-height: 1.8;
+}
+
+.hero-cta-group {
+  margin-top: 36px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.hero-mention {
+  font-size: 0.8125rem;
+  color: var(--slate-light);
+}
+
+/* Hero mockup */
+.hero-mockup {
+  background: var(--white);
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  box-shadow: 0 8px 40px rgba(27,42,74,0.08);
+  padding: 24px;
+  position: relative;
+}
+
+.mockup-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.mockup-title {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: var(--navy);
+}
+
+.mockup-badge-month {
+  font-size: 0.75rem;
+  color: var(--slate-light);
+  background: var(--ivory);
+  padding: 4px 10px;
+  border-radius: 4px;
+}
+
+.mockup-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border-light);
+}
+.mockup-row:last-child { border-bottom: none; }
+
+.mockup-row-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.mockup-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--white);
+}
+
+.mockup-row-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.mockup-row-name {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--navy);
+}
+
+.mockup-row-cat {
+  font-size: 0.75rem;
+  color: var(--slate-light);
+}
+
+.mockup-row-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.mockup-amount {
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--navy);
+}
+
+.badge {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 4px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.badge-auto {
+  background: rgba(201,168,76,0.15);
+  color: var(--gold);
+}
+
+.badge-confirm {
+  background: rgba(74,85,104,0.1);
+  color: var(--slate);
+}
+
+.badge-ready {
+  background: rgba(43,108,176,0.12);
+  color: var(--blue-confirm);
+}
+
+@media (max-width: 768px) {
+  .hero { padding-top: calc(60px + 48px); padding-bottom: var(--section-pad-mobile); }
+  .hero-grid { grid-template-columns: 1fr; gap: 40px; }
+  .hero-mockup { display: none; }
+}
+
+/* ═══════════════════════════════════════════
+   SECTION 2 — SHOWCASE TABS
+   ═══════════════════════════════════════════ */
+.showcase {
+  background: var(--white);
+  padding: var(--section-pad) 0;
+}
+
+.tabs-bar {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  margin-bottom: 56px;
+  background: var(--ivory);
+  padding: 4px;
+  border-radius: 10px;
+  max-width: 640px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 12px 20px;
+  font-family: var(--font-sans);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--slate);
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  white-space: nowrap;
+}
+
+.tab-btn.active {
+  background: var(--navy);
+  color: var(--white);
+  box-shadow: 0 2px 8px rgba(27,42,74,0.15);
+}
+
+.tab-btn:not(.active):hover {
+  color: var(--navy);
+  background: rgba(27,42,74,0.05);
+}
+
+.tab-content {
+  display: none;
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+.tab-content.active {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 64px;
+  align-items: center;
+  animation: fadeUp 0.4s ease forwards;
+}
+
+@keyframes fadeUp {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.tab-text h3 {
+  margin-bottom: 16px;
+  font-size: 1.75rem;
+}
+
+.tab-text p {
+  line-height: 1.8;
+}
+
+/* Tab mockups */
+.tab-mockup {
+  background: var(--ivory);
+  border-radius: 12px;
+  padding: 28px;
+  border: 1px solid var(--border);
+}
+
+.tab-mockup-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  background: var(--white);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+.tab-mockup-row:last-child { margin-bottom: 0; }
+
+.tab-mockup-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--navy);
+}
+
+.tab-mockup-status {
+  font-size: 0.8125rem;
+}
+
+@media (max-width: 768px) {
+  .tabs-bar { flex-direction: column; max-width: 100%; }
+  .tab-content.active { grid-template-columns: 1fr; gap: 32px; }
+  .showcase { padding: var(--section-pad-mobile) 0; }
+}
+
+/* ═══════════════════════════════════════════
+   SECTION 3 — PRICING
+   ═══════════════════════════════════════════ */
+.pricing {
+  background: var(--ivory);
+  padding: var(--section-pad) 0;
+}
+
+.pricing-header {
+  text-align: center;
+  margin-bottom: 56px;
+}
+
+.pricing-header p {
+  margin-top: 12px;
+  max-width: 540px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.pricing-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.pricing-card {
+  background: var(--white);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  padding: 36px 28px;
+  display: flex;
+  flex-direction: column;
+  transition: box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+.pricing-card:hover {
+  box-shadow: 0 8px 32px rgba(27,42,74,0.08);
+}
+
+.pricing-card.featured {
+  border-color: var(--gold);
+  position: relative;
+}
+
+.pricing-card.featured::before {
+  content: 'Recommandé';
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--gold);
+  color: var(--navy);
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 4px 16px;
+  border-radius: 20px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.pricing-tier {
+  font-family: var(--font-serif);
+  font-size: 1.375rem;
+  font-weight: 600;
+  color: var(--navy);
+  margin-bottom: 4px;
+}
+
+.pricing-target {
+  font-size: 0.875rem;
+  color: var(--slate-light);
+  margin-bottom: 20px;
+}
+
+.pricing-price {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  margin-bottom: 24px;
+}
+
+.pricing-amount {
+  font-family: var(--font-mono);
+  font-size: 2.75rem;
+  font-weight: 600;
+  color: var(--navy);
+  letter-spacing: -0.02em;
+}
+
+.pricing-period {
+  font-size: 1rem;
+  color: var(--slate-light);
+}
+
+.pricing-features {
+  list-style: none;
+  margin-bottom: 28px;
+  flex: 1;
+}
+
+.pricing-features li {
+  font-size: 0.9375rem;
+  color: var(--slate);
+  padding: 6px 0;
+  padding-left: 24px;
+  position: relative;
+}
+
+.pricing-features li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 12px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1.5px solid var(--blue-confirm);
+}
+
+.pricing-card.featured .pricing-features li::before {
+  background: var(--gold);
+  border-color: var(--gold);
+}
+
+.pricing-beta {
+  text-align: center;
+  margin-top: 32px;
+  font-style: italic;
+  color: var(--slate-light);
+  font-size: 0.9375rem;
+}
+
+@media (max-width: 768px) {
+  .pricing-grid { grid-template-columns: 1fr; max-width: 400px; }
+  .pricing-card.featured { order: -1; }
+  .pricing { padding: var(--section-pad-mobile) 0; }
+}
+
+/* ═══════════════════════════════════════════
+   SECTION 4 — REASSURANCE
+   ═══════════════════════════════════════════ */
+.reassurance {
+  background: var(--navy);
+  padding: var(--section-pad) 0;
+}
+
+.reassurance-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 48px;
+}
+
+.reassurance-item {
+  text-align: center;
+}
+
+.reassurance-icon {
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.reassurance-icon svg {
+  width: 40px;
+  height: 40px;
+  stroke: var(--gold);
+  fill: none;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.reassurance-item h3 {
+  color: var(--white);
+  font-size: 1.375rem;
+  margin-bottom: 12px;
+}
+
+.reassurance-item p {
+  color: rgba(255,255,255,0.7);
+  font-size: 0.9375rem;
+  line-height: 1.7;
+  max-width: 320px;
+  margin: 0 auto;
+}
+
+@media (max-width: 768px) {
+  .reassurance-grid { grid-template-columns: 1fr; gap: 40px; }
+  .reassurance { padding: var(--section-pad-mobile) 0; }
+}
+
+/* ═══════════════════════════════════════════
+   SECTION 5 — CTA FINAL + STEPS
+   ═══════════════════════════════════════════ */
+.cta-final {
+  background: var(--ivory);
+  padding: var(--section-pad) 0;
+}
+
+.cta-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 80px;
+  align-items: center;
+}
+
+.steps {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  position: relative;
+}
+
+.step {
+  display: flex;
+  gap: 20px;
+  position: relative;
+  padding-bottom: 36px;
+}
+
+.step:last-child { padding-bottom: 0; }
+
+.step-line {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.step-dot {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--gold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  z-index: 1;
+}
+
+.step-dot svg {
+  width: 16px;
+  height: 16px;
+  stroke: var(--white);
+  fill: none;
+  stroke-width: 2.5;
+}
+
+.step-connector {
+  width: 2px;
+  flex: 1;
+  background: var(--gold);
+  opacity: 0.3;
+  margin-top: 4px;
+}
+
+.step:last-child .step-connector { display: none; }
+
+.step-text h3 {
+  font-family: var(--font-sans);
+  font-size: 1.0625rem;
+  font-weight: 600;
+  color: var(--navy);
+  margin-bottom: 4px;
+  margin-top: 6px;
+}
+
+.step-text p {
+  font-size: 0.9375rem;
+  color: var(--slate-light);
+  line-height: 1.6;
+}
+
+.cta-right h2 {
+  margin-bottom: 28px;
+}
+
+.cta-right .hero-mention {
+  margin-top: 12px;
+}
+
+@media (max-width: 768px) {
+  .cta-grid { grid-template-columns: 1fr; gap: 48px; }
+  .cta-right { text-align: center; }
+  .cta-final { padding: var(--section-pad-mobile) 0; }
+}
+
+/* ═══════════════════════════════════════════
+   SECTION 6 — FAQ
+   ═══════════════════════════════════════════ */
+.faq {
+  background: var(--white);
+  padding: var(--section-pad) 0;
+}
+
+.faq h2 {
+  text-align: center;
+  margin-bottom: 48px;
+}
+
+.faq-list {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.faq-item {
+  border-bottom: 1px solid var(--border);
+}
+
+.faq-question {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 24px 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-size: 1.0625rem;
+  font-weight: 600;
+  color: var(--navy);
+  text-align: left;
+  gap: 16px;
+}
+
+.faq-icon {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--gold);
+  font-size: 1.25rem;
+  font-weight: 300;
+  transition: transform 0.3s ease;
+}
+
+.faq-item.open .faq-icon {
+  transform: rotate(45deg);
+}
+
+.faq-answer {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.35s ease, padding 0.35s ease;
+}
+
+.faq-item.open .faq-answer {
+  max-height: 300px;
+}
+
+.faq-answer p {
+  padding-bottom: 24px;
+  font-size: 1rem;
+  color: var(--slate);
+  line-height: 1.8;
+}
+
+@media (max-width: 768px) {
+  .faq { padding: var(--section-pad-mobile) 0; }
+}
+
+/* ═══════════════════════════════════════════
+   SECTION 7 — FOOTER
+   ═══════════════════════════════════════════ */
+.footer {
+  background: var(--navy);
+  padding: 40px 0;
+}
+
+.footer-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.footer-brand {
+  font-family: var(--font-serif);
+  font-size: 1rem;
+  color: rgba(255,255,255,0.6);
+}
+
+.footer-links {
+  display: flex;
+  gap: 24px;
+}
+
+.footer-links a {
+  font-size: 0.875rem;
+  color: rgba(255,255,255,0.5);
+  transition: color 0.2s;
+}
+
+.footer-links a:hover {
+  color: rgba(255,255,255,0.8);
+}
+
+@media (max-width: 768px) {
+  .footer-inner { flex-direction: column; gap: 16px; text-align: center; }
+}
+
+/* ═══════════════════════════════════════════
+   DECORATIVE — REGISTER LINES
+   ═══════════════════════════════════════════ */
+.section-divider {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border), transparent);
+}
+
+/* ═══════════════════════════════════════════
+   SCROLL ANIMATIONS
+   ═══════════════════════════════════════════ */
+.reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════
+     NAVBAR
+     ═══════════════════════════════════════════ -->
+<nav class="navbar" id="navbar">
+  <div class="navbar-inner">
+    <a href="#" class="navbar-logo">
+      <svg width="120" height="36" viewBox="0 0 120 36" xmlns="http://www.w3.org/2000/svg">
+        <!-- Logo Qitus — Serif moderne, Q distinctif -->
+        <defs>
+          <style>
+            .logo-text { font-family: 'Cormorant Garamond', Georgia, serif; font-weight: 600; font-size: 30px; fill: #1B2A4A; }
+          </style>
+        </defs>
+        <!-- Q stylisé avec queue distinctive -->
+        <text class="logo-text" x="0" y="28">Qitus</text>
+        <!-- Queue du Q prolongée — trait fin or mat -->
+        <line x1="14" y1="28" x2="22" y2="35" stroke="#C9A84C" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+    </a>
+
+    <div class="navbar-links">
+      <a href="#showcase">Fonctionnalités</a>
+      <a href="#pricing">Tarifs</a>
+      <a href="#faq">FAQ</a>
+    </div>
+
+    <a href="#cta" class="btn btn-primary btn-sm navbar-cta">Essayer gratuitement</a>
+  </div>
+</nav>
+
+<!-- ═══════════════════════════════════════════
+     SECTION 1 — HERO
+     ═══════════════════════════════════════════ -->
+<section class="hero">
+  <div class="container">
+    <div class="hero-grid">
+      <div class="hero-content">
+        <h1 class="hero-headline">
+          <span>Votre compta est faite.</span>
+          <span>Votre expert-comptable</span>
+          <span>valide en 30&nbsp;minutes.</span>
+        </h1>
+        <p class="hero-sub">
+          Importez vos relevés bancaires. Qitus classe vos transactions, prépare vos documents comptables et livre un dossier complet à votre expert-comptable.
+        </p>
+        <div class="hero-cta-group">
+          <a href="#cta" class="btn btn-primary">Essayer gratuitement</a>
+          <span class="hero-mention">Beta gratuite · Sans engagement · Accès prioritaire</span>
+        </div>
+      </div>
+
+      <div class="hero-mockup">
+        <div class="mockup-header">
+          <span class="mockup-title">Transactions — Mai 2026</span>
+          <span class="mockup-badge-month">187 lignes</span>
+        </div>
+
+        <div class="mockup-row">
+          <div class="mockup-row-left">
+            <div class="mockup-icon" style="background:#4A5568;">OV</div>
+            <div class="mockup-row-info">
+              <span class="mockup-row-name">OVH Cloud</span>
+              <span class="mockup-row-cat">Hébergement & serveurs</span>
+            </div>
+          </div>
+          <div class="mockup-row-right">
+            <span class="mockup-amount">-49,90 €</span>
+            <span class="badge badge-auto">Auto</span>
+          </div>
+        </div>
+
+        <div class="mockup-row">
+          <div class="mockup-row-left">
+            <div class="mockup-icon" style="background:#2B6CB0;">BQ</div>
+            <div class="mockup-row-info">
+              <span class="mockup-row-name">Loyer bureau</span>
+              <span class="mockup-row-cat">Location immobilière</span>
+            </div>
+          </div>
+          <div class="mockup-row-right">
+            <span class="mockup-amount">-1 200,00 €</span>
+            <span class="badge badge-auto">Auto</span>
+          </div>
+        </div>
+
+        <div class="mockup-row">
+          <div class="mockup-row-left">
+            <div class="mockup-icon" style="background:#C9A84C;">NT</div>
+            <div class="mockup-row-info">
+              <span class="mockup-row-name">Notion Team</span>
+              <span class="mockup-row-cat">Logiciels & abonnements</span>
+            </div>
+          </div>
+          <div class="mockup-row-right">
+            <span class="mockup-amount">-96,00 €</span>
+            <span class="badge badge-auto">Auto</span>
+          </div>
+        </div>
+
+        <div class="mockup-row">
+          <div class="mockup-row-left">
+            <div class="mockup-icon" style="background:#718096;">VR</div>
+            <div class="mockup-row-info">
+              <span class="mockup-row-name">Virement reçu — SCI Duval</span>
+              <span class="mockup-row-cat">—</span>
+            </div>
+          </div>
+          <div class="mockup-row-right">
+            <span class="mockup-amount" style="color:var(--blue-confirm);">+3 400,00 €</span>
+            <span class="badge badge-confirm">À confirmer</span>
+          </div>
+        </div>
+
+        <div class="mockup-row">
+          <div class="mockup-row-left">
+            <div class="mockup-icon" style="background:#1B2A4A;">SG</div>
+            <div class="mockup-row-info">
+              <span class="mockup-row-name">Société Générale — frais</span>
+              <span class="mockup-row-cat">Frais bancaires</span>
+            </div>
+          </div>
+          <div class="mockup-row-right">
+            <span class="mockup-amount">-12,50 €</span>
+            <span class="badge badge-auto">Auto</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     SECTION 2 — SHOWCASE TABS
+     ═══════════════════════════════════════════ -->
+<section class="showcase" id="showcase">
+  <div class="container">
+    <div class="tabs-bar">
+      <button class="tab-btn active" data-tab="tab-1">Classement automatique</button>
+      <button class="tab-btn" data-tab="tab-2">Documents comptables</button>
+      <button class="tab-btn" data-tab="tab-3">Collaboration expert-comptable</button>
+    </div>
+
+    <!-- Tab 1 -->
+    <div class="tab-content active" id="tab-1">
+      <div class="tab-text">
+        <h3>Vos transactions classées automatiquement</h3>
+        <p>Qitus reconnaît vos transactions récurrentes et les classe automatiquement. Votre abonnement logiciel, votre loyer, vos fournisseurs habituels&nbsp;: tout est rangé au bon endroit. Vous ne voyez que les quelques lignes inhabituelles à confirmer.</p>
+      </div>
+      <div class="tab-mockup">
+        <div class="tab-mockup-row">
+          <span class="tab-mockup-label">OVH Cloud — Hébergement</span>
+          <span class="badge badge-auto">Auto</span>
+        </div>
+        <div class="tab-mockup-row">
+          <span class="tab-mockup-label">Loyer bureau — Location</span>
+          <span class="badge badge-auto">Auto</span>
+        </div>
+        <div class="tab-mockup-row">
+          <span class="tab-mockup-label">Amazon — Fournitures</span>
+          <span class="badge badge-auto">Auto</span>
+        </div>
+        <div class="tab-mockup-row">
+          <span class="tab-mockup-label">Virement SCI Duval</span>
+          <span class="badge badge-confirm">À confirmer</span>
+        </div>
+        <div class="tab-mockup-row">
+          <span class="tab-mockup-label">SNCF — Déplacement</span>
+          <span class="badge badge-auto">Auto</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 2 -->
+    <div class="tab-content" id="tab-2">
+      <div class="tab-text">
+        <h3>Bilan, compte de résultat, TVA — générés automatiquement</h3>
+        <p>Vos documents comptables sont produits à partir de vos transactions classées. Conformes, téléchargeables, prêts à être transmis. Vous n'avez rien à saisir.</p>
+      </div>
+      <div class="tab-mockup">
+        <div class="tab-mockup-row">
+          <span class="tab-mockup-label">FEC — Mai 2026</span>
+          <span class="badge badge-ready">Prêt</span>
+        </div>
+        <div class="tab-mockup-row">
+          <span class="tab-mockup-label">Grand livre</span>
+          <span class="badge badge-ready">Prêt</span>
+        </div>
+        <div class="tab-mockup-row">
+          <span class="tab-mockup-label">Balance générale</span>
+          <span class="badge badge-ready">Prêt</span>
+        </div>
+        <div class="tab-mockup-row">
+          <span class="tab-mockup-label">Compte de résultat</span>
+          <span class="badge badge-auto" style="background:rgba(201,168,76,0.15);color:var(--gold);">En cours</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 3 -->
+    <div class="tab-content" id="tab-3">
+      <div class="tab-text">
+        <h3>Votre expert-comptable valide le dossier en 30&nbsp;minutes</h3>
+        <p>Votre expert-comptable reçoit un lien sécurisé vers le dossier complet. Il vérifie, il valide, c'est tracé. Plus de ressaisie, plus d'allers-retours, plus de dimanche soir perdu.</p>
+      </div>
+      <div class="tab-mockup">
+        <div class="tab-mockup-row">
+          <span class="tab-mockup-label">Dossier Mai 2026</span>
+          <span class="badge badge-ready">Envoyé</span>
+        </div>
+        <div class="tab-mockup-row">
+          <span class="tab-mockup-label">Avril 2026</span>
+          <span class="badge" style="background:rgba(43,108,176,0.12);color:var(--blue-confirm);">Validé</span>
+        </div>
+        <div class="tab-mockup-row">
+          <span class="tab-mockup-label">Mars 2026</span>
+          <span class="badge" style="background:rgba(43,108,176,0.12);color:var(--blue-confirm);">Validé</span>
+        </div>
+        <div class="tab-mockup-row">
+          <span class="tab-mockup-label">Février 2026</span>
+          <span class="badge" style="background:rgba(43,108,176,0.12);color:var(--blue-confirm);">Validé</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     SECTION 3 — PRICING
+     ═══════════════════════════════════════════ -->
+<section class="pricing" id="pricing">
+  <div class="container">
+    <div class="pricing-header reveal">
+      <h2>Des prix simples. Sans surprise.</h2>
+      <p>Pas d'engagement. Pas de frais cachés. Les premiers inscrits gardent leur tarif après la beta.</p>
+    </div>
+
+    <div class="pricing-grid reveal">
+      <!-- Solo -->
+      <div class="pricing-card">
+        <div class="pricing-tier">Solo</div>
+        <div class="pricing-target">Freelance, auto-entrepreneur</div>
+        <div class="pricing-price">
+          <span class="pricing-amount">9,90</span>
+          <span class="pricing-period">€/mois</span>
+        </div>
+        <ul class="pricing-features">
+          <li>Jusqu'à 200 transactions/mois</li>
+          <li>Classement automatique</li>
+          <li>Documents comptables</li>
+          <li>Partage avec votre expert-comptable</li>
+          <li>Sans engagement</li>
+        </ul>
+        <a href="#cta" class="btn btn-secondary" style="width:100%;">Essayer gratuitement</a>
+      </div>
+
+      <!-- Pro -->
+      <div class="pricing-card featured">
+        <div class="pricing-tier">Pro</div>
+        <div class="pricing-target">Dirigeant, société</div>
+        <div class="pricing-price">
+          <span class="pricing-amount">24,90</span>
+          <span class="pricing-period">€/mois</span>
+        </div>
+        <ul class="pricing-features">
+          <li>Transactions illimitées</li>
+          <li>Bilan, compte de résultat</li>
+          <li>Collaboration avec votre expert-comptable</li>
+          <li>Support prioritaire</li>
+          <li>Sans engagement</li>
+        </ul>
+        <a href="#cta" class="btn btn-primary" style="width:100%;">Essayer gratuitement</a>
+      </div>
+
+      <!-- Cabinet -->
+      <div class="pricing-card">
+        <div class="pricing-tier">Cabinet</div>
+        <div class="pricing-target">Entreprises multi-comptes</div>
+        <div class="pricing-price">
+          <span class="pricing-amount">39</span>
+          <span class="pricing-period">€/mois</span>
+        </div>
+        <ul class="pricing-features">
+          <li>Plusieurs exercices</li>
+          <li>Plusieurs comptes bancaires</li>
+          <li>Historique complet</li>
+          <li>Support dédié</li>
+          <li>Sans engagement</li>
+        </ul>
+        <a href="#cta" class="btn btn-secondary" style="width:100%;">Essayer gratuitement</a>
+      </div>
+    </div>
+
+    <p class="pricing-beta reveal">Beta gratuite — testez Qitus sans payer pendant toute la durée de la beta.</p>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     SECTION 4 — REASSURANCE
+     ═══════════════════════════════════════════ -->
+<section class="reassurance">
+  <div class="container">
+    <div class="reassurance-grid">
+      <div class="reassurance-item reveal">
+        <div class="reassurance-icon">
+          <svg viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>
+        </div>
+        <h3>Vos comptes sont justes dès le départ</h3>
+        <p>Chaque transaction est classée selon les règles comptables qui correspondent à votre situation. Pas d'approximation.</p>
+      </div>
+      <div class="reassurance-item reveal">
+        <div class="reassurance-icon">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </div>
+        <h3>Vos échéances sont sous contrôle</h3>
+        <p>Qitus vous prévient avant chaque date limite — clôture, TVA, bilan. Vous n'êtes plus jamais en retard.</p>
+      </div>
+      <div class="reassurance-item reveal">
+        <div class="reassurance-icon">
+          <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        </div>
+        <h3>Vos données restent en France</h3>
+        <p>Serveurs sécurisés, hébergement français. Aucun transfert hors Union européenne.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     SECTION 5 — CTA FINAL + STEPS
+     ═══════════════════════════════════════════ -->
+<section class="cta-final" id="cta">
+  <div class="container">
+    <div class="cta-grid">
+      <div class="steps reveal">
+        <div class="step">
+          <div class="step-line">
+            <div class="step-dot">
+              <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <div class="step-connector"></div>
+          </div>
+          <div class="step-text">
+            <h3>Créez votre compte Qitus</h3>
+            <p>Renseignez vos informations. 2 minutes.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-line">
+            <div class="step-dot">
+              <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <div class="step-connector"></div>
+          </div>
+          <div class="step-text">
+            <h3>Importez vos relevés bancaires</h3>
+            <p>Déposez le fichier de votre banque. Qonto, BNP, SG, Boursorama.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-line">
+            <div class="step-dot">
+              <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+          </div>
+          <div class="step-text">
+            <h3>C'est prêt.</h3>
+            <p>Vos transactions sont classées. Votre dossier est en route.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="cta-right reveal">
+        <h2>Lancez-vous en 5&nbsp;minutes.</h2>
+        <a href="#" class="btn btn-primary">Essayer gratuitement</a>
+        <p class="hero-mention" style="margin-top:12px;">Gratuit · Sans engagement · Accès prioritaire</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     SECTION 6 — FAQ
+     ═══════════════════════════════════════════ -->
+<section class="faq" id="faq">
+  <div class="container">
+    <h2 class="reveal">Questions fréquentes.</h2>
+
+    <div class="faq-list reveal">
+      <div class="faq-item">
+        <button class="faq-question">
+          <span>Qitus remplace-t-il mon expert-comptable ?</span>
+          <span class="faq-icon">+</span>
+        </button>
+        <div class="faq-answer">
+          <p>Non. Qitus prépare le dossier. Votre expert-comptable le vérifie et le valide. Deux regards valent mieux qu'un — c'est ce qui rend le résultat fiable.</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-question">
+          <span>Comment ça peut être aussi automatique ?</span>
+          <span class="faq-icon">+</span>
+        </button>
+        <div class="faq-answer">
+          <p>La plupart de vos dépenses se répètent chaque mois — loyer, abonnements, fournisseurs. Qitus apprend votre activité et applique les bonnes catégories. Pour les cas inhabituels, il vous demande de confirmer.</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-question">
+          <span>Quelles banques sont compatibles ?</span>
+          <span class="faq-icon">+</span>
+        </button>
+        <div class="faq-answer">
+          <p>Qonto, BNP Paribas, Société Générale, Boursorama au lancement. Plus un import standard compatible avec la plupart des banques françaises. Connexion bancaire automatique à venir.</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-question">
+          <span>Mes données sont en sécurité ?</span>
+          <span class="faq-icon">+</span>
+        </button>
+        <div class="faq-answer">
+          <p>Hébergement en France, serveurs sécurisés. Aucun transfert hors Union européenne.</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-question">
+          <span>C'est prêt ?</span>
+          <span class="faq-icon">+</span>
+        </button>
+        <div class="faq-answer">
+          <p>Beta ouverte. Inscrivez-vous pour un accès prioritaire — les premiers inscrits gardent leur tarif après le lancement.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     SECTION 7 — FOOTER
+     ═══════════════════════════════════════════ -->
+<footer class="footer">
+  <div class="container">
+    <div class="footer-inner">
+      <span class="footer-brand">Qitus — La certitude comptable.</span>
+      <div class="footer-links">
+        <a href="#">Mentions légales</a>
+        <a href="#">Contact</a>
+        <a href="#">À propos</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<!-- ═══════════════════════════════════════════
+     JAVASCRIPT
+     ═══════════════════════════════════════════ -->
+<script>
+// Navbar scroll effect
+const navbar = document.getElementById('navbar');
+window.addEventListener('scroll', () => {
+  navbar.classList.toggle('scrolled', window.scrollY > 20);
+});
+
+// Tabs
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    // Remove active from all
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    // Add active
+    btn.classList.add('active');
+    document.getElementById(btn.dataset.tab).classList.add('active');
+  });
+});
+
+// FAQ accordion
+document.querySelectorAll('.faq-question').forEach(q => {
+  q.addEventListener('click', () => {
+    const item = q.parentElement;
+    const wasOpen = item.classList.contains('open');
+    // Close all
+    document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+    // Toggle current
+    if (!wasOpen) item.classList.add('open');
+  });
+});
+
+// Scroll reveal
+const reveals = document.querySelectorAll('.reveal');
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+      observer.unobserve(entry.target);
+    }
+  });
+}, { threshold: 0.15 });
+
+reveals.forEach(el => observer.observe(el));
+</script>
+
+</body>
+</html>

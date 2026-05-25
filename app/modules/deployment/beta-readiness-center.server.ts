@@ -9,7 +9,9 @@ import { OpenBankingCenter } from "../open-banking/open-banking-center.server";
 import { StorageAuditCenter } from "../storage/storage-audit-center.server";
 import { getRuntimeConfig, type RuntimeConfig } from "../runtime-config.server";
 import { QontoPaReadinessCenter } from "../e-invoices/qonto-pa-readiness-center.server";
+import { FecPrecheckCenter } from "../expert-dossier/fec-precheck-center.server";
 import { OfficialReferenceCenter } from "../official-references/official-reference-center.server";
+import { TaxPackageDraftCenter } from "../tax-package/tax-package-draft-center.server";
 
 export type BetaReadinessSeverity = "ready" | "warning" | "blocked";
 
@@ -38,7 +40,7 @@ export class BetaReadinessCenter {
   }
 
   async listChecks(workspace: CompanyWorkspace): Promise<BetaReadinessCheck[]> {
-    const [runtime, health, security, openBanking, storageAudit, metricCatalog, qontoPaReadiness, accountingReferences] = await Promise.all([
+    const [runtime, health, security, openBanking, storageAudit, metricCatalog, qontoPaReadiness, accountingReferences, fecPrecheck, taxPackage] = await Promise.all([
       Promise.resolve(new DeploymentRuntimeCenter(this.config).getRuntimeReport()),
       new HealthCheckCenter(this.config).getReadiness(),
       Promise.resolve(new SecurityHardeningCenter(this.config).getSecurityStatus()),
@@ -46,7 +48,9 @@ export class BetaReadinessCenter {
       new StorageAuditCenter(this.config).getStorageAudit(workspace),
       Promise.resolve(new MetricCatalog().assertRequiredMetricsPresent()),
       new QontoPaReadinessCenter(this.config).getReadiness(),
-      Promise.resolve(new OfficialReferenceCenter().getReferenceReadiness()),
+      new OfficialReferenceCenter().getReferenceReadinessAsync(),
+      new FecPrecheckCenter().getFecPrecheck(workspace).catch((error) => ({ status: "blocked" as const, message: error instanceof Error ? error.message : "FEC indisponible." })),
+      new TaxPackageDraftCenter().getTaxPackageSummary(workspace).catch((error) => ({ status: "blocked" as const, completeness: null, documentId: null, message: error instanceof Error ? error.message : "Liasse indisponible." })),
     ]);
     const storage = new StorageConfigurationCenter(this.config).getStatus();
     const worker = new WorkerRuntimeCenter(this.config).getRuntimeStatus();
@@ -106,6 +110,13 @@ export class BetaReadinessCenter {
         action: accountingReferences.status === "ready" ? undefined : "Ouvrir Référentiels Qitus et corriger les référentiels bloqués.",
       },
       {
+        code: "fiscal_outputs",
+        label: "Sorties fiscales",
+        status: fecPrecheck.status === "blocked" || taxPackage.status === "missing" || taxPackage.status === "blocked" ? "blocked" : taxPackage.status === "to_complete" || fecPrecheck.status === "warning" ? "warning" : "ready",
+        message: fiscalOutputsMessage(fecPrecheck, taxPackage),
+        action: fecPrecheck.status === "ready" && taxPackage.status === "ready" ? undefined : "Ouvrir Documents pour générer ou relire les sorties fiscales.",
+      },
+      {
         code: "webhooks",
         label: "Webhooks signés",
         status: webhookStatus(this.config),
@@ -159,4 +170,17 @@ function webhookStatus(config: RuntimeConfig): BetaReadinessSeverity {
 function webhookMessage(config: RuntimeConfig) {
   if (webhookStatus(config) === "ready") return "Secrets webhook requis présents ou non applicables.";
   return "Un ou plusieurs webhooks requis n'ont pas de secret configuré.";
+}
+
+function fiscalOutputsMessage(
+  fec: { status: string; label?: string; message?: string },
+  taxPackage: { status: string; completeness?: { totalCases: number; toComplete: number; blocked: number } | null; message?: string }
+) {
+  if (fec.status === "blocked") return fec.message ?? fec.label ?? "FEC non générable ou à corriger.";
+  if (taxPackage.status === "missing") return "Liasse fiscale CERFA non générée.";
+  if (taxPackage.status === "blocked") return taxPackage.message ?? "Liasse fiscale CERFA bloquée.";
+  if (taxPackage.status === "to_complete") {
+    return `${taxPackage.completeness?.totalCases ?? 0} cases CERFA modélisées, ${taxPackage.completeness?.toComplete ?? 0} à compléter.`;
+  }
+  return "FEC et liasse CERFA prêts pour la beta.";
 }

@@ -1,6 +1,6 @@
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
 import { Link, useFetcher, useLoaderData } from "@remix-run/react";
-import { AppShell, ButtonLink, GuidanceList, KpiCard, Main, StatusBadge, TableShell } from "~/components/ui";
+import { AppShell, ButtonLink, GuidanceList, KpiCard, Main, StatusBadge, StatusPill, TableShell } from "~/components/ui";
 import type { ActionableGuidance } from "~/modules/actionable-guidance";
 import { requireCompanyWorkspace } from "~/modules/company-workspace/company-workspace.server";
 import { DashboardOverview } from "~/modules/dashboard/dashboard-overview.server";
@@ -53,6 +53,32 @@ export default function Dashboard() {
         {demoMessage ? <div className="alert blue">{demoMessage}</div> : null}
 
         <GuidanceList items={[consistencyGuidance, ...overview.alerts]} />
+
+        {overview.certainty ? (
+          <div className="card impact-card">
+            <div className="sec-head">
+              <div>
+                <h2>Certitude du dossier</h2>
+                <span className="sub">
+                  {overview.certainty.verified} vérifié{overview.certainty.verified > 1 ? "s" : ""} · {overview.certainty.needsReview} à relire · {overview.certainty.blocked} blocage{overview.certainty.blocked > 1 ? "s" : ""}
+                </span>
+              </div>
+              <div className="row-actions">
+                <StatusPill label={certaintyLabel(overview.certainty.status)} tone={certaintyTone(overview.certainty.status)} />
+                <Link className="btn btn-sm" to={overview.certainty.primaryAction.href}>{overview.certainty.primaryAction.label}</Link>
+              </div>
+            </div>
+            {overview.certainty.reasons.slice(0, 3).map((item) => (
+              <div key={`${item.source}:${item.label}`} className={`impact-row ${item.tone === "blocking" ? "blocking" : item.tone === "warning" ? "warning" : "info"}`}>
+                <div className="impact-content">
+                  <strong>{item.label}</strong>
+                  {item.referenceVersion ? <span>Version vérifiée {item.referenceVersion}</span> : null}
+                </div>
+                {item.action ? <Link className="btn btn-sm" to={item.action.href}>{item.action.label}</Link> : null}
+              </div>
+            ))}
+          </div>
+        ) : null}
 
         {/* ── KPI financiers — première ligne ── */}
         <div className="dash-section-label">Financier</div>
@@ -180,4 +206,18 @@ function demoSuccessMessage(datasetId: string | null) {
   } catch {
     return "Dataset chargé.";
   }
+}
+
+function certaintyLabel(status: string) {
+  if (status === "verified") return "Vérifié";
+  if (status === "blocked") return "Bloqué";
+  if (status === "not_applicable") return "Non applicable";
+  return "À relire";
+}
+
+function certaintyTone(status: string) {
+  if (status === "verified") return "ok" as const;
+  if (status === "blocked") return "error" as const;
+  if (status === "not_applicable") return "info" as const;
+  return "warn" as const;
 }

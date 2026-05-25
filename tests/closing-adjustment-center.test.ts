@@ -5,10 +5,20 @@ import {
   corporateTaxProposal,
   depreciationProposal,
   recalculateDraft,
+  type ClosingAccountRoles,
   type ClosingAdjustmentLine,
   type ClosingAdjustmentSummary,
 } from "../app/modules/closing-adjustments/closing-adjustment-center.server";
 import type { AccountingIssueSummary } from "../app/modules/accounting-issues/accounting-issue-tracker.server";
+import { FixedAssetReferenceCenter } from "../app/modules/official-references/fixed-asset-reference-center.server";
+
+const roles: ClosingAccountRoles = {
+  prepaidExpense: { account: "486", label: "Charges constatées d'avance" },
+  corporateTaxExpense: { account: "695", label: "Impôts sur les bénéfices" },
+  corporateTaxPayable: { account: "444", label: "État - impôts sur les bénéfices" },
+  fixedAssetExpense: { account: "68112", label: "Dotations aux amortissements corporels" },
+  fixedAssetAmortization: { account: "2818", label: "Amortissements du matériel de bureau" },
+};
 
 describe("ClosingAdjustmentCenter", () => {
   it("proposes balanced CCA entries for AXA and Canva", () => {
@@ -17,13 +27,13 @@ describe("ClosingAdjustmentCenter", () => {
       label: "ASSURANCE RC PRO ANNUELLE",
       amount: "-540",
       account: "6161",
-    }));
+    }), roles);
     const [canva] = ccaProposal(issue({
       issueKey: "ANNUAL_CHARGE_CCA:transaction:canva",
       label: "CANVA PRO ANNUAL",
       amount: "-35.9",
       account: "6135",
-    }));
+    }), roles);
 
     expect(axa).toMatchObject({ kind: "CCA", proposalKey: "CCA:ANNUAL_CHARGE_CCA:transaction:axa" });
     expect(axa.lines).toEqual([
@@ -35,25 +45,26 @@ describe("ClosingAdjustmentCenter", () => {
     expectBalanced(canva.lines);
   });
 
-  it("proposes a balanced MacBook depreciation entry", () => {
+  it("proposes a balanced MacBook depreciation entry", async () => {
+    const fixedAssetReference = await new FixedAssetReferenceCenter().getDefaultFamily();
     const [proposal] = depreciationProposal(issue({
       issueKey: "FIXED_ASSET_CANDIDATE:transaction:macbook",
       label: "MACBOOK PRO 14 M3",
       amount: "-1899",
       account: "2183",
       date: "2025-02-10",
-    }), new Date("2025-12-31"));
+    }), new Date("2025-12-31"), roles);
 
     expect(proposal).toMatchObject({ kind: "DEPRECIATION" });
     expect(proposal.lines).toEqual([
-      { account: "68112", accountLabel: "Dotations aux amortissements corporels", debit: 563.89, credit: 0 },
-      { account: "28183", accountLabel: "Amortissements du matériel de bureau", debit: 0, credit: 563.89 },
+      { account: fixedAssetReference.expenseAccount, accountLabel: "Dotations aux amortissements corporels", debit: 563.89, credit: 0 },
+      { account: fixedAssetReference.amortizationAccount, accountLabel: "Amortissements du matériel de bureau", debit: 0, credit: 563.89 },
     ]);
     expectBalanced(proposal.lines);
   });
 
   it("proposes corporate tax from positive result before tax", () => {
-    const [proposal] = corporateTaxProposal("fy_2025", 22150);
+    const [proposal] = corporateTaxProposal("fy_2025", 22150, roles);
 
     expect(proposal).toMatchObject({ kind: "CORPORATE_TAX", issueKey: "CORPORATE_TAX:fiscal-year:fy_2025" });
     expect(proposal.lines).toEqual([
@@ -69,11 +80,11 @@ describe("ClosingAdjustmentCenter", () => {
       label: "ASSURANCE RC PRO ANNUELLE",
       amount: "-540",
       account: "6161",
-    }));
+    }), roles);
     const recalculated = recalculateDraft(summary({
       ...draft,
       assumptions: { ...draft.assumptions, nextExerciseAmount: 55.25, period: "2026-01-01/2026-02-10" },
-    }), new Date("2025-12-31"), 0);
+    }), new Date("2025-12-31"), 0, roles);
 
     expect(recalculated.calculation).toMatchObject({ nextExerciseAmount: 55.25, period: "2026-01-01/2026-02-10" });
     expect(recalculated.lines).toEqual([
@@ -90,19 +101,19 @@ describe("ClosingAdjustmentCenter", () => {
       amount: "-1899",
       account: "2183",
       date: "2025-02-10",
-    }), new Date("2025-12-31"));
+    }), new Date("2025-12-31"), roles);
     const recalculated = recalculateDraft(summary({
       ...draft,
       assumptions: { ...draft.assumptions, usefulLifeYears: 5 },
-    }), new Date("2025-12-31"), 0);
+    }), new Date("2025-12-31"), 0, roles);
 
     expect(recalculated.calculation.depreciationAmount).toBe(338.18);
     expectBalanced(recalculated.lines);
   });
 
   it("recalculates corporate tax from the current result before tax", () => {
-    const [draft] = corporateTaxProposal("fy_2025", 22150);
-    const recalculated = recalculateDraft(summary(draft), new Date("2025-12-31"), 20000);
+    const [draft] = corporateTaxProposal("fy_2025", 22150, roles);
+    const recalculated = recalculateDraft(summary(draft), new Date("2025-12-31"), 20000, roles);
 
     expect(recalculated.calculation).toMatchObject({ resultBeforeTax: 20000, tax: 3000 });
     expect(recalculated.assumptions).toMatchObject({ resultBeforeTax: 20000 });

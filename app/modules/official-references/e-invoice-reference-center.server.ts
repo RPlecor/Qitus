@@ -4,23 +4,23 @@ import type { EInvoiceReferencePayload } from "./official-reference-data.server"
 export class EInvoiceReferenceCenter {
   constructor(private readonly references = new OfficialReferenceCenter()) {}
 
-  getActiveReference() {
-    return this.references.getActiveReference<EInvoiceReferencePayload>("e_invoice");
+  async getActiveReference() {
+    return this.references.getActiveReferenceAsync<EInvoiceReferencePayload>("e_invoice");
   }
 
-  assertReady() {
-    this.references.assertReferenceReady("process_e_invoice");
+  async assertReady() {
+    await this.references.assertReferenceReadyAsync("process_e_invoice");
   }
 
-  listFormats() {
-    return [...this.getActiveReference().payloadJson.formats];
+  async listFormats() {
+    return [...(await this.getActiveReference()).payloadJson.formats];
   }
 
-  isSupportedFormat(format: string | null | undefined) {
-    return Boolean(format && this.getActiveReference().payloadJson.formats.some((item) => item.key === format));
+  async isSupportedFormat(format: string | null | undefined) {
+    return Boolean(format && (await this.getActiveReference()).payloadJson.formats.some((item) => item.key === format));
   }
 
-  getRequiredFields() {
-    return [...this.getActiveReference().payloadJson.requiredFields];
+  async getRequiredFields() {
+    return [...(await this.getActiveReference()).payloadJson.requiredFields];
   }
 }

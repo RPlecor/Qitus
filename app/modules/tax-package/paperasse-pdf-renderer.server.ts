@@ -24,10 +24,10 @@ export class PaperassePdfRenderer {
     const execution = await this.executionCenter.prepareExecution(input);
     try {
       await mkdir(execution.outputPath, { recursive: true });
-      await writeFile(path.join(execution.outputPath, "liasse-fiscale-2033.md"), input.sourceMarkdown, "utf8");
+      await writeFile(path.join(execution.outputPath, "pre-liasse-fiscale.md"), input.sourceMarkdown, "utf8");
       await this.executionCenter.runDocumentScript(execution, "pdfs");
       const pdfDir = path.join(execution.outputPath, "pdf");
-      const filename = (await readdir(pdfDir)).find((candidate) => candidate === "liasse-fiscale-2033.pdf");
+      const filename = (await readdir(pdfDir)).find((candidate) => candidate === "pre-liasse-fiscale.pdf" || candidate === "liasse-fiscale-2033.pdf");
       if (!filename) return { status: "failed", userMessage: "Le script PDF n'a pas produit la liasse fiscale." };
       const pdfPath = path.join(pdfDir, filename);
       const stats = await stat(pdfPath);

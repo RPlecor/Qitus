@@ -38,9 +38,13 @@ export class ExpertDossierExportVerifier {
     if (!fec.fec) issues.push(issue("FEC_MISSING", "blocking", "FEC absent du dossier exporté."));
     if (fec.status && fec.status !== "ready") issues.push(issue("FEC_NOT_READY", "blocking", "FEC non prêt selon le précontrôle."));
     const taxPackage = asRecord(data.taxPackage);
-    if (!taxPackage.sourceDocumentId && !taxPackage.sourceFilename) issues.push(issue("TAX_PACKAGE_SOURCE_MISSING", "blocking", "Source structurée de liasse absente."));
+    if (!taxPackage.sourceDocumentId && !taxPackage.sourceFilename) issues.push(issue("TAX_PACKAGE_SOURCE_MISSING", "blocking", "Liasse fiscale CERFA absente."));
+    const completeness = asRecord(taxPackage.completeness);
+    if (Number(completeness.blocked ?? 0) > 0) issues.push(issue("TAX_PACKAGE_CERFA_BLOCKED", "blocking", "Liasse fiscale CERFA bloquée."));
     const evidenceBundle = asRecord(data.evidenceBundle);
     if (evidenceBundle.error) issues.push(issue("EVIDENCE_BUNDLE_UNAVAILABLE", "warning", String(evidenceBundle.error)));
+    const evidenceTaxPackage = asRecord(evidenceBundle.taxPackage);
+    if (evidenceTaxPackage && !evidenceBundle.error && !evidenceTaxPackage.draft) issues.push(issue("TAX_PACKAGE_CERFA_MANIFEST_MISSING", "blocking", "Manifeste CERFA case par case absent du dossier de preuves."));
     const reviewRuns = Array.isArray(data.expertReview) ? data.expertReview : [];
     const signedOff = reviewRuns.some((run) => asRecord(run).status === "SIGNED_OFF");
     if (!signedOff) issues.push(issue("EXPERT_SIGNOFF_MISSING", "blocking", "Validation finale expert-comptable absente."));

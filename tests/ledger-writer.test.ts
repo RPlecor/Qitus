@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { writeJournalEntries } from "../app/modules/ledger/ledger-writer";
+import { buildOfficialReferencePacks, type VatReferencePayload } from "../app/modules/official-references/official-reference-data.server";
+import { vatAccountLabels } from "../app/modules/official-references/vat-reference-center.server";
 
 describe("LedgerWriter", () => {
   it("creates balanced double-entry records", () => {
+    const vatAccounts = (buildOfficialReferencePacks().vat.payloadJson as VatReferencePayload).accounts;
     const entries = writeJournalEntries({
       transactions: [{
         id: "txn_001",
@@ -23,6 +26,7 @@ describe("LedgerWriter", () => {
         confidence: "HIGH",
         source: "VENDOR_LOOKUP",
       }],
+      vatReference: { accounts: vatAccounts, labels: vatAccountLabels(vatAccounts) },
     });
 
     expect(entries).toHaveLength(1);

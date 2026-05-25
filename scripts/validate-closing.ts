@@ -14,7 +14,7 @@ type ClosingProposal = {
 async function main() {
   try {
     await resetDemo("closing_beta");
-    await pageContains("/cloture/od", ["OD de clôture", "Workpapers", "FNP", "Variation de stock"]);
+    await pageContains("/cloture/od", ["OD de clôture", "Feuilles de travail", "FNP", "Variation de stock"]);
 
     const workpapers = await requestJson<{ workpapers: Array<{ kind: string; status: string }> }>("/api/closing-workpapers");
     check(workpapers.workpapers.some((workpaper) => workpaper.kind === "FNP" && workpaper.status === "READY"), "closing_beta doit charger un workpaper FNP prêt.");
@@ -42,7 +42,7 @@ async function main() {
     check(readiness.workpapers.proposals.approved >= 1, "Le readiness doit compter l'OD validée.");
 
     await pageContains("/couverture/closing", ["Clôture"]);
-    await pageContains("/cloture/CLOSING_ADJUSTMENTS", ["OD validées", "Workpapers"]);
+    await pageContains("/cloture/CLOSING_ADJUSTMENTS", ["OD validées", "Feuilles de travail"]);
 
     console.log(`Validation closing OK sur ${baseUrl}`);
   } finally {

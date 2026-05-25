@@ -1,5 +1,6 @@
 import { json, redirect, type ActionFunctionArgs } from "@remix-run/node";
 import { ActivityLogCenter } from "~/modules/activity-log/activity-log-center.server";
+import { AccountingReferencePolicyCenter } from "~/modules/accounting-reference/accounting-reference-policy-center.server";
 import { AccountingReviewCenter } from "~/modules/accounting-review/accounting-review-center.server";
 import { assertFiscalYearMutable } from "~/modules/annual-closing/annual-closing-center.server";
 import { requireCompanyWorkspace } from "~/modules/company-workspace/company-workspace.server";
@@ -22,20 +23,25 @@ export async function action(args: ActionFunctionArgs) {
   const queue = new TransactionReviewQueue();
   const nextReview = await queue.getNextReview(workspace, String(params.id), filterState);
   const form = await request.formData();
+  const accountPolicy = new AccountingReferencePolicyCenter();
+  const [bankRole, suspenseRole] = await Promise.all([
+    accountPolicy.getAccountRole("bank"),
+    accountPolicy.getAccountRole("suspense"),
+  ]);
   const result = await new TransactionCorrectionFlow().confirmCategorization({
     transactionId: String(params.id),
-    accountDebit: String(form.get("accountDebit") || "471"),
-    accountCredit: String(form.get("accountCredit") || "5121"),
+    accountDebit: String(form.get("accountDebit") || suspenseRole.account),
+    accountCredit: String(form.get("accountCredit") || bankRole.account),
     vatRate: normalizeVatRate(form.get("vatRate")),
     vatOperationNature: normalizeVatOperationNature(form.get("vatOperationNature")),
     ecritureLabel: String(form.get("ecritureLabel") || "Transaction corrigée"),
     learn: Boolean(form.get("learn")),
   });
   if (Boolean(form.get("learn"))) {
-    const amount = Number(result.categorization.accountDebit === "5121" ? 1 : -1);
+    const amount = Number(result.categorization.accountDebit === bankRole.account ? 1 : -1);
     await new CorrectionRuleCenter().createRuleFromTransaction(workspace, {
       transactionId: String(params.id),
-      preferredAccount: amount >= 0 ? result.categorization.accountCredit ?? "471" : result.categorization.accountDebit ?? "471",
+      preferredAccount: amount >= 0 ? result.categorization.accountCredit ?? suspenseRole.account : result.categorization.accountDebit ?? suspenseRole.account,
       preferredAccountLabel: amount >= 0 ? result.categorization.accountCreditLabel : result.categorization.accountDebitLabel,
       preferredVatRate: result.categorization.vatRate?.toString() ?? null,
       vatOperationNature: result.categorization.vatOperationNature,

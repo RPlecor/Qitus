@@ -11,19 +11,20 @@ import { getRuntimeConfig } from "~/modules/runtime-config.server";
 
 export async function loader(args: LoaderFunctionArgs) {
   const workspace = await requireCompanyWorkspace(args);
-  const [packs, snapshots, status, references] = await Promise.all([
+  const [packs, snapshots, status, references, referencePacks] = await Promise.all([
     new AccountingRulePackCenter().listRulePacks(),
     new RegulatorySourceCenter().listSourceSnapshots(),
     new RuleApplicationWorkflow().getRuleUpdateStatus(workspace),
-    Promise.resolve(new OfficialReferenceCenter().getReferenceReadiness()),
+    new OfficialReferenceCenter().getReferenceReadinessAsync(),
+    new OfficialReferenceCenter().listReferencePacks(),
   ]);
   const chart = new ChartOfAccountsCenter().validateChartIntegrity();
   const config = getRuntimeConfig();
-  return json({ packs, snapshots, status, chart, references, canSync: config.authMode === "dev" && process.env.NODE_ENV !== "production" });
+  return json({ packs, snapshots, status, chart, references, referencePacks, canSync: config.authMode === "dev" && process.env.NODE_ENV !== "production" });
 }
 
 export default function AccountingRulesPage() {
-  const { packs, snapshots, status, chart, references, canSync } = useLoaderData<typeof loader>();
+  const { packs, snapshots, status, chart, references, referencePacks, canSync } = useLoaderData<typeof loader>();
   const activePack = status.activePack;
   const impact = status.impact as null | { affectedTransactionCount?: number; conflictCount?: number; protectedTransactionCount?: number; existingDataRequiresExplicitAction?: boolean };
 
@@ -85,11 +86,37 @@ export default function AccountingRulesPage() {
                     <td>{reference.version}</td>
                     <td><a href={reference.sourceUrl} target="_blank" rel="noreferrer">{referenceSourceLabel(reference.source)}</a></td>
                     <td>{formatDateOnly(reference.effectiveFrom)}</td>
-                    <td>
+                    <td className="row gap">
                       <Form method="post" action={`/api/references/${reference.kind}/validate`}>
                         <button className="btn btn-sm" type="submit">Vérifier</button>
                       </Form>
+                      {canSync ? pendingPackFor(reference.kind, referencePacks) ? (
+                        <Form method="post" action={`/api/references/${reference.kind}/activate`}>
+                          <input type="hidden" name="version" value={pendingPackFor(reference.kind, referencePacks)?.version} />
+                          <button className="btn btn-sm" type="submit">Activer la version validée</button>
+                        </Form>
+                      ) : null : null}
                     </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </TableShell>
+        </section>
+
+        <section className="panel">
+          <h2>Versions de référentiels</h2>
+          <TableShell>
+            <table className="tbl">
+              <thead><tr><th>Référentiel</th><th>Version</th><th>État</th><th>Source</th><th>Vérifié le</th></tr></thead>
+              <tbody>
+                {referencePacks.map((pack) => (
+                  <tr key={`${pack.kind}-${pack.version}`}>
+                    <td>{references.items.find((item) => item.kind === pack.kind)?.label ?? "Référentiel Qitus"}</td>
+                    <td>{pack.version}</td>
+                    <td><StatusPill label={officialPackStatusLabel(pack.status)} tone={pack.status === "ACTIVE" ? "ok" : pack.status === "NEEDS_REVIEW" ? "warn" : pack.status === "BLOCKED" ? "error" : "neutral"} /></td>
+                    <td>{referenceSourceLabel(pack.source)}</td>
+                    <td>{formatDateTime(pack.retrievedAt)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -178,6 +205,18 @@ function referenceStatusLabel(status: string) {
   if (status === "ready") return "Validé";
   if (status === "warning") return "À surveiller";
   return "Bloqué";
+}
+
+function officialPackStatusLabel(status: string) {
+  if (status === "ACTIVE") return "Actif";
+  if (status === "ARCHIVED") return "Archivé";
+  if (status === "NEEDS_REVIEW") return "À valider";
+  if (status === "BLOCKED") return "Bloqué";
+  return "Brouillon";
+}
+
+function pendingPackFor(kind: string, packs: Array<{ kind: string; status: string; version: string }>) {
+  return packs.find((pack) => pack.kind === kind && pack.status === "NEEDS_REVIEW") ?? null;
 }
 
 function ruleSetName(pack: { version?: string | null; activatedAt?: string | Date | null } | null | undefined) {

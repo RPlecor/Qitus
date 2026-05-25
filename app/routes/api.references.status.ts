@@ -4,5 +4,5 @@ import { OfficialReferenceCenter } from "~/modules/official-references/official-
 
 export async function loader(args: LoaderFunctionArgs) {
   await requireCompanyWorkspace(args);
-  return json(new OfficialReferenceCenter().getReferenceReadiness());
+  return json(await new OfficialReferenceCenter().getReferenceReadinessAsync());
 }

@@ -3,6 +3,7 @@ import path from "node:path";
 import { promisify } from "node:util";
 import { Prisma } from "@prisma/client";
 import { ActivityLogCenter } from "../activity-log/activity-log-center.server";
+import { AccountingReferencePolicyCenter } from "../accounting-reference/accounting-reference-policy-center.server";
 import type { CompanyWorkspace } from "../company-workspace/company-workspace.server";
 import { prisma } from "../db.server";
 import { ImportOrchestrator } from "../import-orchestrator/import-orchestrator.server";
@@ -192,14 +193,19 @@ export class ConnectorSyncCenter {
       ? await prisma.bankAccount.findFirst({ where: { companyId: workspace.company.id, iban } })
       : await prisma.bankAccount.findFirst({ where: { companyId: workspace.company.id, bank: "Qonto", label: account.name } });
     if (existing) return existing.id;
+    const policy = new AccountingReferencePolicyCenter();
+    const [bank, bankFec] = await Promise.all([
+      policy.getAccountRole("bank"),
+      policy.getAccountRole("bank_fec"),
+    ]);
     const created = await prisma.bankAccount.create({
       data: {
         companyId: workspace.company.id,
         bank: "Qonto",
         label: account.name,
         iban,
-        pcgAccount: "5121",
-        fecAccount: "51211",
+        pcgAccount: bank.account,
+        fecAccount: bankFec.account,
       },
     });
     return created.id;

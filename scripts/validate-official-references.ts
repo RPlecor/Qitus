@@ -8,7 +8,8 @@ const kinds: OfficialReferenceKind[] = requested
   : [...OFFICIAL_REFERENCE_KINDS];
 
 const center = new OfficialReferenceCenter();
-const results = kinds.map((kind) => center.validateReferencePack(kind));
+await center.bootstrapEmbeddedReferences();
+const results = await Promise.all(kinds.map((kind) => center.validateReferencePackAsync(kind)));
 const failed = results.filter((result) => !result.ok);
 
 for (const result of results) {

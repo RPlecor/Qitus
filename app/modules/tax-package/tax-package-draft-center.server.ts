@@ -7,8 +7,8 @@ import { prisma } from "../db.server";
 import { JournalExplorer } from "../journal/journal-explorer.server";
 import { LocalDocumentStorageAdapter, type DocumentStorageAdapter } from "../documents/document-storage-adapter.server";
 import { toPaperasseCompany } from "../documents/document-generation-center.server";
-import { VatLedgerPolicy } from "../ledger/vat-ledger-policy";
 import { PaperassePdfRenderer } from "./paperasse-pdf-renderer.server";
+import { TaxPackageCerfaCenter, type TaxPackageCompletenessSummary } from "./tax-package-cerfa-center.server";
 import { TaxPackageTemplateRenderer } from "./tax-package-template-renderer.server";
 
 export type TaxPackageSummary = {
@@ -16,21 +16,23 @@ export type TaxPackageSummary = {
   filename: string;
   pdfDocumentId: string | null;
   pdfFilename: string | null;
-  status: "missing" | "ready";
+  status: "missing" | "ready" | "to_complete" | "blocked";
   generatedAt: string | null;
+  packageCode: string | null;
+  completeness: TaxPackageCompletenessSummary | null;
 };
 
 export class TaxPackageDraftCenter {
   constructor(
     private readonly journal = new JournalExplorer(),
     private readonly storage: DocumentStorageAdapter = new LocalDocumentStorageAdapter(),
-    private readonly vatPolicy = new VatLedgerPolicy(),
     private readonly renderer = new TaxPackageTemplateRenderer(),
-    private readonly pdfRenderer = new PaperassePdfRenderer()
+    private readonly pdfRenderer = new PaperassePdfRenderer(),
+    private readonly cerfa = new TaxPackageCerfaCenter()
   ) {}
 
   async getTaxPackageSummary(workspace: CompanyWorkspace): Promise<TaxPackageSummary> {
-    const [document, pdfDocument] = await Promise.all([
+    const [document, pdfDocument, completeness] = await Promise.all([
       prisma.document.findFirst({
         where: { fiscalYearId: workspace.fiscalYear.id, type: DocumentType.LIASSE_FISCALE, format: { in: ["md", "html"] } },
         orderBy: { generatedAt: "desc" },
@@ -39,21 +41,24 @@ export class TaxPackageDraftCenter {
         where: { fiscalYearId: workspace.fiscalYear.id, type: DocumentType.LIASSE_FISCALE, format: "pdf" },
         orderBy: { generatedAt: "desc" },
       }),
+      this.cerfa.buildDraft(workspace).catch(() => null),
     ]);
+    const status = !document ? "missing" : completeness?.summary.status === "blocked" ? "blocked" : completeness?.summary.status === "to_complete" ? "to_complete" : "ready";
     return {
       documentId: document?.id ?? null,
-      filename: document?.filename ?? `liasse-fiscale-${workspace.fiscalYear.endDate.getFullYear()}-brouillon.md`,
+      filename: document?.filename ?? `liasse-fiscale-${workspace.fiscalYear.endDate.getFullYear()}-cerfa.md`,
       pdfDocumentId: pdfDocument?.id ?? null,
       pdfFilename: pdfDocument?.filename ?? null,
-      status: document ? "ready" : "missing",
+      status,
       generatedAt: document?.generatedAt.toISOString() ?? null,
+      packageCode: completeness?.packageCode ?? null,
+      completeness: completeness?.summary ?? null,
     };
   }
 
   async generateTaxPackageDraft(workspace: CompanyWorkspace, options: { generatePdf?: boolean } = {}) {
-    const [journal, vat, bankAccounts, entries] = await Promise.all([
+    const [journal, bankAccounts, entries] = await Promise.all([
       this.journal.summarizeJournal(workspace),
-      this.vatPolicy.summarizeVatForFiscalYear(workspace),
       prisma.bankAccount.findMany({ where: { companyId: workspace.company.id } }),
       prisma.journalEntry.findMany({
         where: { fiscalYearId: workspace.fiscalYear.id },
@@ -61,8 +66,9 @@ export class TaxPackageDraftCenter {
         orderBy: { num: "asc" },
       }),
     ]);
-    const filename = `liasse-fiscale-${workspace.fiscalYear.endDate.getFullYear()}-brouillon.md`;
-    const source = this.renderer.renderStructuredSource({ workspace, journal, vat });
+    const cerfa = await this.cerfa.buildDraft(workspace);
+    const filename = `liasse-fiscale-${workspace.fiscalYear.endDate.getFullYear()}-${cerfa.packageCode.toLowerCase().replace(/[^a-z0-9]+/g, "-")}.md`;
+    const source = this.renderer.renderCerfaDraft(cerfa);
     const storageKey = `${workspace.company.id}/${workspace.fiscalYear.id}/tax-package/${randomUUID()}-${filename}`;
     const sourcePath = path.join(process.cwd(), "tmp", "tax-package", storageKey.replace(/\//g, "_"));
     await mkdir(path.dirname(sourcePath), { recursive: true });
@@ -90,8 +96,8 @@ export class TaxPackageDraftCenter {
         filename,
         sizeBytes: stored.sizeBytes,
         entriesCount: journal.entriesCount,
-        generatedBy: "tax-package-template-renderer",
-        scriptVersion: "phase-8-5-structured-source",
+        generatedBy: "Qitus",
+        scriptVersion: `tax-package-cerfa-${cerfa.reference.version}`,
       },
     });
     created.push(document);
@@ -143,6 +149,7 @@ export class TaxPackageDraftCenter {
       filename: document.filename,
       status: "ready" as const,
       generatedAt: document.generatedAt.toISOString(),
+      cerfa,
       documents: created.map((doc) => ({
         id: doc.id,
         type: doc.type,

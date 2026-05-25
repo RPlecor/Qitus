@@ -57,7 +57,7 @@ export default function Imports() {
         <div className="sec-head"><h2>Historique</h2></div>
         <TableShell>
         <table className="tbl">
-          <thead><tr><th>Date</th><th>Fichier</th><th>Format</th><th>Étape</th><th>Progression</th><th className="r">Lignes</th><th className="r">Catégorisées</th><th className="r">À vérifier</th><th>Durée</th><th>Statut</th><th>Actions</th></tr></thead>
+          <thead><tr><th>Date</th><th>Fichier</th><th>Format</th><th>Étape</th><th>Progression</th><th className="r">Lignes</th><th className="r">Catégorisées</th><th className="r">À vérifier</th><th className="r">À relire</th><th>Durée</th><th>Statut</th><th>Actions</th></tr></thead>
           <tbody>
             {imports.map((importRow) => (
               <tr key={importRow.id}>
@@ -74,6 +74,7 @@ export default function Imports() {
                 <td className="r mono">{importRow.parsedRows}/{importRow.totalRows}</td>
                 <td className="r mono">{importRow.categorizedRows}</td>
                 <td className="r mono">{importRow.reviewRows}</td>
+                <td className="r mono">{importRow.lightReviewRows}</td>
                 <td className="mono">{formatDuration(importRow.durationMs)}</td>
                 <td><StatusBadge status={toBadgeStatus(importRow.statusKind)} /></td>
                 <td>
@@ -101,7 +102,7 @@ export default function Imports() {
               </tr>
             ))}
             {imports.length === 0 ? (
-              <tr><td colSpan={11} className="sub">Aucun import lancé pour cet exercice.</td></tr>
+              <tr><td colSpan={12} className="sub">Aucun import lancé pour cet exercice.</td></tr>
             ) : null}
           </tbody>
         </table>

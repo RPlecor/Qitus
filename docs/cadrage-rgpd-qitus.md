@@ -123,8 +123,13 @@ Clerk est utilisable pour la pré-beta et la beta fermée, mais constitue un ris
 | `addressStreet/Postal/City` | Company | Coordonnées entreprise | Faible à moyenne (EI = domicile) | Contrat | Durée du contrat |
 | `managerFirstName/LastName` | Company | Identifiant direct | Moyenne | Contrat | Durée du contrat + 3 ans |
 | `managerCivility/Role` | Company | Identifiant indirect | Faible | Contrat | Durée du contrat |
+| `hasAccountant` | Company | Information d'organisation | Faible | Contrat + intérêt légitime | Durée du contrat |
+| `accountantEmail` | Company | Identifiant direct d'un tiers professionnel | Moyenne | Contrat + intérêt légitime | Durée du contrat + 3 ans |
+| `revenueEstimate` | Company | Estimation économique déclarative | Moyenne | Contrat + intérêt légitime | Durée du contrat |
 
 **Point d'attention EI :** pour une entreprise individuelle, l'adresse de l'entreprise peut être le domicile personnel du dirigeant. Dans ce cas, la donnée est de sensibilité élevée (donnée de localisation du domicile).
+
+**Profil de catégorisation :** `hasAccountant`, `accountantEmail` et `revenueEstimate` servent à orienter l'expérience produit et la prudence de catégorisation. Ils ne sont pas envoyés à Clerk. Le tier de catégorisation dérivé est une aide interne Qitus, corrigeable indirectement via le profil entreprise.
 
 ### 2.3 Données financières et comptables
 
@@ -174,7 +179,7 @@ Clerk est utilisable pour la pré-beta et la beta fermée, mais constitue un ris
 | Conservation des factures | Obligation légale (6.1.c) — art. 289 CGI, 6 ans (TVA) + 10 ans (C.com) | Factures entrantes, pièces | Néant |
 | Préparation du dossier EC | Contrat (6.1.b) | Dossier, snapshot, documents | EC via lien partagé |
 | Partage du dossier au cabinet | Intérêt légitime (6.1.f) + action utilisateur explicite | Dossier, commentaires EC | EC identifié |
-| Suggestions IA de catégorisation | Intérêt légitime (6.1.f) | Libellés de transactions (sans identifiant utilisateur) | Anthropic API |
+| Catégorisation IA transactionnelle | Intérêt légitime (6.1.f) | Libellés de transactions, contreparties, profil fiscal minimal, tier de catégorisation | Provider IA configuré |
 | Assistant Qitus P0 | Intérêt légitime (6.1.f) + contrat (assistance produit) | Question utilisateur, sources d'aide Qitus, résumé dossier redigé | OpenAI si `CHAT_PROVIDER=openai` |
 | Facturation de l'abonnement | Contrat (6.1.b) | email, stripeCustomerId | Stripe |
 | Audit et traçabilité | Intérêt légitime (6.1.f) | Actions utilisateur, métadonnées | Néant (interne) |
@@ -213,7 +218,7 @@ Clerk est utilisable pour la pré-beta et la beta fermée, mais constitue un ris
 | **Limitation** (art. 18) | Oui | Soft-delete (marque `deletedAt`, données conservées mais inaccessibles) | Existant via soft-delete |
 | **Portabilité** (art. 20) | Oui | Export FEC (format normé), export pièces, export dossier | Partiellement existant (FEC) |
 | **Opposition** (art. 21) | Limité | Non applicable au traitement contractuel. Applicable aux suggestions IA (intérêt légitime). | À implémenter pour l'IA |
-| **Non-profilage** (art. 22) | Oui | Aucune décision automatisée avec effet juridique. Les catégorisations IA sont des suggestions. | Conforme by design |
+| **Non-profilage** (art. 22) | Oui | Aucune décision automatisée avec effet juridique. Les catégorisations IA peuvent être appliquées automatiquement sur des cas courants, mais restent contractuelles, explicables, corrigeables et sans verrouillage utilisateur. | Conforme by design |
 
 ### 4.2 Limites à l'effacement
 
@@ -364,7 +369,7 @@ La politique de confidentialité doit être accessible sur `/privacy` ou `/polit
 | Onboarding entreprise | Si données EI (adresse = domicile) : mention "Votre adresse peut être votre domicile. Elle est protégée et n'est jamais partagée sans votre accord." |
 | Upload de pièces | "Vos justificatifs sont stockés de manière sécurisée et chiffrée." |
 | Partage dossier EC | "Le lien partagé donne un accès en lecture seule à votre dossier comptable. Il expire automatiquement. Vous pouvez le révoquer à tout moment." |
-| Suggestions IA | "Qitus utilise l'IA pour vous proposer des catégorisations. Aucune écriture n'est créée sans votre validation. Vous pouvez désactiver les suggestions IA dans vos paramètres." |
+| Catégorisation IA | "Qitus utilise l'IA pour classer certaines transactions. Les cas courants peuvent être appliqués automatiquement selon votre profil, mais restent expliqués, traçables et corrigeables. Les cas sensibles demandent une vérification." |
 
 ---
 

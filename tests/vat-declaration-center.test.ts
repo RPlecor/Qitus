@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { renderVatDeclarationSource, resolveDeclarationType } from "../app/modules/vat/vat-declaration-center.server";
 import type { CompanyWorkspace } from "../app/modules/company-workspace/company-workspace.server";
 import type { VatPosition } from "../app/modules/vat/vat-position-center.server";
+import { buildOfficialReferencePacks, type VatReferencePayload } from "../app/modules/official-references/official-reference-data.server";
 
 describe("VatDeclarationCenter", () => {
   it("chooses CA12 for réel simplifié and CA3 for réel normal", () => {
@@ -10,9 +11,13 @@ describe("VatDeclarationCenter", () => {
   });
 
   it("renders a structured local draft with amounts and controls", () => {
-    const source = renderVatDeclarationSource(workspace({ vatRegime: "REEL_SIMPLIFIE" }), "CA12", position(), [
-      { severity: "warning", title: "Déclaration TVA absente", detail: "Générer un brouillon." },
-    ]);
+    const source = renderVatDeclarationSource(
+      workspace({ vatRegime: "REEL_SIMPLIFIE" }),
+      "CA12",
+      position(),
+      [{ severity: "warning", title: "Déclaration TVA absente", detail: "Générer un brouillon." }],
+      (buildOfficialReferencePacks().vat.payloadJson as VatReferencePayload).accounts,
+    );
 
     expect(source).toContain("# Déclaration TVA CA12 - brouillon");
     expect(source).toContain("Brouillon local - non télétransmis");

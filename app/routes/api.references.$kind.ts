@@ -9,8 +9,10 @@ export async function loader(args: LoaderFunctionArgs) {
   const kind = args.params.kind;
   if (!isOfficialReferenceKind(kind)) throw new ExpectedRouteError("Référentiel Qitus introuvable.", 404);
   const center = new OfficialReferenceCenter();
+  const packs = await center.listReferencePacks(kind);
   return json({
-    reference: center.getActiveReference(kind),
-    validation: center.validateReferencePack(kind),
+    reference: await center.getActiveReferenceAsync(kind),
+    validation: await center.validateReferencePackAsync(kind),
+    packs,
   });
 }

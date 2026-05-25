@@ -30,11 +30,44 @@ describe("CategorizationTrustPolicy", () => {
     });
   });
 
-  it("forces AI suggestions into user review even with high confidence", () => {
+  it("keeps AI suggestions in review without an auto-apply decision", () => {
     expect(new CategorizationTrustPolicy().classifySuggestion({ ...baseSuggestion, source: "AI" }, validated)).toMatchObject({
       writable: false,
       reviewRequired: true,
-      reasons: ["Suggestion IA à valider avant création d'écriture."],
+      categorizationStatus: "NEEDS_REVIEW",
+      reasons: ["Suggestion IA à relire avant création d'écriture."],
+    });
+  });
+
+  it("allows auto-applied AI suggestions to write without marking them confirmed", () => {
+    expect(new CategorizationTrustPolicy().classifySuggestion({ ...baseSuggestion, source: "AI" }, validated, {
+      autoApplyDecision: {
+        status: "AUTO_APPLIED",
+        writable: true,
+        userFacingResolution: "auto_applied",
+        reasons: ["Même compte que l'historique fournisseur."],
+        audit: {
+          supplierHistory: { supplierKey: "orange", coherentMatches: 2, contradictoryUserDecisions: 0, medianAmount: 42 },
+          pcg: "validated",
+          vat: "simple",
+          amountCoherence: "coherent",
+          exclusions: [],
+        },
+      },
+    })).toMatchObject({
+      writable: true,
+      reviewRequired: false,
+      categorizationStatus: "AUTO_APPLIED",
+      userFacingResolution: "auto_applied",
+    });
+  });
+
+  it("keeps contradictory learned rules in light review", () => {
+    expect(new CategorizationTrustPolicy().classifySuggestion({ ...baseSuggestion, source: "CORRECTION_RULE", requiresLightReview: true }, validated)).toMatchObject({
+      writable: false,
+      lightReviewRequired: true,
+      categorizationStatus: "REVIEW_LIGHT",
+      userFacingResolution: "to_review_light",
     });
   });
 });

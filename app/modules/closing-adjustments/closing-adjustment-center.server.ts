@@ -1,11 +1,20 @@
 import { type ClosingAdjustmentKind, type ClosingAdjustmentStatus, Prisma } from "@prisma/client";
 import Decimal from "decimal.js";
 import { ActivityLogCenter } from "../activity-log/activity-log-center.server";
+import { AccountingReferencePolicyCenter } from "../accounting-reference/accounting-reference-policy-center.server";
 import { AccountingIssueTracker, type AccountingIssueSummary } from "../accounting-issues/accounting-issue-tracker.server";
 import type { CompanyWorkspace } from "../company-workspace/company-workspace.server";
 import { prisma } from "../db.server";
 import { ExpectedRouteError } from "../route-errors.server";
 import { generalAssumptionsForDraft, recalculateGeneralClosingDraft } from "../closing-workpapers/general-closing-calculators.server";
+
+export type ClosingAccountRoles = {
+  prepaidExpense: { account: string; label: string };
+  corporateTaxExpense: { account: string; label: string };
+  corporateTaxPayable: { account: string; label: string };
+  fixedAssetExpense: { account: string; label: string };
+  fixedAssetAmortization: { account: string; label: string };
+};
 
 export type ClosingAdjustmentLine = {
   account: string;
@@ -54,7 +63,8 @@ export type ClosingAdjustmentAuditEvent = {
 export class ClosingAdjustmentCenter {
   constructor(
     private readonly issueTracker = new AccountingIssueTracker(),
-    private readonly activity = new ActivityLogCenter()
+    private readonly activity = new ActivityLogCenter(),
+    private readonly accountPolicy = new AccountingReferencePolicyCenter()
   ) {}
 
   async listProposals(workspace: CompanyWorkspace): Promise<ClosingAdjustmentSummary[]> {
@@ -87,7 +97,7 @@ export class ClosingAdjustmentCenter {
   ): Promise<ClosingAdjustmentSummary> {
     const proposal = await this.getProposal(workspace, input.proposalKey);
     assertDraftEditable(proposal);
-    const assumptions = normalizeAssumptions(proposal, input.assumptions);
+    const assumptions = normalizeAssumptions(proposal, input.assumptions, await this.getClosingAccountRoles());
     const updated = await prisma.closingAdjustmentProposal.update({
       where: { fiscalYearId_proposalKey: { fiscalYearId: workspace.fiscalYear.id, proposalKey: input.proposalKey } },
       data: {
@@ -108,8 +118,9 @@ export class ClosingAdjustmentCenter {
   async recalculateProposal(workspace: CompanyWorkspace, proposalKey: string): Promise<ClosingAdjustmentSummary> {
     const proposal = await this.getProposal(workspace, proposalKey);
     assertDraftEditable(proposal);
-    const resultBeforeTax = proposal.kind === "CORPORATE_TAX" ? await computeResultBeforeTax(workspace.fiscalYear.id) : 0;
-    const next = recalculateDraft(proposal, workspace.fiscalYear.endDate, resultBeforeTax);
+    const roles = await this.getClosingAccountRoles();
+    const resultBeforeTax = proposal.kind === "CORPORATE_TAX" ? await computeResultBeforeTax(workspace.fiscalYear.id, roles) : 0;
+    const next = recalculateDraft(proposal, workspace.fiscalYear.endDate, resultBeforeTax, roles);
     const updated = await prisma.closingAdjustmentProposal.update({
       where: { fiscalYearId_proposalKey: { fiscalYearId: workspace.fiscalYear.id, proposalKey } },
       data: {
@@ -266,15 +277,16 @@ export class ClosingAdjustmentCenter {
   }
 
   private async syncDraftProposals(workspace: CompanyWorkspace) {
+    const roles = await this.getClosingAccountRoles();
     const [issues, existing, resultBeforeTax] = await Promise.all([
       this.issueTracker.listIssues(workspace),
       prisma.closingAdjustmentProposal.findMany({ where: { fiscalYearId: workspace.fiscalYear.id } }),
-      computeResultBeforeTax(workspace.fiscalYear.id),
+      computeResultBeforeTax(workspace.fiscalYear.id, roles),
     ]);
     const existingByKey = new Map(existing.map((proposal) => [proposal.proposalKey, proposal]));
     const drafts = [
-      ...issues.flatMap((issue) => proposalForIssue(issue, workspace.fiscalYear.endDate)),
-      ...corporateTaxProposal(workspace.fiscalYear.id, resultBeforeTax),
+      ...issues.flatMap((issue) => proposalForIssue(issue, workspace.fiscalYear.endDate, roles)),
+      ...corporateTaxProposal(workspace.fiscalYear.id, resultBeforeTax, roles),
     ];
 
     for (const draft of drafts) {
@@ -316,6 +328,17 @@ export class ClosingAdjustmentCenter {
     }
   }
 
+  private async getClosingAccountRoles(): Promise<ClosingAccountRoles> {
+    const [prepaidExpense, corporateTaxExpense, corporateTaxPayable, fixedAssetExpense, fixedAssetAmortization] = await Promise.all([
+      this.accountPolicy.getAccountRole("prepaid_expense"),
+      this.accountPolicy.getAccountRole("corporate_tax_expense"),
+      this.accountPolicy.getAccountRole("corporate_tax_payable"),
+      this.accountPolicy.getAccountRole("fixed_asset_expense"),
+      this.accountPolicy.getAccountRole("fixed_asset_amortization"),
+    ]);
+    return { prepaidExpense, corporateTaxExpense, corporateTaxPayable, fixedAssetExpense, fixedAssetAmortization };
+  }
+
   private async recordProposalEvent(
     workspace: CompanyWorkspace,
     proposalId: string,
@@ -333,14 +356,14 @@ export class ClosingAdjustmentCenter {
   }
 }
 
-export function proposalForIssue(issue: AccountingIssueSummary, fiscalYearEnd: Date): ClosingAdjustmentDraft[] {
+export function proposalForIssue(issue: AccountingIssueSummary, fiscalYearEnd: Date, roles: ClosingAccountRoles): ClosingAdjustmentDraft[] {
   if (issue.status !== "OPEN" && issue.status !== "RESOLVED") return [];
-  if (issue.controlCode === "ANNUAL_CHARGE_CCA") return ccaProposal(issue);
-  if (issue.controlCode === "FIXED_ASSET_CANDIDATE") return depreciationProposal(issue, fiscalYearEnd);
+  if (issue.controlCode === "ANNUAL_CHARGE_CCA") return ccaProposal(issue, roles);
+  if (issue.controlCode === "FIXED_ASSET_CANDIDATE") return depreciationProposal(issue, fiscalYearEnd, roles);
   return [];
 }
 
-export function ccaProposal(issue: AccountingIssueSummary): ClosingAdjustmentDraft[] {
+export function ccaProposal(issue: AccountingIssueSummary, roles: ClosingAccountRoles): ClosingAdjustmentDraft[] {
   const label = issue.evidence.label ?? "";
   const account = issue.evidence.account ?? "";
   const known = knownCca(label);
@@ -357,14 +380,14 @@ export function ccaProposal(issue: AccountingIssueSummary): ClosingAdjustmentDra
       period: known.period,
     },
     lines: [
-      { account: "486", accountLabel: "Charges constatées d'avance", debit: known.amount, credit: 0 },
+      { account: roles.prepaidExpense.account, accountLabel: roles.prepaidExpense.label, debit: known.amount, credit: 0 },
       { account, debit: 0, credit: known.amount },
     ],
   };
   return [{ ...draft, assumptions: assumptionsForDraft(draft) }];
 }
 
-export function depreciationProposal(issue: AccountingIssueSummary, fiscalYearEnd: Date): ClosingAdjustmentDraft[] {
+export function depreciationProposal(issue: AccountingIssueSummary, fiscalYearEnd: Date, roles: ClosingAccountRoles): ClosingAdjustmentDraft[] {
   const label = issue.evidence.label ?? "";
   if (!/macbook/i.test(label)) return [];
   const draft: ClosingAdjustmentDraft = {
@@ -382,14 +405,14 @@ export function depreciationProposal(issue: AccountingIssueSummary, fiscalYearEn
       depreciationAmount: 563.89,
     },
     lines: [
-      { account: "68112", accountLabel: "Dotations aux amortissements corporels", debit: 563.89, credit: 0 },
-      { account: "28183", accountLabel: "Amortissements du matériel de bureau", debit: 0, credit: 563.89 },
+      { account: roles.fixedAssetExpense.account, accountLabel: roles.fixedAssetExpense.label, debit: 563.89, credit: 0 },
+      { account: roles.fixedAssetAmortization.account, accountLabel: roles.fixedAssetAmortization.label, debit: 0, credit: 563.89 },
     ],
   };
   return [{ ...draft, assumptions: assumptionsForDraft(draft) }];
 }
 
-export function corporateTaxProposal(fiscalYearId: string, resultBeforeTax: number): ClosingAdjustmentDraft[] {
+export function corporateTaxProposal(fiscalYearId: string, resultBeforeTax: number, roles: ClosingAccountRoles): ClosingAdjustmentDraft[] {
   if (resultBeforeTax <= 0) return [];
   const tax = money(new Decimal(resultBeforeTax).times(0.15).toNumber());
   if (tax <= 0) return [];
@@ -406,8 +429,8 @@ export function corporateTaxProposal(fiscalYearId: string, resultBeforeTax: numb
       tax,
     },
     lines: [
-      { account: "695", accountLabel: "Impôts sur les bénéfices", debit: tax, credit: 0 },
-      { account: "444", accountLabel: "État - impôts sur les bénéfices", debit: 0, credit: tax },
+      { account: roles.corporateTaxExpense.account, accountLabel: roles.corporateTaxExpense.label, debit: tax, credit: 0 },
+      { account: roles.corporateTaxPayable.account, accountLabel: roles.corporateTaxPayable.label, debit: 0, credit: tax },
     ],
   };
   return [{ ...draft, assumptions: assumptionsForDraft(draft) }];
@@ -416,14 +439,15 @@ export function corporateTaxProposal(fiscalYearId: string, resultBeforeTax: numb
 export function recalculateDraft(
   proposal: ClosingAdjustmentSummary,
   fiscalYearEnd: Date,
-  resultBeforeTax: number
+  resultBeforeTax: number,
+  roles: ClosingAccountRoles
 ): Pick<ClosingAdjustmentDraft, "assumptions" | "calculation" | "lines"> {
-  const assumptions = normalizeAssumptions(proposal, {});
+  const assumptions = normalizeAssumptions(proposal, {}, roles);
   if (proposal.kind === "CCA") {
     const amount = money(numberValue(assumptions.nextExerciseAmount, 0));
     const period = stringValue(assumptions.period, "");
     const chargeAccount = stringValue(assumptions.chargeAccount, "6");
-    const prepaidExpenseAccount = stringValue(assumptions.prepaidExpenseAccount, "486");
+    const prepaidExpenseAccount = stringValue(assumptions.prepaidExpenseAccount, roles.prepaidExpense.account);
     return {
       assumptions,
       calculation: {
@@ -433,7 +457,7 @@ export function recalculateDraft(
         period,
       },
       lines: [
-        { account: prepaidExpenseAccount, accountLabel: prepaidExpenseAccount === "486" ? "Charges constatées d'avance" : undefined, debit: amount, credit: 0 },
+        { account: prepaidExpenseAccount, accountLabel: prepaidExpenseAccount === roles.prepaidExpense.account ? roles.prepaidExpense.label : undefined, debit: amount, credit: 0 },
         { account: chargeAccount, debit: 0, credit: amount },
       ],
     };
@@ -443,8 +467,8 @@ export function recalculateDraft(
     const usefulLifeYears = Math.max(numberValue(assumptions.usefulLifeYears, 1), 1);
     const prorataDays = Math.max(numberValue(assumptions.prorataDays, 365), 0);
     const depreciationAmount = money(new Decimal(baseAmount).div(usefulLifeYears).times(prorataDays).div(365).toNumber());
-    const expenseAccount = stringValue(assumptions.expenseAccount, "68112");
-    const depreciationAccount = stringValue(assumptions.depreciationAccount, "28183");
+    const expenseAccount = stringValue(assumptions.expenseAccount, roles.fixedAssetExpense.account);
+    const depreciationAccount = stringValue(assumptions.depreciationAccount, roles.fixedAssetAmortization.account);
     return {
       assumptions,
       calculation: {
@@ -457,8 +481,8 @@ export function recalculateDraft(
         depreciationAmount,
       },
       lines: [
-        { account: expenseAccount, accountLabel: "Dotations aux amortissements corporels", debit: depreciationAmount, credit: 0 },
-        { account: depreciationAccount, accountLabel: "Amortissements du matériel de bureau", debit: 0, credit: depreciationAmount },
+        { account: expenseAccount, accountLabel: expenseAccount === roles.fixedAssetExpense.account ? roles.fixedAssetExpense.label : undefined, debit: depreciationAmount, credit: 0 },
+        { account: depreciationAccount, accountLabel: depreciationAccount === roles.fixedAssetAmortization.account ? roles.fixedAssetAmortization.label : undefined, debit: 0, credit: depreciationAmount },
       ],
     };
   }
@@ -485,20 +509,20 @@ export function recalculateDraft(
       tax,
     },
     lines: [
-      { account: stringValue(assumptions.expenseAccount, "695"), accountLabel: "Impôts sur les bénéfices", debit: tax, credit: 0 },
-      { account: stringValue(assumptions.payableAccount, "444"), accountLabel: "État - impôts sur les bénéfices", debit: 0, credit: tax },
+      { account: stringValue(assumptions.expenseAccount, roles.corporateTaxExpense.account), accountLabel: roles.corporateTaxExpense.label, debit: tax, credit: 0 },
+      { account: stringValue(assumptions.payableAccount, roles.corporateTaxPayable.account), accountLabel: roles.corporateTaxPayable.label, debit: 0, credit: tax },
     ],
   };
 }
 
-function normalizeAssumptions(proposal: ClosingAdjustmentSummary, next: Record<string, unknown>): Record<string, unknown> {
+function normalizeAssumptions(proposal: ClosingAdjustmentSummary, next: Record<string, unknown>, roles: ClosingAccountRoles): Record<string, unknown> {
   const current: Record<string, unknown> = { ...assumptionsForDraft(proposal), ...proposal.assumptions, ...next };
   if (proposal.kind === "CCA") {
     return {
       period: stringValue(current.period, ""),
       nextExerciseAmount: money(numberValue(current.nextExerciseAmount, 0)),
       chargeAccount: stringValue(current.chargeAccount, stringValue(proposal.lines[1]?.account, "")),
-      prepaidExpenseAccount: stringValue(current.prepaidExpenseAccount, "486"),
+      prepaidExpenseAccount: stringValue(current.prepaidExpenseAccount, roles.prepaidExpense.account),
     };
   }
   if (proposal.kind === "DEPRECIATION") {
@@ -507,8 +531,8 @@ function normalizeAssumptions(proposal: ClosingAdjustmentSummary, next: Record<s
       baseAmount: money(numberValue(current.baseAmount, 0)),
       usefulLifeYears: numberValue(current.usefulLifeYears, 3),
       prorataDays: numberValue(current.prorataDays, 365),
-      expenseAccount: stringValue(current.expenseAccount, "68112"),
-      depreciationAccount: stringValue(current.depreciationAccount, "28183"),
+      expenseAccount: stringValue(current.expenseAccount, roles.fixedAssetExpense.account),
+      depreciationAccount: stringValue(current.depreciationAccount, roles.fixedAssetAmortization.account),
     };
   }
   if (proposal.kind !== "CORPORATE_TAX") {
@@ -530,8 +554,8 @@ function normalizeAssumptions(proposal: ClosingAdjustmentSummary, next: Record<s
   return {
     resultBeforeTax: numberValue(current.resultBeforeTax, numberValue(proposal.calculation.resultBeforeTax, 0)),
     rate: numberValue(current.rate, 0.15),
-    expenseAccount: stringValue(current.expenseAccount, "695"),
-    payableAccount: stringValue(current.payableAccount, "444"),
+    expenseAccount: stringValue(current.expenseAccount, roles.corporateTaxExpense.account),
+    payableAccount: stringValue(current.payableAccount, roles.corporateTaxPayable.account),
   };
 }
 
@@ -541,7 +565,7 @@ export function assumptionsForDraft(draft: Pick<ClosingAdjustmentDraft, "kind" |
       period: stringValue(draft.calculation.period, ""),
       nextExerciseAmount: money(numberValue(draft.calculation.nextExerciseAmount, 0)),
       chargeAccount: stringValue(draft.lines[1]?.account, ""),
-      prepaidExpenseAccount: stringValue(draft.lines[0]?.account, "486"),
+      prepaidExpenseAccount: stringValue(draft.lines[0]?.account, ""),
     };
   }
   if (draft.kind === "DEPRECIATION") {
@@ -550,8 +574,8 @@ export function assumptionsForDraft(draft: Pick<ClosingAdjustmentDraft, "kind" |
       baseAmount: money(numberValue(draft.calculation.baseAmount, 0)),
       usefulLifeYears: numberValue(draft.calculation.usefulLifeYears, 3),
       prorataDays: numberValue(draft.calculation.prorataDays, 365),
-      expenseAccount: stringValue(draft.lines[0]?.account, "68112"),
-      depreciationAccount: stringValue(draft.lines[1]?.account, "28183"),
+      expenseAccount: stringValue(draft.lines[0]?.account, ""),
+      depreciationAccount: stringValue(draft.lines[1]?.account, ""),
     };
   }
   if (draft.kind !== "CORPORATE_TAX") {
@@ -560,8 +584,8 @@ export function assumptionsForDraft(draft: Pick<ClosingAdjustmentDraft, "kind" |
   return {
     resultBeforeTax: numberValue(draft.calculation.resultBeforeTax, 0),
     rate: numberValue(draft.calculation.rate, 0.15),
-    expenseAccount: stringValue(draft.lines[0]?.account, "695"),
-    payableAccount: stringValue(draft.lines[1]?.account, "444"),
+    expenseAccount: stringValue(draft.lines[0]?.account, ""),
+    payableAccount: stringValue(draft.lines[1]?.account, ""),
   };
 }
 
@@ -604,13 +628,13 @@ function toSummary(row: {
   return { ...base, assumptions: Object.keys(base.assumptions).length > 0 ? base.assumptions : assumptionsForDraft(base) };
 }
 
-async function computeResultBeforeTax(fiscalYearId: string) {
+async function computeResultBeforeTax(fiscalYearId: string, roles: ClosingAccountRoles) {
   const lines = await prisma.journalLine.findMany({
     where: { journalEntry: { fiscalYearId } },
     select: { account: true, debit: true, credit: true },
   });
   return lines.reduce((total, line) => {
-    if (line.account === "695" || line.account === "444") return total;
+    if (line.account === roles.corporateTaxExpense.account || line.account === roles.corporateTaxPayable.account) return total;
     if (line.account.startsWith("7")) return total + Number(line.credit) - Number(line.debit);
     if (line.account.startsWith("6")) return total - Number(line.debit) + Number(line.credit);
     return total;

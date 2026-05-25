@@ -1,4 +1,5 @@
 import type { Categorization, Confidence, CorrectionRule, VendorMapping } from "@prisma/client";
+import { AccountingReferencePolicyCenter, type AccountingAccountRoleValue } from "../accounting-reference/accounting-reference-policy-center.server";
 import type { CompanyWorkspace } from "../company-workspace/company-workspace.server";
 import { prisma } from "../db.server";
 import { ruleMatchesTransaction } from "./transaction-explorer.server";
@@ -19,8 +20,10 @@ export type TransactionSuggestion = {
 };
 
 export class TransactionSuggestionCenter {
+  constructor(private readonly accountPolicy = new AccountingReferencePolicyCenter()) {}
+
   async getSuggestions(workspace: CompanyWorkspace, transactionId: string): Promise<TransactionSuggestion[]> {
-    const [transaction, rules, mappings] = await Promise.all([
+    const [transaction, rules, mappings, bankRole, suspenseRole] = await Promise.all([
       prisma.transaction.findFirstOrThrow({
         where: { id: transactionId, fiscalYearId: workspace.fiscalYear.id },
         include: { categorization: true },
@@ -30,16 +33,17 @@ export class TransactionSuggestionCenter {
         where: { active: true, OR: [{ companyId: null }, { companyId: workspace.company.id }] },
         orderBy: [{ companyId: "desc" }, { hitCount: "desc" }],
       }),
+      this.accountPolicy.getAccountRole("bank"),
+      this.accountPolicy.getAccountRole("suspense"),
     ]);
 
     const suggestions = [
       currentSuggestion(transaction.categorization),
-      rules.map((rule) => ruleSuggestion(transaction, rule)).find(Boolean) ?? null,
-      mappings.map((mapping) => mappingSuggestion(transaction, mapping)).find(Boolean) ?? null,
-      patternSuggestion(transaction),
+      rules.map((rule) => ruleSuggestion(transaction, rule, bankRole)).find(Boolean) ?? null,
+      mappings.map((mapping) => mappingSuggestion(transaction, mapping, bankRole)).find(Boolean) ?? null,
     ].filter((suggestion): suggestion is TransactionSuggestion => Boolean(suggestion));
 
-    if (suggestions.length === 0) suggestions.push(reviewSuggestion(transaction));
+    if (suggestions.length === 0) suggestions.push(reviewSuggestion(transaction, bankRole, suspenseRole));
     return uniqueSuggestions(suggestions);
   }
 
@@ -81,15 +85,15 @@ function currentSuggestion(categorization: Categorization | null): TransactionSu
   };
 }
 
-function ruleSuggestion(transaction: TransactionShape, rule: CorrectionRule): TransactionSuggestion | null {
+function ruleSuggestion(transaction: TransactionShape, rule: CorrectionRule, bankRole: AccountingAccountRoleValue): TransactionSuggestion | null {
   if (!ruleMatchesTransaction(rule, transaction)) return null;
   const isCredit = Number(transaction.amount) >= 0;
   return {
     id: `rule:${rule.id}:${transaction.id}`,
-    accountDebit: isCredit ? "5121" : rule.preferredAccount,
-    accountDebitLabel: isCredit ? "Banque" : rule.preferredAccountLabel,
-    accountCredit: isCredit ? rule.preferredAccount : "5121",
-    accountCreditLabel: isCredit ? rule.preferredAccountLabel : "Banque",
+    accountDebit: isCredit ? bankRole.account : rule.preferredAccount,
+    accountDebitLabel: isCredit ? bankRole.label : rule.preferredAccountLabel,
+    accountCredit: isCredit ? rule.preferredAccount : bankRole.account,
+    accountCreditLabel: isCredit ? rule.preferredAccountLabel : bankRole.label,
     ecritureLabel: `${transaction.counterparty ?? "Transaction"} - ${transaction.label}`,
     vatRate: rule.preferredVatRate?.toString() ?? null,
     vatOperationNature: rule.vatOperationNature,
@@ -100,7 +104,7 @@ function ruleSuggestion(transaction: TransactionShape, rule: CorrectionRule): Tr
   };
 }
 
-function mappingSuggestion(transaction: TransactionShape, mapping: VendorMapping): TransactionSuggestion | null {
+function mappingSuggestion(transaction: TransactionShape, mapping: VendorMapping, bankRole: AccountingAccountRoleValue): TransactionSuggestion | null {
   const label = transaction.normalizedLabel.toLowerCase();
   const counterparty = (transaction.counterparty ?? "").toLowerCase();
   const pattern = mapping.pattern.toLowerCase();
@@ -113,10 +117,10 @@ function mappingSuggestion(transaction: TransactionShape, mapping: VendorMapping
   const isCredit = Number(transaction.amount) >= 0;
   return {
     id: `mapping:${mapping.id}:${transaction.id}`,
-    accountDebit: isCredit ? "5121" : mapping.accountDebit,
-    accountDebitLabel: isCredit ? "Banque" : mapping.accountLabel,
+    accountDebit: isCredit ? bankRole.account : mapping.accountDebit,
+    accountDebitLabel: isCredit ? bankRole.label : mapping.accountLabel,
     accountCredit: isCredit ? mapping.accountDebit : mapping.accountCredit,
-    accountCreditLabel: isCredit ? mapping.accountLabel : "Banque",
+    accountCreditLabel: isCredit ? mapping.accountLabel : bankRole.label,
     ecritureLabel: mapping.ecritureLabel ?? `${transaction.counterparty ?? "Transaction"} - ${transaction.label}`,
     vatRate: mapping.vatRate?.toString() ?? null,
     vatOperationNature: mapping.vatOperationNature,
@@ -127,41 +131,13 @@ function mappingSuggestion(transaction: TransactionShape, mapping: VendorMapping
   };
 }
 
-function patternSuggestion(transaction: TransactionShape): TransactionSuggestion | null {
-  const label = transaction.normalizedLabel.toLowerCase();
-  const patterns: Array<[RegExp, string, string]> = [
-    [/frais bancaire|qonto|commission/, "627", "Services bancaires"],
-    [/greffe|inpi|cci/, "6354", "Droits d'enregistrement"],
-    [/expert comptable|fiduciaire/, "6226", "Honoraires"],
-    [/coworking|loyer|bail/, "6132", "Locations immobilières"],
-  ];
-  const match = patterns.find(([pattern]) => pattern.test(label));
-  if (!match) return null;
-  const [, account, accountLabel] = match;
-  const isCredit = Number(transaction.amount) >= 0;
-  return {
-    id: `pattern:${account}:${transaction.id}`,
-    accountDebit: isCredit ? "5121" : account,
-    accountDebitLabel: isCredit ? "Banque" : accountLabel,
-    accountCredit: isCredit ? account : "5121",
-    accountCreditLabel: isCredit ? accountLabel : "Banque",
-    ecritureLabel: `${transaction.counterparty ?? "Transaction"} - ${transaction.label}`,
-    vatRate: null,
-    vatOperationNature: null,
-    confidence: "MEDIUM",
-    source: "PATTERN",
-    rationale: "Pattern déterministe Qitus.",
-    badge: "suggérée",
-  };
-}
-
-function reviewSuggestion(transaction: TransactionShape): TransactionSuggestion {
+function reviewSuggestion(transaction: TransactionShape, bankRole: AccountingAccountRoleValue, suspenseRole: AccountingAccountRoleValue): TransactionSuggestion {
   return {
     id: `review:${transaction.id}`,
-    accountDebit: "471",
-    accountDebitLabel: "Compte d'attente",
-    accountCredit: "5121",
-    accountCreditLabel: "Banque",
+    accountDebit: suspenseRole.account,
+    accountDebitLabel: suspenseRole.label,
+    accountCredit: bankRole.account,
+    accountCreditLabel: bankRole.label,
     ecritureLabel: transaction.label,
     vatRate: null,
     vatOperationNature: null,

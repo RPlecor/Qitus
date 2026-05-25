@@ -1,15 +1,15 @@
 import { Prisma, type Categorization, type CorrectionRule, type JournalEntry, type JournalLine, type Transaction } from "@prisma/client";
 import type { CompanyWorkspace } from "../company-workspace/company-workspace.server";
 import { prisma } from "../db.server";
-import { isTransactionInReview } from "./transaction-review-state";
+import { isTransactionInLightReview, isTransactionInReview } from "./transaction-review-state";
 
-export type TransactionBusinessStatus = "NEEDS_REVIEW" | "CATEGORIZED" | "CONFIRMED" | "CORRECTED" | "HAS_RULE";
+export type TransactionBusinessStatus = "NEEDS_REVIEW" | "REVIEW_LIGHT" | "AUTO_APPLIED" | "CATEGORIZED" | "CONFIRMED" | "CORRECTED" | "HAS_RULE";
 export type TransactionDirection = "all" | "debit" | "credit";
 
 export type TransactionExplorerQuery = {
   page?: number;
   pageSize?: number;
-  status?: "all" | "review" | "categorized" | "confirmed" | "corrected" | "has_rule";
+  status?: "all" | "review" | "review_light" | "auto_applied" | "categorized" | "confirmed" | "corrected" | "has_rule";
   search?: string | null;
   dateFrom?: string | null;
   dateTo?: string | null;
@@ -29,6 +29,8 @@ export type TransactionListItem = {
   categorizationStatus: string | null;
   businessStatus: TransactionBusinessStatus;
   needsReview: boolean;
+  needsLightReview: boolean;
+  autoApplied: boolean;
   hasRule: boolean;
   journalEntryId: string | null;
 };
@@ -36,6 +38,8 @@ export type TransactionListItem = {
 export type TransactionFacets = {
   total: number;
   review: number;
+  reviewLight: number;
+  autoApplied: number;
   categorized: number;
   confirmed: number;
   corrected: number;
@@ -160,6 +164,8 @@ export function summarizeTransaction(transaction: TransactionWithRelations, rule
     categorizationStatus: transaction.categorization?.status ?? null,
     businessStatus,
     needsReview: businessStatus === "NEEDS_REVIEW",
+    needsLightReview: businessStatus === "REVIEW_LIGHT",
+    autoApplied: businessStatus === "AUTO_APPLIED",
     hasRule,
     journalEntryId: transaction.journalEntryId,
   };
@@ -170,6 +176,8 @@ export function businessStatusFor(
   hasRule = false
 ): TransactionBusinessStatus {
   if (isTransactionInReview(categorization)) return "NEEDS_REVIEW";
+  if (isTransactionInLightReview(categorization)) return "REVIEW_LIGHT";
+  if (categorization?.status === "AUTO_APPLIED") return "AUTO_APPLIED";
   if (categorization?.source === "MANUAL" || categorization?.status === "USER_CORRECTED" || categorization?.status === "MANUAL") return "CORRECTED";
   if (categorization?.status === "USER_CONFIRMED") return "CONFIRMED";
   if (hasRule) return "HAS_RULE";
@@ -197,6 +205,8 @@ function matchesPostFilters(transaction: TransactionListItem, query: Transaction
   if (!query.status || query.status === "all") return true;
   const statusMap: Record<Exclude<NonNullable<TransactionExplorerQuery["status"]>, "all">, TransactionBusinessStatus> = {
     review: "NEEDS_REVIEW",
+    review_light: "REVIEW_LIGHT",
+    auto_applied: "AUTO_APPLIED",
     categorized: "CATEGORIZED",
     confirmed: "CONFIRMED",
     corrected: "CORRECTED",
@@ -209,6 +219,8 @@ function buildFacets(transactions: TransactionListItem[]): TransactionFacets {
   return {
     total: transactions.length,
     review: transactions.filter((transaction) => transaction.businessStatus === "NEEDS_REVIEW").length,
+    reviewLight: transactions.filter((transaction) => transaction.businessStatus === "REVIEW_LIGHT").length,
+    autoApplied: transactions.filter((transaction) => transaction.businessStatus === "AUTO_APPLIED").length,
     categorized: transactions.filter((transaction) => transaction.businessStatus === "CATEGORIZED").length,
     confirmed: transactions.filter((transaction) => transaction.businessStatus === "CONFIRMED").length,
     corrected: transactions.filter((transaction) => transaction.businessStatus === "CORRECTED").length,
@@ -219,8 +231,8 @@ function buildFacets(transactions: TransactionListItem[]): TransactionFacets {
 }
 
 function displayAccount(amount: number, categorization: { accountDebit: string | null; accountCredit: string | null } | null) {
-  if (!categorization) return "471";
-  return amount >= 0 ? categorization.accountCredit ?? "471" : categorization.accountDebit ?? "471";
+  if (!categorization) return "";
+  return amount >= 0 ? categorization.accountCredit ?? "" : categorization.accountDebit ?? "";
 }
 
 function clampInt(value: unknown, min: number, max: number, fallback: number) {

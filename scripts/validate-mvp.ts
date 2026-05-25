@@ -1,3 +1,5 @@
+import { FixedAssetReferenceCenter } from "../app/modules/official-references/fixed-asset-reference-center.server";
+
 const baseUrl = process.env.MVP_BASE_URL ?? "http://localhost:5173";
 
 type GeneratedDocument = {
@@ -39,7 +41,7 @@ async function main() {
   await pageContains("/ecritures", ["42 écritures", "84 lignes"]);
   await expectJournalApi(42, 84, true);
   await generateDocuments("/api/documents/fec/generate", ["FEC"]);
-  await pageContains("/documents", ["912345678FEC20251231.txt", "À jour", "script:generate-fec", "Audit génération", "Dernière génération réussie", "Télécharger paquet de preuve"]);
+  await pageContains("/documents", ["912345678FEC20251231.txt", "À jour", "script:generate-fec", "Dernière génération", "Dernière génération réussie", "Télécharger le dossier de preuves"]);
   await expectDocumentsApiMetadata();
   await expectDocumentsAudit("succeeded");
   await approveFirstDraftProposal("CCA");
@@ -69,7 +71,7 @@ async function main() {
   await pageContains("/notifications", ["Notifications"]);
   await pageContains("/exercices", ["Exercices disponibles"]);
   await expectPhase10Apis();
-  await pageContains("/activity", ["Point de contrôle résolu", "Hypothèses OD modifiées", "OD recalculée", "OD validée", "Documents à régénérer", "Audit génération réussi", "Paquet de preuve téléchargé", "Document généré", "Document téléchargé", "Clôture démarrée", "Exercice clôturé", "Exercice rouvert"]);
+  await pageContains("/activity", ["Point de contrôle résolu", "Hypothèses OD modifiées", "OD recalculée", "OD validée", "Documents à régénérer", "Audit génération réussi", "Dossier de preuves téléchargé", "Document généré", "Document téléchargé", "Clôture démarrée", "Exercice clôturé", "Exercice rouvert"]);
 
   console.log(`Validation MVP OK sur ${baseUrl}`);
 }
@@ -123,7 +125,7 @@ async function correctReviewTransactions(correctionLinks: string[]) {
     const id = link.split("/").pop();
     check(Boolean(id), `Lien de correction invalide: ${link}`);
     const form = new URLSearchParams({
-      accountDebit: "471",
+      accountDebit: "6226",
       accountCredit: "5121",
       ecritureLabel: "Transaction corrigée",
     });
@@ -257,14 +259,15 @@ async function expectEvidenceBundle() {
 async function validateAnnualClosing() {
   await requestJson<{ overview: unknown }>("/api/cloture/start", { method: "POST" });
   await pageContains("/cloture", ["Workflow annuel", "Vérification balance", "Export et archivage"]);
+  const fixedAssetFamily = await new FixedAssetReferenceCenter().getDefaultFamily();
   const fixedAsset = new URLSearchParams({
     label: "MacBook Pro 14 pouces M3",
-    account: "2183",
+    account: fixedAssetFamily.assetAccount,
     acquisitionDate: "2025-02-10",
     amount: "1899.00",
-    usefulLifeYears: "3",
-    depreciationAccount: "28183",
-    expenseAccount: "68112",
+    usefulLifeYears: String(fixedAssetFamily.usefulLifeYears),
+    depreciationAccount: fixedAssetFamily.amortizationAccount,
+    expenseAccount: fixedAssetFamily.expenseAccount,
   });
   await requestJson<{ asset: unknown }>("/api/fixed-assets", {
     method: "POST",

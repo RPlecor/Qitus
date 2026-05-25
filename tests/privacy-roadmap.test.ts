@@ -3,19 +3,19 @@ import { DataRetentionPolicy } from "../app/modules/privacy/data-retention-polic
 import { redactSensitive } from "../app/modules/deployment/security-hardening-center.server";
 
 describe("privacy roadmap safeguards", () => {
-  it("protects accounting evidence from automatic purge", () => {
+  it("protects accounting evidence from automatic purge", async () => {
     const policy = new DataRetentionPolicy();
-    expect(policy.describe("journal_entry")).toMatchObject({ autoPurgeAllowed: false, protectedAccountingEvidence: true });
-    expect(policy.describe("document")).toMatchObject({ autoPurgeAllowed: false, protectedAccountingEvidence: true });
-    expect(policy.describe("attachment")).toMatchObject({ autoPurgeAllowed: false, protectedAccountingEvidence: true });
-    expect(policy.describe("expert_dossier")).toMatchObject({ autoPurgeAllowed: false, protectedAccountingEvidence: true });
+    await expect(policy.describe("journal_entry")).resolves.toMatchObject({ autoPurgeAllowed: false, protectedAccountingEvidence: true });
+    await expect(policy.describe("document")).resolves.toMatchObject({ autoPurgeAllowed: false, protectedAccountingEvidence: true });
+    await expect(policy.describe("attachment")).resolves.toMatchObject({ autoPurgeAllowed: false, protectedAccountingEvidence: true });
+    await expect(policy.describe("expert_dossier")).resolves.toMatchObject({ autoPurgeAllowed: false, protectedAccountingEvidence: true });
   });
 
-  it("allows automatic purge only for non-accounting temporary data", () => {
+  it("allows automatic purge only for non-accounting temporary data", async () => {
     const policy = new DataRetentionPolicy();
-    expect(policy.describe("share_link")).toMatchObject({ autoPurgeAllowed: true, autoPurgeAfterDays: 30 });
-    expect(policy.describe("webhook_event")).toMatchObject({ autoPurgeAllowed: true, autoPurgeAfterDays: 90 });
-    expect(policy.describe("privacy_export")).toMatchObject({ autoPurgeAllowed: true, autoPurgeAfterDays: 7 });
+    await expect(policy.describe("share_link")).resolves.toMatchObject({ autoPurgeAllowed: true, autoPurgeAfterDays: 30 });
+    await expect(policy.describe("webhook_event")).resolves.toMatchObject({ autoPurgeAllowed: true, autoPurgeAfterDays: 90 });
+    await expect(policy.describe("privacy_export")).resolves.toMatchObject({ autoPurgeAllowed: true, autoPurgeAfterDays: 7 });
   });
 
   it("redacts secrets, tokens and full IBAN values", () => {

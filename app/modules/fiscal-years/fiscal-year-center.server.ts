@@ -1,6 +1,7 @@
 import { createCookie, redirect } from "@remix-run/node";
 import type { FiscalYear, FiscalYearStatus } from "@prisma/client";
 import { ActivityLogCenter } from "../activity-log/activity-log-center.server";
+import { AccountingReferencePolicyCenter } from "../accounting-reference/accounting-reference-policy-center.server";
 import type { CompanyWorkspace } from "../company-workspace/company-workspace.server";
 import { prisma } from "../db.server";
 import { ExpectedRouteError } from "../route-errors.server";
@@ -134,9 +135,14 @@ export function normalizeFiscalYearInput(input: FiscalYearInput) {
 }
 
 async function ensurePrimaryBankAccount(companyId: string) {
-  const existing = await prisma.bankAccount.findFirst({ where: { companyId, pcgAccount: "5121" } });
+  const policy = new AccountingReferencePolicyCenter();
+  const [bank, bankFec] = await Promise.all([
+    policy.getAccountRole("bank"),
+    policy.getAccountRole("bank_fec"),
+  ]);
+  const existing = await prisma.bankAccount.findFirst({ where: { companyId, pcgAccount: bank.account } });
   if (existing) return existing;
   return prisma.bankAccount.create({
-    data: { companyId, bank: "Qonto", label: "Compte principal", pcgAccount: "5121", fecAccount: "51211" },
+    data: { companyId, bank: "Qonto", label: "Compte principal", pcgAccount: bank.account, fecAccount: bankFec.account },
   });
 }

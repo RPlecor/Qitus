@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Qitus — Roadmap de sortie beta fonctionnelle</title>
+<style>
+:root {
+  --ivory: #FAF9F5;
+  --paper: #FFFFFF;
+  --slate: #141413;
+  --green: #1B3A2D;
+  --green-l: #2D5F3F;
+  --clay: #D97757;
+  --clay-d: #B85C3E;
+  --oat: #E3DACC;
+  --olive: #788C5D;
+  --red: #C0392B;
+  --amber: #E67E22;
+  --blue: #2980B9;
+  --g100: #F0EEE6;
+  --g200: #E6E3DA;
+  --g300: #D1CFC5;
+  --g500: #87867F;
+  --g700: #3D3D3A;
+  --serif: ui-serif, Georgia, "Times New Roman", serif;
+  --sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: var(--sans);
+  background: var(--ivory);
+  color: var(--slate);
+  line-height: 1.55;
+  font-size: 15px;
+  -webkit-font-smoothing: antialiased;
+}
+.wrap { max-width: 1180px; margin: 0 auto; padding: 48px 32px 80px; }
+
+/* ── TOC sidebar ── */
+.toc {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 240px;
+  height: 100vh;
+  overflow-y: auto;
+  background: var(--green);
+  padding: 28px 16px;
+  z-index: 100;
+}
+.toc h3 {
+  color: var(--clay);
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 16px;
+}
+.toc a {
+  display: block;
+  color: rgba(255,255,255,0.7);
+  text-decoration: none;
+  font-size: 0.82rem;
+  padding: 5px 8px;
+  border-radius: 4px;
+  margin-bottom: 2px;
+  transition: all 0.15s;
+}
+.toc a:hover { color: #fff; background: rgba(255,255,255,0.08); }
+.toc a.phase { color: var(--clay); font-weight: 700; margin-top: 12px; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.06em; }
+.toc a.phase:hover { background: none; }
+
+.main { margin-left: 240px; }
+
+@media (max-width: 900px) {
+  .toc { display: none; }
+  .main { margin-left: 0; }
+}
+
+/* ── Hero ── */
+.hero {
+  padding: 64px 0 48px;
+  border-bottom: 1.5px solid var(--g300);
+  margin-bottom: 48px;
+}
+.hero .eyebrow {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--clay);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.hero .eyebrow::before {
+  content: "";
+  display: inline-block;
+  width: 24px;
+  height: 3px;
+  background: var(--clay);
+  border-radius: 2px;
+}
+.hero h1 {
+  font-family: var(--serif);
+  font-size: clamp(32px, 4.5vw, 52px);
+  font-weight: 700;
+  color: var(--green);
+  letter-spacing: -0.018em;
+  line-height: 1.08;
+  margin-bottom: 16px;
+}
+.hero h1 em { font-style: italic; color: var(--clay-d); }
+.hero .sub { font-size: 1.05rem; color: var(--g500); max-width: 680px; line-height: 1.6; }
+.hero .meta { margin-top: 14px; font-size: 0.82rem; color: var(--g500); }
+
+/* ── Sections ── */
+section { margin-bottom: 56px; }
+h2 {
+  font-family: var(--serif);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--green);
+  margin-bottom: 20px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--clay);
+  display: inline-block;
+}
+h3 { font-size: 1.05rem; font-weight: 700; color: var(--green-l); margin: 20px 0 10px; }
+p { margin-bottom: 12px; max-width: 780px; }
+
+/* ── Callout ── */
+.callout {
+  background: var(--green);
+  color: #fff;
+  border-radius: 10px;
+  padding: 24px 28px;
+  margin: 24px 0;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+.callout strong { color: var(--clay); }
+
+/* ── Scope pills ── */
+.scope-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 16px 0 24px;
+}
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.82rem;
+  font-weight: 500;
+}
+.pill-in { background: #D4EDDA; color: #155724; }
+.pill-in::before { content: "✓"; font-weight: 700; }
+.pill-out { background: #F8D7DA; color: #721C24; }
+.pill-out::before { content: "✗"; font-weight: 700; }
+
+/* ── Bloc cards ── */
+.bloc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 20px;
+  margin: 24px 0;
+}
+.bloc-card {
+  background: var(--paper);
+  border-radius: 10px;
+  padding: 24px;
+  box-shadow: 0 1px 5px rgba(0,0,0,0.06);
+  border-left: 4px solid var(--g300);
+  position: relative;
+}
+.bloc-card.infra { border-left-color: var(--blue); }
+.bloc-card.core { border-left-color: var(--clay); }
+.bloc-card.advanced { border-left-color: var(--olive); }
+.bloc-card.ops { border-left-color: var(--amber); }
+
+.bloc-card .bloc-id {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 6px;
+}
+.bloc-card.infra .bloc-id { color: var(--blue); }
+.bloc-card.core .bloc-id { color: var(--clay); }
+.bloc-card.advanced .bloc-id { color: var(--olive); }
+.bloc-card.ops .bloc-id { color: var(--amber); }
+
+.bloc-card .bloc-title {
+  font-family: var(--serif);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--green);
+  margin-bottom: 10px;
+}
+.bloc-card .bloc-obj {
+  font-size: 0.88rem;
+  color: var(--g700);
+  margin-bottom: 14px;
+  line-height: 1.5;
+}
+.bloc-card .steps-count {
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  color: var(--g500);
+}
+.bloc-card .exit-criteria {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--g200);
+  font-size: 0.84rem;
+  color: var(--green-l);
+  font-style: italic;
+}
+
+/* ── Timeline ── */
+.timeline {
+  position: relative;
+  margin: 32px 0;
+  padding-left: 36px;
+}
+.timeline::before {
+  content: "";
+  position: absolute;
+  left: 14px;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--g200);
+  border-radius: 2px;
+}
+.tl-item {
+  position: relative;
+  margin-bottom: 32px;
+  padding-left: 20px;
+}
+.tl-item::before {
+  content: "";
+  position: absolute;
+  left: -25px;
+  top: 6px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 3px solid var(--clay);
+  background: var(--ivory);
+}
+.tl-item .tl-label {
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--clay);
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+.tl-item .tl-title {
+  font-family: var(--serif);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--green);
+  margin-bottom: 8px;
+}
+.tl-steps {
+  list-style: none;
+  padding: 0;
+}
+.tl-steps li {
+  font-size: 0.88rem;
+  padding: 4px 0;
+  color: var(--g700);
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+.tl-steps li::before {
+  content: "→";
+  color: var(--clay);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* ── Tables ── */
+.table-wrap {
+  overflow-x: auto;
+  margin: 18px 0 24px;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--paper);
+  font-size: 0.88rem;
+}
+th {
+  background: var(--green);
+  color: #fff;
+  padding: 11px 14px;
+  text-align: left;
+  font-weight: 600;
+  white-space: nowrap;
+}
+td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--g200);
+  vertical-align: top;
+}
+tr:last-child td { border-bottom: none; }
+tr:nth-child(even) td { background: var(--g100); }
+
+/* ── Go/No-Go ── */
+.gng-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin: 24px 0;
+}
+@media (max-width: 700px) { .gng-grid { grid-template-columns: 1fr; } }
+
+.gng-card {
+  border-radius: 10px;
+  padding: 24px;
+  font-size: 0.9rem;
+}
+.gng-card.go {
+  background: #D4EDDA;
+  border: 2px solid var(--olive);
+}
+.gng-card.nogo {
+  background: #F8D7DA;
+  border: 2px solid var(--red);
+}
+.gng-card h3 {
+  font-family: var(--serif);
+  margin: 0 0 14px;
+}
+.gng-card.go h3 { color: #155724; }
+.gng-card.nogo h3 { color: #721C24; }
+.gng-card ul { list-style: none; padding: 0; }
+.gng-card li {
+  padding: 5px 0;
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+.gng-card.go li::before { content: "✓"; color: var(--olive); font-weight: 700; }
+.gng-card.nogo li::before { content: "✗"; color: var(--red); font-weight: 700; }
+
+/* ── Validation code block ── */
+.code-block {
+  background: #1E1E2E;
+  color: #CDD6F4;
+  border-radius: 8px;
+  padding: 20px 24px;
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  line-height: 1.7;
+  overflow-x: auto;
+  margin: 18px 0;
+}
+.code-block .comment { color: #6C7086; }
+.code-block .cmd { color: #A6E3A1; }
+.code-block .env { color: #F9E2AF; }
+
+/* ── Decisions ── */
+.decisions-list {
+  counter-reset: dec;
+  list-style: none;
+  padding: 0;
+  margin: 16px 0;
+}
+.decisions-list li {
+  counter-increment: dec;
+  padding: 14px 18px 14px 52px;
+  margin-bottom: 8px;
+  background: var(--paper);
+  border-radius: 8px;
+  border-left: 3px solid var(--amber);
+  position: relative;
+  font-size: 0.92rem;
+}
+.decisions-list li::before {
+  content: counter(dec);
+  position: absolute;
+  left: 16px;
+  top: 14px;
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: 0.82rem;
+  color: var(--amber);
+}
+
+/* ── Env block ── */
+.env-block {
+  background: var(--paper);
+  border-radius: 8px;
+  padding: 18px 22px;
+  margin: 14px 0;
+  border: 1px solid var(--g200);
+}
+.env-block .env-title {
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--g500);
+  margin-bottom: 10px;
+}
+.env-block code {
+  display: block;
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  line-height: 1.8;
+  color: var(--g700);
+}
+.env-block .secret { color: var(--red); font-weight: 600; }
+
+footer {
+  text-align: center;
+  padding: 40px 0 0;
+  border-top: 1px solid var(--g300);
+  color: var(--g500);
+  font-size: 0.82rem;
+}
+</style>
+</head>
+<body>
+
+<!-- TOC -->
+<nav class="toc">
+  <h3>Roadmap Beta</h3>
+  <a href="#scope">Périmètre</a>
+  <a href="#decisions-produit">Décisions produit</a>
+  <a class="phase" href="#phase-infra">Infrastructure</a>
+  <a href="#bloc-a">A — Render</a>
+  <a href="#bloc-b">B — Auth & onboarding</a>
+  <a href="#bloc-c">C — Persistance</a>
+  <a class="phase" href="#phase-core">Core comptable</a>
+  <a href="#bloc-d">D — Parcours MVP</a>
+  <a href="#bloc-e">E — Imports & reset</a>
+  <a href="#bloc-f">F — TVA</a>
+  <a href="#bloc-g">G — Pièces & preuve</a>
+  <a class="phase" href="#phase-advanced">Fonctions avancées</a>
+  <a href="#bloc-h">H — Rapprochements</a>
+  <a href="#bloc-i">I — Clôture & OD</a>
+  <a href="#bloc-j">J — Dossier EC</a>
+  <a href="#bloc-k">K — Connecteurs</a>
+  <a href="#bloc-l">L — Facture élec.</a>
+  <a class="phase" href="#phase-ops">Ops & compliance</a>
+  <a href="#bloc-m">M — Règles & impacts</a>
+  <a href="#bloc-n">N — Chat & billing</a>
+  <a href="#bloc-o">O — Sécurité</a>
+  <a class="phase" href="#deploy">Déploiement</a>
+  <a href="#timeline">Séquence J0→J4</a>
+  <a href="#validations">Validations</a>
+  <a href="#go-nogo">Go / No-Go</a>
+  <a href="#remaining">Décisions ouvertes</a>
+</nav>
+
+<div class="main">
+<div class="wrap">
+
+<!-- HERO -->
+<header class="hero" id="top">
+  <div class="eyebrow">Qitus · Roadmap beta fonctionnelle</div>
+  <h1>Sortir en <em>beta</em>, vite et propre</h1>
+  <p class="sub">Déployer Qitus en beta hébergée, persistante et testable. Chaque fonctionnalité visible fonctionne de bout en bout dans son mode annoncé. Pas de production certifiée — une version utilisable par de vrais comptes.</p>
+  <p class="meta">v1.0 · DRAFT · 23 mai 2026</p>
+</header>
+
+<!-- 1. PERIMETRE -->
+<section id="scope">
+  <h2>Périmètre beta</h2>
+
+  <h3>Inclus</h3>
+  <div class="scope-grid">
+    <span class="pill pill-in">Auth Clerk</span>
+    <span class="pill pill-in">Onboarding entreprise</span>
+    <span class="pill pill-in">Imports CSV</span>
+    <span class="pill pill-in">Catégorisation & règles</span>
+    <span class="pill pill-in">Transactions & écritures</span>
+    <span class="pill pill-in">TVA franchise/réel</span>
+    <span class="pill pill-in">Pièces justificatives</span>
+    <span class="pill pill-in">Documents & paquet de preuve</span>
+    <span class="pill pill-in">Rapprochements</span>
+    <span class="pill pill-in">Clôture & OD</span>
+    <span class="pill pill-in">Dossier EC</span>
+    <span class="pill pill-in">Notifications & impacts</span>
+    <span class="pill pill-in">Connecteurs (Qonto, Stripe, OB, PA)</span>
+    <span class="pill pill-in">Banc de test interne</span>
+    <span class="pill pill-in">Facture élec. (upload/sandbox)</span>
+  </div>
+
+  <h3>Exclus</h3>
+  <div class="scope-grid">
+    <span class="pill pill-out">Certification fiscale</span>
+    <span class="pill pill-out">Télétransmission</span>
+    <span class="pill pill-out">EBICS</span>
+    <span class="pill pill-out">Paiement</span>
+    <span class="pill pill-out">Factures clients</span>
+    <span class="pill pill-out">PA conforme (sans contrat)</span>
+    <span class="pill pill-out">Open Banking live garanti</span>
+    <span class="pill pill-out">Stockage local éphémère</span>
+    <span class="pill pill-out">SLA production</span>
+  </div>
+</section>
+
+<!-- 2. DECISIONS PRODUIT -->
+<section id="decisions-produit">
+  <h2>Décisions produit à figer</h2>
+
+  <div class="callout">
+    <strong>Message beta :</strong> Qitus est une beta comptable pour centraliser imports, pièces, TVA, clôture, rapprochements et dossier expert-comptable. Les connecteurs et la facture électronique peuvent être testés dans un environnement interne contrôlé. Les écritures restent validées par l'utilisateur.
+  </div>
+
+  <h3>Connecteurs — mode utilisateur vs test interne</h3>
+  <div class="table-wrap">
+    <table>
+      <tr><th>Connecteur</th><th>Mode utilisateur</th><th>Mode test interne</th></tr>
+      <tr><td><strong>Qonto bancaire</strong></td><td>Configuré ou non configuré</td><td>Flux bancaire simulé</td></tr>
+      <tr><td><strong>Stripe</strong></td><td>Configuré ou non configuré</td><td>Fixture Stripe importable</td></tr>
+      <tr><td><strong>Open Banking</strong></td><td>Configuré ou non configuré</td><td>—</td></tr>
+      <tr><td><strong>Qonto PA</strong></td><td>PA en attente partenaire</td><td>Facture entrante simulée</td></tr>
+    </table>
+  </div>
+  <p style="font-size:0.85rem;color:var(--g500);">Les données test sont toujours marquées non conformes production. <code>QITUS_INTERNAL_TEST_MODE=false</code> sur Render public.</p>
+</section>
+
+<!-- 3. BLOCS -->
+<section id="phase-infra">
+  <h2>Blocs A→C — Infrastructure</h2>
+  <div class="bloc-grid">
+
+    <div class="bloc-card infra" id="bloc-a">
+      <div class="bloc-id">Bloc A</div>
+      <div class="bloc-title">Déploiement Render stable</div>
+      <div class="bloc-obj">URL Render utilisable sans intervention locale. Build auto depuis GitHub, migrations Prisma, endpoints de santé.</div>
+      <div class="steps-count">9 étapes · healthz · readyz · login · signup · dashboard</div>
+      <div class="exit-criteria">Un utilisateur peut créer un compte, terminer l'onboarding et accéder au dashboard depuis Render.</div>
+    </div>
+
+    <div class="bloc-card infra" id="bloc-b">
+      <div class="bloc-id">Bloc B</div>
+      <div class="bloc-title">Auth & onboarding Clerk</div>
+      <div class="bloc-obj">Inscription sans mode dev. Branding Qitus uniquement, webhook Clerk robuste, onboarding entreprise, déconnexion.</div>
+      <div class="steps-count">9 étapes · sign-in/up · webhook · onboarding · demo masqué</div>
+      <div class="exit-criteria">Un utilisateur inconnu peut s'inscrire, renseigner son entreprise et utiliser Qitus sans intervention admin.</div>
+    </div>
+
+    <div class="bloc-card infra" id="bloc-c">
+      <div class="bloc-id">Bloc C</div>
+      <div class="bloc-title">Persistance & sauvegarde</div>
+      <div class="bloc-obj">PostgreSQL persistant + backups. S3-compatible recommandé pour pièces et documents avant données réelles.</div>
+      <div class="steps-count">5 étapes ASAP + 7 étapes S3 recommandées</div>
+      <div class="exit-criteria">Base PostgreSQL persistante et backupée. (Robuste : + S3 + audit stockage OK)</div>
+    </div>
+
+  </div>
+
+  <h3>Variables d'environnement staging</h3>
+  <div class="env-block">
+    <div class="env-title">Configuration staging</div>
+    <code>
+APP_ENV=staging<br>
+AUTH_MODE=clerk<br>
+BILLING_MODE=stub<br>
+OBJECT_STORAGE_MODE=local<br>
+CONNECTORS_MODE=disabled<br>
+OPEN_BANKING_PROVIDER=disabled<br>
+E_INVOICE_PROVIDER=disabled<br>
+QITUS_INTERNAL_TEST_MODE=false<br>
+COOKIE_SECURE=true
+    </code>
+  </div>
+  <div class="env-block">
+    <div class="env-title">Secrets obligatoires</div>
+    <code>
+<span class="secret">SESSION_SECRET</span>=&lt;secret-long&gt;<br>
+<span class="secret">CLERK_PUBLISHABLE_KEY</span>=&lt;clé-clerk&gt;<br>
+<span class="secret">CLERK_SECRET_KEY</span>=&lt;clé-clerk&gt;<br>
+<span class="secret">CLERK_WEBHOOK_SECRET</span>=&lt;secret-svix&gt;
+    </code>
+  </div>
+</section>
+
+<section id="phase-core">
+  <h2>Blocs D→G — Core comptable</h2>
+  <div class="bloc-grid">
+
+    <div class="bloc-card core" id="bloc-d">
+      <div class="bloc-id">Bloc D</div>
+      <div class="bloc-title">Parcours MVP comptable</div>
+      <div class="bloc-obj">Import CSV → catégorisation → corrections → règles → écritures → export journal → activité → notifications.</div>
+      <div class="steps-count">11 étapes + 4 points de vigilance</div>
+      <div class="exit-criteria">Le scénario end-user passe sur une base propre et sur l'URL Render beta.</div>
+    </div>
+
+    <div class="bloc-card core" id="bloc-e">
+      <div class="bloc-id">Bloc E</div>
+      <div class="bloc-title">Imports, recatégorisation & reset</div>
+      <div class="bloc-obj">Réparer un import sans SQL. Historique, relance catégorisation, suppression, reset exercice. Pièces préservées.</div>
+      <div class="steps-count">8 étapes</div>
+      <div class="exit-criteria">L'utilisateur peut repartir de zéro côté imports depuis l'interface, sans support technique.</div>
+    </div>
+
+    <div class="bloc-card core" id="bloc-f">
+      <div class="bloc-id">Bloc F</div>
+      <div class="bloc-title">TVA</div>
+      <div class="bloc-obj">Franchise et réel normal. Alertes quand calcul impossible. Brouillons propres. Libellés en français, pas de fausse impression de validité.</div>
+      <div class="steps-count">7 étapes</div>
+      <div class="exit-criteria">L'utilisateur comprend pourquoi la TVA est calculée ou pourquoi elle ne peut pas encore l'être.</div>
+    </div>
+
+    <div class="bloc-card core" id="bloc-g">
+      <div class="bloc-id">Bloc G</div>
+      <div class="bloc-title">Pièces, documents & preuve</div>
+      <div class="bloc-obj">Upload, rattachement, FEC, états financiers, paquet de preuve. Obsolescence après mutation. Bundle sans crash.</div>
+      <div class="steps-count">9 étapes</div>
+      <div class="exit-criteria">L'utilisateur peut produire, télécharger et retrouver les preuves du dossier.</div>
+    </div>
+
+  </div>
+</section>
+
+<section id="phase-advanced">
+  <h2>Blocs H→L — Fonctions avancées</h2>
+  <div class="bloc-grid">
+
+    <div class="bloc-card advanced" id="bloc-h">
+      <div class="bloc-id">Bloc H</div>
+      <div class="bloc-title">Rapprochements</div>
+      <div class="bloc-obj">Bancaire, tiers, Stripe. Match, ignore, relance. Comptes d'attente, fraîcheur, lettrage.</div>
+      <div class="steps-count">8 étapes</div>
+      <div class="exit-criteria">L'utilisateur comprend ce qui est rapproché, ce qui ne l'est pas, et ce qui bloque la clôture.</div>
+    </div>
+
+    <div class="bloc-card advanced" id="bloc-i">
+      <div class="bloc-id">Bloc I</div>
+      <div class="bloc-title">Clôture & OD validables</div>
+      <div class="bloc-obj">Workpapers, propositions OD, blocage si pièce manquante, validation/rejet, écriture, fraîcheur, couverture.</div>
+      <div class="steps-count">11 étapes</div>
+      <div class="exit-criteria">Chaque OD créée est relue et validée explicitement par l'utilisateur.</div>
+    </div>
+
+    <div class="bloc-card advanced" id="bloc-j">
+      <div class="bloc-id">Bloc J</div>
+      <div class="bloc-title">Dossier expert-comptable</div>
+      <div class="bloc-obj">Snapshot, lien partagé, demandes/réponses EC, signoff, export final. Obsolescence après modification.</div>
+      <div class="steps-count">10 étapes</div>
+      <div class="exit-criteria">Un cabinet peut relire, commenter et signer sans pouvoir modifier les écritures.</div>
+    </div>
+
+    <div class="bloc-card advanced" id="bloc-k">
+      <div class="bloc-id">Bloc K</div>
+      <div class="bloc-title">Connecteurs & banc de test</div>
+      <div class="bloc-obj">Surface produit propre (pas de mock/fixture visible). Banc de test interne isolé. Qonto PA guarded.</div>
+      <div class="steps-count">5 étapes produit + 5 étapes test</div>
+      <div class="exit-criteria">L'utilisateur voit des connecteurs clairs. L'équipe garde un banc de test sans fuite UX.</div>
+    </div>
+
+    <div class="bloc-card advanced" id="bloc-l">
+      <div class="bloc-id">Bloc L</div>
+      <div class="bloc-title">Facture électronique entrante</div>
+      <div class="bloc-obj">Upload XML/Factur-X, détection UBL/CII, brouillon → approbation → écriture. Pas de prétention PA.</div>
+      <div class="steps-count">10 étapes</div>
+      <div class="exit-criteria">Une facture entrante structurée peut devenir une écriture validée. La conformité PA reste réservée.</div>
+    </div>
+
+  </div>
+</section>
+
+<section id="phase-ops">
+  <h2>Blocs M→O — Ops & compliance</h2>
+  <div class="bloc-grid">
+
+    <div class="bloc-card ops" id="bloc-m">
+      <div class="bloc-id">Bloc M</div>
+      <div class="bloc-title">Règles & impacts de changement</div>
+      <div class="bloc-obj">Alertes TVA, impacts documents/FEC/rapprochements/dossier EC après modification. Pas de doublon d'alertes.</div>
+      <div class="steps-count">7 étapes</div>
+      <div class="exit-criteria">L'utilisateur sait quoi relancer après un changement, sans modification silencieuse du passé.</div>
+    </div>
+
+    <div class="bloc-card ops" id="bloc-n">
+      <div class="bloc-id">Bloc N</div>
+      <div class="bloc-title">Chat, abonnement & limites</div>
+      <div class="bloc-obj">Chat fake en staging, billing en stub, limites lisibles, pas de confusion Stripe billing / Stripe rapprochement.</div>
+      <div class="steps-count">5 étapes</div>
+      <div class="exit-criteria">Le produit ne bloque pas l'utilisateur beta sur une facturation incomplète.</div>
+    </div>
+
+    <div class="bloc-card ops" id="bloc-o">
+      <div class="bloc-id">Bloc O</div>
+      <div class="bloc-title">Sécurité & conformité beta</div>
+      <div class="bloc-obj">Secrets protégés, cookies sécurisés, webhooks signés, rate limit, mutations bloquées si clôturé, RGPD, anonymisation.</div>
+      <div class="steps-count">10 étapes</div>
+      <div class="exit-criteria">Qitus testable par des utilisateurs beta sans exposition de secrets ni comportement destructif.</div>
+    </div>
+
+  </div>
+</section>
+
+<!-- TIMELINE -->
+<section id="deploy">
+  <h2>Séquence de déploiement ASAP</h2>
+</section>
+
+<section id="timeline">
+  <div class="timeline">
+
+    <div class="tl-item">
+      <div class="tl-label">Jour 0 — Gel du périmètre</div>
+      <div class="tl-title">Déclarer le scope et désactiver le non-prêt</div>
+      <ul class="tl-steps">
+        <li>Déclarer officiellement le périmètre beta</li>
+        <li>Désactiver PA réelle, OB live non configuré, Stripe/Qonto live si secrets absents</li>
+        <li>Garder QITUS_INTERNAL_TEST_MODE=false sur Render public</li>
+      </ul>
+    </div>
+
+    <div class="tl-item">
+      <div class="tl-label">Jour 1 — Déploiement technique</div>
+      <div class="tl-title">Render build, Clerk, PostgreSQL, migrations, endpoints</div>
+      <ul class="tl-steps">
+        <li>Vérifier Render build + auto-deploy GitHub</li>
+        <li>Vérifier Clerk (login, signup, webhook)</li>
+        <li>Vérifier PostgreSQL + migrations Prisma</li>
+        <li>Vérifier /healthz, /readyz, /dashboard</li>
+      </ul>
+    </div>
+
+    <div class="tl-item">
+      <div class="tl-label">Jour 2 — Données & backups</div>
+      <div class="tl-title">Backups PostgreSQL, décision S3, storage audit</div>
+      <ul class="tl-steps">
+        <li>Activer backups PostgreSQL</li>
+        <li>Documenter procédure de restore</li>
+        <li>Décider si S3 obligatoire avant ouverture → si oui, configurer</li>
+        <li>Vérifier storage audit</li>
+      </ul>
+    </div>
+
+    <div class="tl-item">
+      <div class="tl-label">Jour 3 — Validation produit</div>
+      <div class="tl-title">Validations coeur, test manuel, import réel</div>
+      <ul class="tl-steps">
+        <li>Lancer la suite de validation coeur</li>
+        <li>Corriger tout bloquant</li>
+        <li>Tester manuellement un compte neuf + import réel + reset</li>
+      </ul>
+    </div>
+
+    <div class="tl-item">
+      <div class="tl-label">Jour 4 — Beta contrôlée</div>
+      <div class="tl-title">Ouverture limitée, monitoring, feedback loop</div>
+      <ul class="tl-steps">
+        <li>Ouvrir à un nombre limité d'utilisateurs</li>
+        <li>Collecter erreurs Render</li>
+        <li>Lire /activity et /notifications</li>
+        <li>Vérifier régulièrement /api/beta-readiness</li>
+      </ul>
+    </div>
+
+  </div>
+</section>
+
+<!-- VALIDATIONS -->
+<section id="validations">
+  <h2>Suite de validation complète</h2>
+
+  <div class="code-block">
+<span class="comment"># Avant ouverture beta</span>
+<span class="cmd">npm run typecheck</span>
+<span class="cmd">npm test</span>
+<span class="cmd">npm run build</span>
+<span class="cmd">npm run demo:reset</span>
+<span class="cmd">npm run validate:mvp</span>
+<span class="cmd">npm run validate:end-user</span>
+<span class="cmd">npm run validate:vat</span>
+<span class="cmd">npm run validate:reconciliations</span>
+<span class="cmd">npm run validate:closing</span>
+<span class="cmd">npm run validate:closing-end-user</span>
+<span class="cmd">npm run validate:dossier-ec</span>
+<span class="cmd">npm run validate:dossier-ec-end-user</span>
+<span class="cmd">npm run validate:production-config</span>
+<span class="cmd">npm run validate:beta-infra</span>
+<span class="cmd">npm run validate:connector-product-surface</span>
+
+<span class="comment"># Banc de test interne</span>
+<span class="env">QITUS_INTERNAL_TEST_MODE=true</span> <span class="cmd">npm run validate:e-invoice-pa-sandbox</span>
+<span class="cmd">npm run validate:open-banking</span>
+<span class="cmd">npm run validate:open-banking-end-user</span>
+<span class="cmd">npm run validate:e-invoices</span>
+<span class="cmd">npm run validate:e-invoice-provider-contract</span>
+  </div>
+</section>
+
+<!-- GO / NO-GO -->
+<section id="go-nogo">
+  <h2>Go / No-Go beta</h2>
+
+  <div class="gng-grid">
+    <div class="gng-card go">
+      <h3>Go — Ouvrir la beta si :</h3>
+      <ul>
+        <li>Render déploie automatiquement depuis GitHub</li>
+        <li>L'inscription Clerk fonctionne</li>
+        <li>L'onboarding fonctionne</li>
+        <li>La base est persistante</li>
+        <li>Les backups PostgreSQL sont actifs</li>
+        <li>Le parcours MVP passe</li>
+        <li>Le reset import est possible sans SQL</li>
+        <li>Documents et pièces persistants ou limités à des tests sans données sensibles</li>
+        <li>Les connecteurs test ne sont pas visibles hors mode interne</li>
+        <li>Les secrets ne sortent pas dans les statuts</li>
+        <li>Les erreurs utilisateur sont lisibles</li>
+      </ul>
+    </div>
+
+    <div class="gng-card nogo">
+      <h3>No-Go — Ne pas ouvrir si :</h3>
+      <ul>
+        <li>/dashboard inaccessible après login</li>
+        <li>Les imports nécessitent du SQL pour être corrigés</li>
+        <li>Fichiers sur disque éphémère avec de vraies données</li>
+        <li>Backups inconnus</li>
+        <li>Clerk affiche une expérience non brandée Qitus</li>
+        <li>Les connecteurs test sont visibles comme connecteurs produit</li>
+        <li>Génération d'écriture automatique sans validation utilisateur</li>
+        <li>Les secrets apparaissent dans une page, API ou log</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- DECISIONS RESTANTES -->
+<section id="remaining">
+  <h2>Décisions ouvertes</h2>
+  <ol class="decisions-list">
+    <li>Le stockage S3 est-il obligatoire avant la première beta fermée ?</li>
+    <li>Quel plan Render PostgreSQL est retenu pour backups et restauration ?</li>
+    <li>Combien d'utilisateurs maximum pour la beta initiale ?</li>
+    <li>Les utilisateurs beta peuvent-ils importer de vraies données bancaires ?</li>
+    <li>Le banc de test interne sera-t-il accessible seulement à l'équipe ou aussi à certains beta testers ?</li>
+    <li>Quelle PA réelle est contractualisée pour la suite facture électronique ?</li>
+    <li>Quelle politique de rétention des pièces et documents est affichée aux utilisateurs ?</li>
+    <li>Quel canal support est promis pendant la beta ?</li>
+  </ol>
+</section>
+
+<footer>
+  Qitus · Roadmap beta fonctionnelle v1.0 · DRAFT · 23 mai 2026
+</footer>
+
+</div>
+</div>
+
+<!-- Smooth scroll -->
+<script>
+document.querySelectorAll('.toc a').forEach(a => {
+  a.addEventListener('click', e => {
+    const href = a.getAttribute('href');
+    if (href && href.startsWith('#')) {
+      e.preventDefault();
+      const target = document.querySelector(href);
+      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  });
+});
+</script>
+
+</body>
+</html>

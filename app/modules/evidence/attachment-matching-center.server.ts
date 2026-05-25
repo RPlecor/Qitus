@@ -3,6 +3,7 @@ import type { EvidenceRequirement, EvidenceRequirementKind, EvidenceRequirementL
 import { EvidenceRequirementCenter } from "../accounting-coverage/evidence-requirement-center.server";
 import type { CompanyWorkspace } from "../company-workspace/company-workspace.server";
 import { prisma } from "../db.server";
+import { ReconciliationPolicyCenter } from "../official-references/reconciliation-policy-center.server";
 import { ExpectedRouteError } from "../route-errors.server";
 
 export type AttachmentMatchSuggestion = {
@@ -37,7 +38,10 @@ type RequirementFact = {
 };
 
 export class AttachmentMatchingCenter {
-  constructor(private readonly requirements = new EvidenceRequirementCenter()) {}
+  constructor(
+    private readonly requirements = new EvidenceRequirementCenter(),
+    private readonly reconciliationPolicy = new ReconciliationPolicyCenter()
+  ) {}
 
   async suggestLinksForAttachment(workspace: CompanyWorkspace, attachmentId: string): Promise<AttachmentMatchSuggestion[]> {
     const attachment = await this.getAttachment(workspace, attachmentId);
@@ -78,11 +82,12 @@ export class AttachmentMatchingCenter {
 
   private async rankMatches(workspace: CompanyWorkspace, attachment: AttachmentMatchSource, requirements: EvidenceRequirement[]) {
     const facts = await loadRequirementFacts(workspace, requirements);
+    const exactAmountEpsilon = (await this.reconciliationPolicy.getTolerances()).exactAmountEpsilon;
     return requirements.map((requirement) => {
       const fact = facts.get(requirement.id);
       const relationType = relationTypeForEvidenceKind(requirement.kind);
       const entityType = attachmentEntityTypeForRequirement(requirement);
-      const scoring = scoreAttachmentMatch(attachment, requirement, fact);
+      const scoring = scoreAttachmentMatch(attachment, requirement, fact, exactAmountEpsilon);
       return {
         requirementId: requirement.id,
         entityType,
@@ -126,7 +131,8 @@ export function relationTypeForEvidenceKind(kind: EvidenceRequirementKind): Atta
 export function scoreAttachmentMatch(
   attachment: { supplierName: string | null; invoiceDate: Date | null; amountTtc: { toNumber(): number } | null },
   requirement: Pick<EvidenceRequirement, "kind" | "label">,
-  fact: RequirementFact | undefined
+  fact: RequirementFact | undefined,
+  exactAmountEpsilon: number
 ) {
   const reasons: string[] = [];
   let score = relationCompatibilityScore(requirement.kind);
@@ -135,7 +141,7 @@ export function scoreAttachmentMatch(
   const attachmentAmount = attachment.amountTtc?.toNumber();
   if (attachmentAmount != null && fact?.amount != null) {
     const delta = Math.abs(Math.abs(attachmentAmount) - Math.abs(fact.amount));
-    if (delta < 0.01) {
+    if (delta <= exactAmountEpsilon) {
       score += 45;
       reasons.push("montant exact");
     } else if (delta <= 1) {

@@ -9,5 +9,5 @@ export async function loader(args: LoaderFunctionArgs) {
     center.listEvidenceRequirements(workspace),
     center.summarizeEvidenceGaps(workspace),
   ]);
-  return json({ policy: center.getEvidencePolicy(), summary, requirements });
+  return json({ policy: await center.getEvidencePolicy(), summary, requirements });
 }

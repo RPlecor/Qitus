@@ -2,6 +2,7 @@ import type { DocumentType } from "@prisma/client";
 import { assertActionableGuidance, type ActionableGuidance, type ActionableGuidanceTone } from "../actionable-guidance";
 import { AccountingReviewCenter, type AccountingReview } from "../accounting-review/accounting-review-center.server";
 import { AccountingCoverageCenter, type AccountingCoverageOverview } from "../accounting-coverage/accounting-coverage-center.server";
+import { AccountingCertaintyCenter, type AccountingCertaintySummary } from "../accounting-certainty/accounting-certainty-center.server";
 import { AutomationOpportunityCenter, summarizeAutomationOpportunities, type AutomationOpportunity } from "../automation/automation-opportunity-center.server";
 import { ChangeImpactCenter, type ChangeImpactOverview } from "../change-impacts/change-impact-center.server";
 import { ClosingAdjustmentCenter } from "../closing-adjustments/closing-adjustment-center.server";
@@ -39,6 +40,7 @@ export type DashboardOverviewResult = {
   documentFreshness: { staleCount: number } | null;
   closingAdjustments: { draft: number; approved: number; rejected: number } | null;
   coverage: { score: number; label: string; highRisk: number } | null;
+  certainty: AccountingCertaintySummary | null;
   changeImpacts: Pick<ChangeImpactOverview, "mode" | "status" | "total" | "blocking" | "actionRequired" | "warning" | "impacts" | "performanceBudget"> | null;
   automation: {
     mode: string;
@@ -68,13 +70,14 @@ export class DashboardOverview {
       }),
     ]);
     const changeImpactMode = getRuntimeConfig().changeImpactsMode;
-    const [accountingReview, freshness, closingAdjustments, coverage, comparison, changeImpacts, automationData] = typeof input === "string"
-      ? [null, null, null, null, null, null, null] as const
+    const [accountingReview, freshness, closingAdjustments, coverage, certainty, comparison, changeImpacts, automationData] = typeof input === "string"
+      ? [null, null, null, null, null, null, null, null] as const
       : await Promise.all([
           new AccountingReviewCenter().getReview(input),
           new DocumentFreshnessCenter().getFreshness(input),
           new ClosingAdjustmentCenter().summarizeClosingAdjustments(input),
           new AccountingCoverageCenter().getCoverageOverview(input),
+          new AccountingCertaintyCenter().getFiscalYearCertaintySummary(input),
           this.getComparison(input),
           changeImpactMode === "off" ? null : new ChangeImpactCenter().getImpactOverview(input, { surface: "dashboard" }),
           this.getAutomation(input),
@@ -92,6 +95,7 @@ export class DashboardOverview {
       documentFreshness: freshness ? { staleCount: freshness.staleCount } : null,
       closingAdjustments,
       coverage: coverage ? { score: coverage.score, label: coverage.label, highRisk: coverage.highRisk } : null,
+      certainty,
       changeImpacts: changeImpacts ? {
         mode: changeImpacts.mode,
         status: changeImpacts.status,
@@ -284,6 +288,6 @@ function dashboardAlert(input: {
 }
 
 function displayAccount(amount: number, categorization: { accountDebit: string | null; accountCredit: string | null } | null) {
-  if (!categorization) return "471";
-  return amount >= 0 ? categorization.accountCredit ?? "471" : categorization.accountDebit ?? "471";
+  if (!categorization) return "";
+  return amount >= 0 ? categorization.accountCredit ?? "" : categorization.accountDebit ?? "";
 }

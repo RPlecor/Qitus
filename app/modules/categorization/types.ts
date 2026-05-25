@@ -18,6 +18,7 @@ export type CategorizationSuggestion = {
   rationale?: string;
   alternatives?: Array<{ account: string; label?: string; confidence: number }>;
   isAnnualCharge?: boolean;
+  requiresLightReview?: boolean;
 };
 
 export type CategorizationTransaction = NormalizedTransaction & {
@@ -30,6 +31,8 @@ export type CorrectionRuleInput = {
   preferredAccountLabel?: string;
   preferredVatRate?: number | null;
   vatOperationNature?: string | null;
+  conflict?: boolean;
+  sourceFiscalYearId?: string;
 };
 
 export type VendorMappingInput = {
@@ -48,7 +51,13 @@ export type VendorMappingInput = {
 export type CategorizationContext = {
   companyName: string;
   legalForm: string;
+  incomeRegime?: string | null;
   vatRegime: string;
+  companyTier?: string;
+  accountRoles: {
+    bank: { account: string; label: string };
+    suspense: { account: string; label: string };
+  };
   correctionRules: CorrectionRuleInput[];
   vendorMappings: VendorMappingInput[];
 };
